@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Littgram Book Seeder v2</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#100C08;color:#F5EEE3;font-family:'DM Sans',system-ui,sans-serif;padding:20px;min-height:100vh}
+h1{font-size:20px;font-weight:700;margin-bottom:4px;color:#C9964A}
+.sub{font-size:12px;color:#9A8878;margin-bottom:20px}
+.card{background:#1E1610;border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid rgba(255,190,130,.1)}
+.row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,190,130,.05)}
+.row:last-child{border-bottom:none}
+.dot{width:16px;height:16px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px}
+.pending{background:rgba(201,150,74,.2);color:#C9964A}
+.loading{background:rgba(200,98,74,.2);color:#C8624A;animation:pulse 1s infinite}
+.done{background:rgba(82,196,26,.2);color:#52c41a}
+.failed{background:rgba(255,77,109,.2);color:#ff4d6d}
+.skip{background:rgba(100,100,100,.2);color:#888}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.name{font-size:12px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.note{font-size:10px;color:#9A8878;flex-shrink:0}
+.prog{height:4px;background:#2A2018;border-radius:2px;overflow:hidden;margin:10px 0}
+.prog-fill{height:100%;background:linear-gradient(90deg,#C8624A,#C9964A);border-radius:2px;transition:width .3s}
+button{background:#C8624A;color:#fff;border:none;border-radius:10px;padding:11px 20px;font-size:13px;font-weight:700;cursor:pointer;width:100%;margin-bottom:8px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.btn-retry{background:#2A2018;color:#C9964A;border:1px solid rgba(201,150,74,.3)}
+.log{font-size:10px;color:#9A8878;max-height:160px;overflow-y:auto;background:#100C08;border-radius:8px;padding:10px;margin-top:10px;font-family:monospace;display:none}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.stat{background:#100C08;border-radius:8px;padding:10px;text-align:center}
+.stat-n{font-size:20px;font-weight:700}
+.stat-l{font-size:10px;color:#9A8878;margin-top:2px}
+.warn{background:rgba(255,190,50,.1);border:1px solid rgba(255,190,50,.2);border-radius:8px;padding:10px;font-size:11px;color:#C9964A;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<h1>📚 Littgram Book Seeder v2</h1>
+<p class="sub">Pre-loads all 51 books into Firebase. Fixes: smaller chunks, lower threshold, better subpage fetch, retry logic.</p>
+
+<div class="warn">
+  ⚠️ <strong>Firestore rules:</strong> Make sure anonymous writes to <code>books/</code> are allowed. 
+  If seeding fails with 403, update Firestore rules in Firebase Console to allow writes to books/.
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-n" id="s-done" style="color:#52c41a">0</div><div class="stat-l">Seeded</div></div>
+  <div class="stat"><div class="stat-n" id="s-skip" style="color:#888">0</div><div class="stat-l">Skipped</div></div>
+  <div class="stat"><div class="stat-n" id="s-fail" style="color:#ff4d6d">0</div><div class="stat-l">Failed</div></div>
+  <div class="stat"><div class="stat-n" id="s-total" style="color:#C9964A">51</div><div class="stat-l">Total</div></div>
+</div>
+
+<div class="card">
+  <div id="status" style="font-size:12px;color:#C9964A;margin-bottom:10px">Ready</div>
+  <div class="prog"><div class="prog-fill" id="bar" style="width:0%"></div></div>
+  <button id="btn-all" onclick="startAll()">🌱 Seed All Books</button>
+  <button id="btn-retry" class="btn-retry" onclick="retryFailed()" style="display:none">🔄 Retry Failed Books</button>
+  <div id="log" class="log"></div>
+</div>
+
+<div class="card">
+  <div style="font-size:12px;font-weight:700;margin-bottom:10px">All 51 books</div>
+  <div id="book-list"></div>
+</div>
+
+<script>
+const FB_KEY = 'AIzaSyA3aB2fNYzSSiWGNL5SM9EmRPGAM71nyQI';
+const FB_PROJECT = 'littgram-54427';
+const CHUNK_SIZE = 480 * 1024; // 480KB — safe under 1MB Firestore limit
+const MIN_LENGTH = 50; // chars — allow even short poems/stories
+const BATCH_DELAY = 250; // ms between requests
+
+const BOOKS = [{"id": "meditations", "title": "Meditations", "native": null, "pdfUrl": "https://www.gutenberg.org/cache/epub/55317/pg55317.txt"}, {"id": "crime", "title": "Crime and Punishment", "native": null, "pdfUrl": "https://www.gutenberg.org/cache/epub/2554/pg2554.txt"}, {"id": "siddhartha", "title": "Siddhartha", "native": null, "pdfUrl": "https://www.gutenberg.org/cache/epub/2413/pg2413.txt"}, {"id": "little_prince", "title": "The Little Prince", "native": null, "pdfUrl": "https://www.gutenberg.org/cache/epub/71975/pg71975.txt"}, {"id": "gitanjali", "title": "Gitanjali", "native": "গীতাঞ্জলি", "pdfUrl": "https://www.gutenberg.org/cache/epub/7164/pg7164.txt"}, {"id": "gora", "title": "Gora", "native": "গোরা", "pdfUrl": "WIKISOURCE:bn:গোরা"}, {"id": "pather_panchali", "title": "Pather Panchali", "native": "পথের পাঁচালী", "pdfUrl": "WIKISOURCE:bn:পথের_পাঁচালী"}, {"id": "chokher_bali", "title": "Chokher Bali", "native": "চোখের বালি", "pdfUrl": "WIKISOURCE:bn:চোখের_বালি"}, {"id": "aranyak", "title": "Aranyak", "native": "আরণ্যক", "pdfUrl": "WIKISOURCE:bn:আরণ্যক"}, {"id": "devdas", "title": "Devdas", "native": "দেবদাস", "pdfUrl": "WIKISOURCE:bn:দেবদাস"}, {"id": "ananda_math", "title": "Ananda Math", "native": "আনন্দমঠ", "pdfUrl": "WIKISOURCE:bn:আনন্দমঠ"}, {"id": "devi_chowdhurani", "title": "Devi Chowdhurani", "native": "দেবী চৌধুরাণী", "pdfUrl": "WIKISOURCE:bn:দেবী_চৌধুরাণী"}, {"id": "bishbrikkho", "title": "Bishbrikkho", "native": "বিষবৃক্ষ", "pdfUrl": "WIKISOURCE:bn:বিষবৃক্ষ"}, {"id": "kapalkundala", "title": "Kapalkundala", "native": "কপালকুণ্ডলা", "pdfUrl": "WIKISOURCE:bn:কপালকুণ্ডলা"}, {"id": "krishnakanter_will", "title": "Krishnakanter Will", "native": "কৃষ্ণকান্তের উইল", "pdfUrl": "WIKISOURCE:bn:কৃষ্ণকান্তের_উইল"}, {"id": "durgesh_nandini", "title": "Durgesh Nandini", "native": "দুর্গেশনন্দিনী", "pdfUrl": "WIKISOURCE:bn:দুর্গেশনন্দিনী"}, {"id": "rajsingha", "title": "Rajsingha", "native": "রাজসিংহ", "pdfUrl": "WIKISOURCE:bn:রাজসিংহ"}, {"id": "radharani", "title": "Radharani", "native": "রাধারাণী", "pdfUrl": "WIKISOURCE:bn:রাধারাণী"}, {"id": "jugalanguriya", "title": "Jugalanguriya", "native": "যুগলাঙ্গুরীয়", "pdfUrl": "WIKISOURCE:bn:যুগলাঙ্গুরীয়"}, {"id": "noukadubi", "title": "Noukadubi", "native": "নৌকাডুবি", "pdfUrl": "WIKISOURCE:bn:নৌকাডুবি"}, {"id": "ghore_baire", "title": "Ghore Baire", "native": "ঘরে বাইরে", "pdfUrl": "WIKISOURCE:bn:ঘরে_বাইরে"}, {"id": "shesher_kabita", "title": "Shesher Kabita", "native": "শেষের কবিতা", "pdfUrl": "WIKISOURCE:bn:শেষের_কবিতা"}, {"id": "golpoguchho", "title": "Golpoguchho", "native": "গল্পগুচ্ছ", "pdfUrl": "WIKISOURCE:bn:গল্পগুচ্ছ"}, {"id": "chitrangada", "title": "Chitrangada", "native": "চিত্রাঙ্গদা", "pdfUrl": "WIKISOURCE:bn:চিত্রাঙ্গদা"}, {"id": "gitabitan", "title": "Gitabitan", "native": "গীতবিতান", "pdfUrl": "WIKISOURCE:bn:গীতবিতান"}, {"id": "chander_pahar", "title": "Chander Pahar", "native": "চাঁদের পাহাড়", "pdfUrl": "WIKISOURCE:bn:চাঁদের_পাহাড়"}, {"id": "adarsha_hindu_hotel", "title": "Adarsha Hindu Hotel", "native": "আদর্শ হিন্দু হোটেল", "pdfUrl": "WIKISOURCE:bn:আদর্শ_হিন্দু_হোটেল"}, {"id": "aparajito", "title": "Aparajito", "native": "অপরাজিত", "pdfUrl": "WIKISOURCE:bn:অপরাজিত"}, {"id": "heera_manik_jwale", "title": "Heera Manik Jwale", "native": "হীরামানিক জ্বলে", "pdfUrl": "WIKISOURCE:bn:হীরামানিক_জ্বলে"}, {"id": "asani_sanket", "title": "Asani Sanket", "native": "আশানি সংকেত", "pdfUrl": "WIKISOURCE:bn:আশানি_সংকেত"}, {"id": "srikanto", "title": "Srikanto", "native": "শ্রীকান্ত", "pdfUrl": "WIKISOURCE:bn:শ্রীকান্ত"}, {"id": "datta", "title": "Datta", "native": "দত্তা", "pdfUrl": "WIKISOURCE:bn:দত্তা"}, {"id": "parineeta", "title": "Parineeta", "native": "পরিণীতা", "pdfUrl": "WIKISOURCE:bn:পরিণীতা"}, {"id": "nishkriti", "title": "Nishkriti", "native": "নিষ্কৃতি", "pdfUrl": "WIKISOURCE:bn:নিষ্কৃতি"}, {"id": "mohesh", "title": "Mohesh", "native": "মহেশ", "pdfUrl": "WIKISOURCE:bn:মহেশ"}, {"id": "grihodaho", "title": "Grihodaho", "native": "গৃহদাহ", "pdfUrl": "WIKISOURCE:bn:গৃহদাহ"}, {"id": "pather_dabi", "title": "Pather Dabi", "native": "পথের দাবী", "pdfUrl": "WIKISOURCE:bn:পথের_দাবী"}, {"id": "charitrahin", "title": "Charitrahin", "native": "চরিত্রহীন", "pdfUrl": "WIKISOURCE:bn:চরিত্রহীন"}, {"id": "shesh_prasna", "title": "Shesh Prasna", "native": "শেষ প্রশ্ন", "pdfUrl": "WIKISOURCE:bn:শেষ_প্রশ্ন"}, {"id": "pallisamaj", "title": "Pallisamaj", "native": "পল্লীসমাজ", "pdfUrl": "WIKISOURCE:bn:পল্লীসমাজ"}, {"id": "janani", "title": "Janani", "native": "জননী", "pdfUrl": "WIKISOURCE:bn:জননী_(মানিক_বন্দ্যোপাধ্যায়)"}, {"id": "dibaratrir_kabya", "title": "Dibaratrir Kabya", "native": "দিবারাত্রির কাব্য", "pdfUrl": "WIKISOURCE:bn:দিবারাত্রির_কাব্য"}, {"id": "putulnacher_itikatha", "title": "Putulnacher Itikatha", "native": "পুতুলনাচের ইতিকথা", "pdfUrl": "WIKISOURCE:bn:পুতুলনাচের_ইতিকথা"}, {"id": "padma_nadir_majhi", "title": "Padma Nadir Majhi", "native": "পদ্মা নদীর মাঝি", "pdfUrl": "WIKISOURCE:bn:পদ্মা_নদীর_মাঝি"}, {"id": "chotushkon", "title": "Chotushkon", "native": "চতুষ্কোণ", "pdfUrl": "WIKISOURCE:bn:চতুষ্কোণ"}, {"id": "byomkesh_bakshi", "title": "Byomkesh Bakshi", "native": "ব্যোমকেশ বক্সী সমগ্র", "pdfUrl": "WIKISOURCE:bn:সত্যান্বেষী"}, {"id": "oitihasik_kahini", "title": "Oitihasik Kahini", "native": "ঐতিহাসিক কাহিনী সমগ্র", "pdfUrl": "WIKISOURCE:bn:ঐতিহাসিক_কাহিনী"}, {"id": "godan", "title": "Godan", "native": "गोदान", "pdfUrl": "WIKISOURCE:hi:गोदान"}, {"id": "madhushala", "title": "Madhushala", "native": "मधुशाला", "pdfUrl": "WIKISOURCE:hi:मधुशाला"}, {"id": "nirmala", "title": "Nirmala", "native": "निर्मला", "pdfUrl": "WIKISOURCE:hi:निर्मला"}, {"id": "shyamchi_aai", "title": "Shyamchi Aai", "native": "श्यामची आई", "pdfUrl": "WIKISOURCE:mr:श्यामची_आई"}];
+
+let token = null, seeding = false;
+const rowEls = {}, failedBooks = [];
+let counts = {done:0, skip:0, fail:0};
+
+function fbUrl(p){ return 'https://firestore.googleapis.com/v1/projects/'+FB_PROJECT+'/databases/(default)/documents/'+p; }
+
+function toFs(obj){
+  const f={};
+  Object.keys(obj).forEach(k=>{
+    const v=obj[k];
+    if(typeof v==='string') f[k]={stringValue:v};
+    else if(typeof v==='number') f[k]={integerValue:String(v)};
+    else if(typeof v==='boolean') f[k]={booleanValue:v};
+  });
+  return f;
+}
+
+async function getToken(){
+  const r=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key='+FB_KEY,
+    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({returnSecureToken:true})});
+  const d=await r.json();
+  if(!d.idToken) throw new Error('Auth failed: '+JSON.stringify(d));
+  return d.idToken;
+}
+
+async function isSeeded(id){
+  try{
+    const r=await fetch(fbUrl('books/'+id),{headers:{'Authorization':'Bearer '+token}});
+    if(!r.ok) return false;
+    const d=await r.json();
+    return !!(d.fields&&d.fields.seeded&&(d.fields.seeded.booleanValue===true||d.fields.seeded.stringValue==='true'));
+  }catch(e){return false;}
+}
+
+async function saveBook(id, text, title){
+  const chunks=[];
+  for(let p=0;p<text.length;p+=CHUNK_SIZE) chunks.push(text.slice(p,p+CHUNK_SIZE));
+  
+  // Save metadata
+  const mr=await fetch(fbUrl('books/'+id),{
+    method:'PATCH',
+    headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+    body:JSON.stringify({fields:toFs({title,totalChunks:chunks.length,seededAt:Date.now(),seeded:true,bytes:text.length})})
+  });
+  if(!mr.ok) throw new Error('Meta save failed: '+mr.status);
+  
+  // Save chunks sequentially
+  for(let i=0;i<chunks.length;i++){
+    const cr=await fetch(fbUrl('books/'+id+'/chunks/'+i),{
+      method:'PATCH',
+      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({fields:toFs({text:chunks[i],index:i})})
+    });
+    if(!cr.ok) throw new Error('Chunk '+i+' failed: '+cr.status);
+    await delay(100);
+  }
+  return chunks.length;
+}
+
+async function cleanWikitext(wt){
+  return wt
+    .replace(/\[\[(?:File|Image|চিত্র|ফাইল):[^\]]+\]\]/gi,'')
+    .replace(/\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/g,'$1')
+    .replace(/\{\{(?:[^{}]|\{[^{}]*\})*\}\}/g,'')
+    .replace(/\{\{[^}]*\}\}/g,'')
+    .replace(/\[https?:\/\/[^\] ]+(?:\s[^\]]+)?\]/g,'')
+    .replace(/'{2,5}/g,'')
+    .replace(/<ref[^>]*>.*?<\/ref>/gs,'')
+    .replace(/<[^>]+>/g,'')
+    .replace(/^[=]+\s*(.+?)\s*[=]+\s*$/gm,'$1')
+    .replace(/^[*#:;]+\s*/gm,'')
+    .replace(/\|\|/g,' ')
+    .replace(/^\|.*/gm,'')
+    .replace(/^!.*/gm,'')
+    .replace(/\n{3,}/g,'\n\n')
+    .trim();
+}
+
+async function fetchWikisource(pdfUrl, onProgress){
+  const parts=pdfUrl.split(':');
+  const lang=parts[1];
+  const title=parts.slice(2).join(':');
+  const base='https://'+lang+'.wikisource.org/w/api.php';
+  
+  onProgress('Fetching main page…',5);
+  
+  const r=await fetch(base+'?action=query&prop=revisions&rvprop=content&rvslots=main&format=json&origin=*&titles='+encodeURIComponent(title));
+  if(!r.ok) throw new Error('Wikisource HTTP '+r.status);
+  const d=await r.json();
+  const pg=d.query&&d.query.pages&&Object.values(d.query.pages)[0];
+  if(!pg||pg.missing!==undefined) throw new Error('Page missing on Wikisource');
+  const wt=pg.revisions&&pg.revisions[0]&&(pg.revisions[0]['*']||(pg.revisions[0].slots&&pg.revisions[0].slots.main&&pg.revisions[0].slots.main['*']));
+  if(!wt) throw new Error('No wikitext content');
+
+  // Find all subpages: [[/ChapterName]] or [[/ChapterName|display]]
+  const subRe=/\[\[\/([^\]|#]+)/g;
+  const subs=new Set();
+  let m;
+  while((m=subRe.exec(wt))!==null){
+    const sub=m[1].trim().replace(/\s+/g,'_');
+    if(sub) subs.add(title+'/'+sub);
+  }
+  const uniqueSubs=[...subs];
+  
+  let allText=await cleanWikitext(wt);
+  onProgress('Found '+(uniqueSubs.length||0)+' chapters…',15);
+  
+  // Fetch subpages in batches of 5
+  if(uniqueSubs.length>0){
+    for(let i=0;i<uniqueSubs.length;i+=5){
+      const batch=uniqueSubs.slice(i,i+5);
+      const pct=15+Math.round((i/uniqueSubs.length)*70);
+      onProgress('Chapter '+(i+1)+'-'+(Math.min(i+5,uniqueSubs.length))+' of '+uniqueSubs.length,pct);
+      try{
+        const br=await fetch(base+'?action=query&prop=revisions&rvprop=content&rvslots=main&format=json&origin=*&titles='+batch.map(encodeURIComponent).join('|'));
+        if(br.ok){
+          const bd=await br.json();
+          const bp=bd.query&&bd.query.pages;
+          if(bp){
+            Object.values(bp).forEach(p2=>{
+              if(p2.missing!==undefined) return;
+              const w2=p2.revisions&&p2.revisions[0]&&(p2.revisions[0]['*']||(p2.revisions[0].slots&&p2.revisions[0].slots.main&&p2.revisions[0].slots.main['*']));
+              if(w2) allText+='\n\n'+cleanWikitext(w2);
+            });
+          }
+        }
+      }catch(e){log('  ⚠ Batch '+i+' error: '+e.message);}
+      await delay(BATCH_DELAY);
+    }
+  }
+
+  allText=await Promise.resolve(allText); // resolve any pending cleanWikitext
+  const cleaned=allText.replace(/\n{3,}/g,'\n\n').trim();
+  
+  if(cleaned.length<MIN_LENGTH){
+    throw new Error('Too short: '+cleaned.length+' chars after cleaning');
+  }
+  return cleaned;
+}
+
+async function fetchGutenberg(url, onProgress){
+  onProgress('Downloading from Gutenberg…',20);
+  const r=await fetch(url);
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  let t=await r.text();
+  const s=t.indexOf('*** START OF');
+  if(s>-1) t=t.slice(t.indexOf('\n',s)+1);
+  const e=t.lastIndexOf('*** END OF');
+  if(e>-1) t=t.slice(0,e);
+  onProgress('Processing…',80);
+  return t.trim();
+}
+
+async function seedBook(b, retrying){
+  const name=b.native||b.title;
+  setStatus(b.id,'loading','Checking…');
+  
+  try{
+    if(!retrying){
+      const already=await isSeeded(b.id);
+      if(already){
+        setStatus(b.id,'skip','Already seeded ✓');
+        counts.skip++;updateStats();
+        log('⏭ '+name+' — skipped (already seeded)');
+        return 'skip';
+      }
+    }
+
+    function onProgress(msg,pct){
+      setStatus(b.id,'loading',msg);
+      log('  '+name+': '+msg);
+    }
+
+    let text='';
+    if(b.pdfUrl.startsWith('WIKISOURCE:')){
+      text=await fetchWikisource(b.pdfUrl,onProgress);
+    } else if(b.pdfUrl.includes('gutenberg.org')){
+      text=await fetchGutenberg(b.pdfUrl,onProgress);
+    } else {
+      throw new Error('Unknown source type');
+    }
+
+    setStatus(b.id,'loading','Saving '+(text.length/1024).toFixed(0)+'KB…');
+    const chunks=await saveBook(b.id,text,b.title);
+    setStatus(b.id,'done',(text.length/1024).toFixed(0)+'KB · '+chunks+' chunk'+(chunks>1?'s':''));
+    counts.done++;updateStats();
+    log('✅ '+name+' — '+(text.length/1024).toFixed(0)+'KB, '+chunks+' chunks');
+    return 'done';
+
+  }catch(e){
+    setStatus(b.id,'failed',e.message.slice(0,45));
+    counts.fail++;updateStats();
+    log('❌ '+name+' — '+e.message);
+    failedBooks.push(b);
+    return 'fail';
+  }
+}
+
+async function startAll(){
+  if(seeding)return;
+  seeding=true;
+  failedBooks.length=0;
+  counts={done:0,skip:0,fail:0};
+  updateStats();
+
+  document.getElementById('btn-all').disabled=true;
+  document.getElementById('btn-retry').style.display='none';
+
+  try{
+    document.getElementById('status').textContent='Authenticating with Firebase…';
+    token=await getToken();
+    log('✅ Firebase authenticated');
+  }catch(e){
+    log('❌ Auth failed: '+e.message);
+    document.getElementById('btn-all').disabled=false;
+    seeding=false;return;
+  }
+
+  for(let i=0;i<BOOKS.length;i++){
+    const b=BOOKS[i];
+    document.getElementById('status').textContent='('+(i+1)+'/'+BOOKS.length+') '+(b.native||b.title);
+    document.getElementById('bar').style.width=(i/BOOKS.length*100)+'%';
+    await seedBook(b,false);
+    await delay(BATCH_DELAY);
+  }
+
+  document.getElementById('bar').style.width='100%';
+  document.getElementById('status').textContent='Done! '+counts.done+' seeded, '+counts.skip+' skipped, '+counts.fail+' failed';
+  document.getElementById('btn-all').disabled=false;
+  if(counts.fail>0) document.getElementById('btn-retry').style.display='block';
+  log('\n=== COMPLETE: '+counts.done+' seeded, '+counts.skip+' skipped, '+counts.fail+' failed ===');
+  seeding=false;
+}
+
+async function retryFailed(){
+  if(seeding||!failedBooks.length)return;
+  seeding=true;
+  const toRetry=[...failedBooks];
+  failedBooks.length=0;
+  counts.fail=0;
+  document.getElementById('btn-retry').style.display='none';
+  document.getElementById('btn-all').disabled=true;
+
+  for(let i=0;i<toRetry.length;i++){
+    const b=toRetry[i];
+    document.getElementById('status').textContent='Retry ('+(i+1)+'/'+toRetry.length+') '+(b.native||b.title);
+    await seedBook(b,true);
+    await delay(500);
+  }
+
+  document.getElementById('status').textContent='Retry done. '+counts.done+' seeded, '+counts.fail+' still failed';
+  document.getElementById('btn-all').disabled=false;
+  if(counts.fail>0) document.getElementById('btn-retry').style.display='block';
+  seeding=false;
+}
+
+function setStatus(id,cls,note){
+  const el=rowEls[id];if(!el)return;
+  const dot=el.querySelector('.dot');
+  dot.className='dot '+cls;
+  dot.textContent=cls==='done'?'✓':cls==='failed'?'✗':cls==='skip'?'–':cls==='loading'?'…':'·';
+  el.querySelector('.note').textContent=note||'';
+}
+
+function updateStats(){
+  document.getElementById('s-done').textContent=counts.done;
+  document.getElementById('s-skip').textContent=counts.skip;
+  document.getElementById('s-fail').textContent=counts.fail;
+}
+
+function log(msg){
+  const el=document.getElementById('log');
+  el.style.display='block';
+  el.innerHTML+=msg+'\n';
+  el.scrollTop=el.scrollHeight;
+}
+
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// Build book list
+window.onload=function(){
+  const list=document.getElementById('book-list');
+  BOOKS.forEach(function(b){
+    const row=document.createElement('div');
+    row.className='row';
+    const src=b.pdfUrl.startsWith('WIKISOURCE:')?b.pdfUrl.split(':')[1].toUpperCase():'GUTENBERG';
+    row.innerHTML='<div class="dot pending">·</div>'
+      +'<div class="name">'+(b.native||b.title)+'</div>'
+      +'<div class="note">'+src+'</div>';
+    list.appendChild(row);
+    rowEls[b.id]=row;
+  });
+};
+</script>
+</body>
+</html>
