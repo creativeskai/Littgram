@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Littgram Book Engine v3</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d0b09;--s1:#181410;--s2:#201c16;--bor:#352b1e;--tx:#ede5d8;--mu:#8a7a6a;--ac:#c8624a;--go:#c9964a;--gr:#4caf50;--rd:#e53935;--bl:#1e88e5;--pu:#8e24aa}
+body{background:var(--bg);color:var(--tx);font-family:'DM Sans',system-ui,sans-serif;min-height:100vh}
+.layout{display:grid;grid-template-columns:320px 1fr;height:100vh;overflow:hidden}
+.side{background:var(--s1);border-right:1px solid var(--bor);padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.main{overflow-y:auto;padding:18px}
+h1{font-family:Georgia,serif;font-size:19px;font-weight:700;color:var(--go);line-height:1.2}
+.kv{font-size:10px;color:var(--mu)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.stat{background:var(--s2);border-radius:7px;padding:9px;text-align:center}
+.sn{font-size:20px;font-weight:700;font-family:Georgia,serif}
+.sl{font-size:10px;color:var(--mu);margin-top:1px}
+.btn{border:none;border-radius:7px;padding:8px 13px;font-size:12px;font-weight:700;cursor:pointer;width:100%;font-family:inherit;transition:opacity .15s}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-p{background:var(--ac);color:#fff}
+.btn-s{background:var(--s2);color:var(--go);border:1px solid var(--bor)}
+.btn-d{background:rgba(229,57,53,.1);color:var(--rd);border:1px solid rgba(229,57,53,.2)}
+.btn-sm{padding:3px 7px;font-size:9px;width:auto;border-radius:4px}
+.pb{height:4px;background:var(--s2);border-radius:2px;overflow:hidden;margin:5px 0}
+.pf{height:100%;background:linear-gradient(90deg,var(--ac),var(--go));border-radius:2px;transition:width .4s}
+.bl{display:flex;flex-direction:column;gap:4px}
+.bc{background:var(--s1);border-radius:8px;border:1px solid var(--bor);padding:9px 11px;display:flex;align-items:center;gap:9px;border-left:3px solid var(--bor)}
+.bc.done{border-left-color:var(--gr)}.bc.failed{border-left-color:var(--rd)}.bc.running{border-left-color:var(--go)}.bc.skipped{border-left-color:var(--bl)}.bc.pending{border-left-color:var(--bor)}
+.bi{width:30px;height:43px;border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;background:linear-gradient(160deg,#1a1a2e,#2a2a40)}
+.btt{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bst{font-size:10px;color:var(--mu);margin-top:1px}
+.bdt{font-size:10px;color:var(--mu);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:320px}
+.bpr{height:2px;background:var(--s2);border-radius:1px;overflow:hidden;margin-top:4px}
+.bpf{height:100%;background:var(--go);border-radius:1px;transition:width .3s}
+.badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:7px;white-space:nowrap}
+.ok{background:rgba(76,175,80,.15);color:var(--gr)}.er{background:rgba(229,57,53,.15);color:var(--rd)}.ru{background:rgba(201,150,74,.15);color:var(--go)}.sk{background:rgba(30,136,229,.15);color:var(--bl)}.pe{background:rgba(138,122,106,.1);color:var(--mu)}
+.sb{font-size:8px;padding:1px 4px;border-radius:3px;font-weight:700;margin-right:2px}
+.AR{background:rgba(30,136,229,.15);color:var(--bl)}.GU{background:rgba(142,36,170,.15);color:var(--pu)}.SE{background:rgba(76,175,80,.15);color:var(--gr)}.WS{background:rgba(201,150,74,.15);color:var(--go)}.SC{background:rgba(229,57,53,.15);color:var(--rd)}
+.log{background:var(--s2);border-radius:6px;padding:8px;font-family:monospace;font-size:10px;color:var(--mu);max-height:140px;overflow-y:auto;line-height:1.7}
+.lok{color:var(--gr)}.ler{color:var(--rd)}.lw{color:var(--go)}.li{color:var(--bl)}
+.pills{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+.pill{padding:3px 8px;border-radius:9px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--bor);background:var(--s2);color:var(--mu)}
+.pill.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.srch{width:100%;background:var(--s2);border:1px solid var(--bor);border-radius:7px;padding:6px 10px;color:var(--tx);font-size:12px;margin-bottom:8px}
+.srch:focus{outline:none;border-color:var(--ac)}
+.warn{background:rgba(201,150,74,.07);border:1px solid rgba(201,150,74,.22);border-radius:7px;padding:8px 10px;font-size:10.5px;color:var(--go);line-height:1.5}
+</style>
+</head>
+<body>
+<div class="layout">
+<div class="side">
+  <div>
+    <h1>📚 Littgram<br>Book Engine v3</h1>
+    <div class="kv" style="margin-top:4px">Archive.org (DLI/WBPL) · Standard Ebooks · Gutenberg · Wikisource · Scraper</div>
+  </div>
+  <div>
+    <div class="kv" style="font-weight:700;margin-bottom:7px">STATS</div>
+    <div class="stats">
+      <div class="stat"><div class="sn" id="nd" style="color:var(--gr)">0</div><div class="sl">Seeded</div></div>
+      <div class="stat"><div class="sn" id="ns" style="color:var(--bl)">0</div><div class="sl">Cached</div></div>
+      <div class="stat"><div class="sn" id="nf" style="color:var(--rd)">0</div><div class="sl">Failed</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px">
+      <div class="stat"><div class="sn" id="mb" style="color:var(--go)">0</div><div class="sl">MB stored</div></div>
+      <div class="stat"><div class="sn" id="ts" style="color:var(--pu)">-</div><div class="sl">Top source</div></div>
+    </div>
+  </div>
+  <div>
+    <div style="display:flex;justify-content:space-between" class="kv"><span>Progress</span><span id="pl">0 / 52</span></div>
+    <div class="pb"><div class="pf" id="pf" style="width:0%"></div></div>
+    <div id="rs" class="kv" style="margin-top:2px"></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <button class="btn btn-p" id="btna" onclick="startAll()">🌱 Seed All 52 Books</button>
+    <button class="btn btn-s" id="btnr" onclick="retryFailed()" style="display:none">🔄 Retry Failed</button>
+    <button class="btn btn-s" onclick="checkStatus()" style="font-size:11px;padding:7px">🔍 Check Firebase Status</button>
+    <button class="btn btn-d" onclick="clearAll()" style="font-size:11px;padding:7px">🗑 Clear All and Re-seed</button>
+  </div>
+  <div class="kv">
+    <div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">
+      <div id="fd" style="width:7px;height:7px;border-radius:50%;background:var(--mu);flex-shrink:0"></div>
+      <span id="fs">Not connected</span>
+    </div>
+    <div style="color:var(--bor)">Firebase: littgram-54427</div>
+  </div>
+  <div class="warn">Run from desktop Chrome. Firestore rules must allow anonymous writes to books/ collection. Each book tries multiple sources automatically.</div>
+  <div>
+    <div class="kv" style="font-weight:700;margin-bottom:5px">SOURCE PRIORITY</div>
+    <div style="font-size:10px;color:var(--mu);line-height:1.9">
+      <span class="sb AR">AR</span> Internet Archive (DLI/WBPL OCR text)<br>
+      <span class="sb SE">SE</span> Standard Ebooks (clean plain text)<br>
+      <span class="sb GU">GU</span> Project Gutenberg<br>
+      <span class="sb WS">WS</span> Wikisource API + all subpages<br>
+      <span class="sb SC">SC</span> Web scraper via allorigins proxy
+    </div>
+  </div>
+  <div>
+    <div class="kv" style="font-weight:700;margin-bottom:4px">ACTIVITY LOG</div>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+<div class="main">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="font-size:14px;font-weight:700">52 Books <span style="color:var(--mu);font-size:11px;font-weight:400">EN · BN · HI · MR · all public domain</span></div>
+    <div id="cur" class="kv"></div>
+  </div>
+  <input class="srch" id="sq" placeholder="Search title, author, language..." oninput="render()">
+  <div class="pills">
+    <div class="pill on" onclick="setf('all',this)">All (52)</div>
+    <div class="pill" onclick="setf('pending',this)">Pending</div>
+    <div class="pill" onclick="setf('done',this)">Done</div>
+    <div class="pill" onclick="setf('failed',this)">Failed</div>
+    <div class="pill" onclick="setf('bn',this)">Bengali (43)</div>
+    <div class="pill" onclick="setf('hi',this)">Hindi (3)</div>
+    <div class="pill" onclick="setf('mr',this)">Marathi (1)</div>
+    <div class="pill" onclick="setf('en',this)">English (5)</div>
+  </div>
+  <div class="bl" id="bl"></div>
+</div>
+</div>
+<script>
+const FB_KEY='AIzaSyA3aB2fNYzSSiWGNL5SM9EmRPGAM71nyQI',FB_PRJ='littgram-54427',CHUNK=480*1024;
+const FU=p=>`https://firestore.googleapis.com/v1/projects/${FB_PRJ}/databases/(default)/documents/${p}`;
+const toF=o=>{const f={};Object.entries(o).forEach(([k,v])=>{if(typeof v==='string')f[k]={stringValue:v};else if(typeof v==='number')f[k]={integerValue:String(Math.round(v))};else if(typeof v==='boolean')f[k]={booleanValue:v};});return f;};
+const fGet=async p=>{const r=await fetch(FU(p),{headers:{Authorization:`Bearer ${fbToken}`}});return r.ok?r.json():null;};
+const fSet=async(p,fields)=>{const r=await fetch(FU(p),{method:'PATCH',headers:{Authorization:`Bearer ${fbToken}`,'Content-Type':'application/json'},body:JSON.stringify({fields:toF(fields)})});if(!r.ok)throw new Error(`FS${r.status}:${(await r.text()).slice(0,80)}`);};
+const fDel=async p=>fetch(FU(p),{method:'DELETE',headers:{Authorization:`Bearer ${fbToken}`}});
+async function fbAuth(){const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB_KEY}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({returnSecureToken:true})});const d=await r.json();if(!d.idToken)throw new Error('Auth:'+JSON.stringify(d).slice(0,80));return d.idToken;}
+async function isSeeded(id){try{const d=await fGet(`books/${id}`);return!!(d&&d.fields&&d.fields.seeded&&d.fields.seeded.booleanValue===true);}catch(e){return false;}}
+async function saveToFB(id,text,book,srcKey){
+  const chunks=[];for(let p=0;p<text.length;p+=CHUNK)chunks.push(text.slice(p,p+CHUNK));
+  await fSet(`books/${id}`,{title:book.t,lang:book.l,native:book.n||book.t,author:book.a,source:srcKey,bytes:text.length,chunks:chunks.length,seededAt:Date.now(),seeded:true,version:3});
+  for(let i=0;i<chunks.length;i++){await fSet(`books/${id}/chunks/${i}`,{text:chunks[i],index:i});ST[id].pct=Math.round((i+1)/chunks.length*100);ST[id].det=`Saving chunk ${i+1}/${chunks.length}...`;rCard(id);if(i<chunks.length-1)await sl(80);}
+  return chunks.length;
+}
+
+// BOOK CATALOGUE - 52 books matching Littgram BOOKS_DB exactly
+// AR = Internet Archive (auto-discovers text file via metadata API)
+// GU = Gutenberg direct .txt   SE = Standard Ebooks .txt
+// WS = Wikisource API          SC = Web scraper via allorigins
+
+const BOOKS=[
+// ENGLISH
+{id:'meditations',e:'🏛️',t:'Meditations',n:null,a:'Marcus Aurelius',l:'en',src:[
+  {k:'SE',u:'https://standardebooks.org/ebooks/marcus-aurelius/meditations/george-long/downloads/marcus-aurelius_meditations_george-long.txt'},
+  {k:'GU',u:'https://www.gutenberg.org/cache/epub/55317/pg55317.txt'},
+  {k:'AR',i:'meditationsofmarc00marc'}]},
+{id:'crime',e:'⚖️',t:'Crime and Punishment',n:null,a:'Fyodor Dostoevsky',l:'en',src:[
+  {k:'GU',u:'https://www.gutenberg.org/cache/epub/2554/pg2554.txt'},
+  {k:'SE',u:'https://standardebooks.org/ebooks/fyodor-dostoevsky/crime-and-punishment/constance-garnett/downloads/fyodor-dostoevsky_crime-and-punishment_constance-garnett.txt'},
+  {k:'AR',i:'crimeandpunishm00dostuoft'}]},
+{id:'siddhartha',e:'🧘',t:'Siddhartha',n:null,a:'Hermann Hesse',l:'en',src:[
+  {k:'GU',u:'https://www.gutenberg.org/cache/epub/2413/pg2413.txt'},
+  {k:'AR',i:'siddharthaherma00hess'}]},
+{id:'1984',e:'👁️',t:'1984',n:null,a:'George Orwell',l:'en',src:[
+  {k:'AR',i:'1984bygeorgeorwell'},
+  {k:'SC',u:'https://www.george-orwell.org/1984/0.html'}]},
+{id:'little_prince',e:'🌹',t:'The Little Prince',n:null,a:'A. de Saint-Exupery',l:'en',src:[
+  {k:'GU',u:'https://www.gutenberg.org/cache/epub/71975/pg71975.txt'}]},
+// BENGALI - RABINDRANATH TAGORE
+// dli.bengal.10689.* = West Bengal Public Library Network (ABBYY OCR)
+// in.ernet.dli.2015.* = Digital Library of India (DLI)
+{id:'gora',e:'📖',t:'Gora',n:'গোরা',a:'Rabindranath Tagore',l:'bn',src:[
+  {k:'AR',i:'dli.bengal.10689.6665'},
+  {k:'AR',i:'in.ernet.dli.2015.339335'},
+  {k:'AR',i:'in.ernet.dli.2015.290288'},
+  {k:'WS',i:'bn:গোরা'}]},
+{id:'chokher_bali',e:'💧',t:'Chokher Bali',n:'চোখের বালি',a:'Rabindranath Tagore',l:'bn',src:[
+  {k:'AR',i:'dli.bengal.10689.5624'},
+  {k:'AR',i:'in.ernet.dli.2015.339335'},
+  {k:'WS',i:'bn:চোখের_বালি'}]},
+{id:'noukadubi',e:'⛵',t:'Noukadubi',n:'নৌকাডুবি',a:'Rabindranath Tagore',l:'bn',src:[
+  {k:'AR',i:'dli.bengal.10689.6121'},
+  {k:'WS',i:'bn:নৌকাডুবি'}]},
+{id:'ghore_baire',e:'🏡',t:'Ghore Baire',n:'ঘরে বাইরে',a:'Rabindranath Tagore',l:'bn',src:[
+  {k:'SE',u:'https://standardebooks.org/ebooks/rabindranath-tagore/the-home-and-the-world/surendranath-tagore/downloads/rabindranath-tagore_the-home-and-the-world_surendranath-tagore.txt'},
+  {k:'AR',i:'dli.bengal.10689.6121'},
+  {k:'WS',i:'bn:ঘরে_বাইরে'}]},
+{id:'shesher_kabita',e:'✍️',t:'Shesher Kabita',n:'শেষের কবিতা',a:'Rabindranath Tagore',l:'bn',src:[
+  {k:'AR',i:'dli.bengal.10689.6121'},
+  {k:'WS',i:'bn:শেষের_কবিতা'}]},
+{id:'golpoguchho',e:'📚',t:'Golpoguchho',n:'গল্পগুচ্ছ',a:'Rabindranath Tagore',l:'bn',src:[
+  {k:'AR',i:'dli.bengal.10689.6351'},
+  {k:'AR',i:'in.ernet.dli.2015.339335'},
+  {k:'WS',i:'bn:গল্পগুচ্ছ'}]},
+{id:'chitrangada',e:'🏹',t:'Chitrangada',n:'চিত্রাঙ্গদা',a:'Rabindranath Tagore',l:'bn',src:[
+  {k:'WS',i:'bn:চিত্রাঙ্গদা'},
+  {k:'AR',i:'dli.bengal.10689.6665'}]},
+{id:'gitabitan',e:'🎵',t:'Gitabitan',n:'গীতবিতান',a:'Rabindranath Tagore',l:'bn',src:[
+  {k:'AR',i:'dli.bengal.10689.3037'},
+  {k:'WS',i:'bn:গীতবিতান'}]},
+{id:'gitanjali',e:'🌸',t:'Gitanjali',n:'গীতাঞ্জলি',a:'Rabindranath Tagore',l:'bn',src:[
+  {k:'SE',u:'https://standardebooks.org/ebooks/rabindranath-tagore/gitanjali/downloads/rabindranath-tagore_gitanjali.txt'},
+  {k:'GU',u:'https://www.gutenberg.org/cache/epub/7164/pg7164.txt'},
+  {k:'AR',i:'gitanjaliso00tago'}]},
+// BENGALI - BIBHUTIBHUSHAN
+// in.ernet.dli.2015.455079 = Apu Pather Panchali Aparajita combined 818pp
+// in.ernet.dli.2015.454286 = Opur Sansar Samagra (Bibhutibhushan collected)
+{id:'pather_panchali',e:'🌾',t:'Pather Panchali',n:'পথের পাঁচালী',a:'Bibhutibhushan Bandyopadhyay',l:'bn',src:[
+  {k:'AR',i:'in.ernet.dli.2015.302660'},
+  {k:'AR',i:'in.ernet.dli.2015.455079'},
+  {k:'WS',i:'bn:পথের_পাঁচালী'}]},
+{id:'aranyak',e:'🌿',t:'Aranyak',n:'আরণ্যক',a:'Bibhutibhushan Bandyopadhyay',l:'bn',src:[
+  {k:'AR',i:'in.ernet.dli.2015.455079'},
+  {k:'AR',i:'in.ernet.dli.2015.454286'},
+  {k:'WS',i:'bn:আরণ্যক'}]},
+{id:'aparajito',e:'🌅',t:'Aparajito',n:'অপরাজিত',a:'Bibhutibhushan Bandyopadhyay',l:'bn',src:[
+  {k:'AR',i:'in.ernet.dli.2015.455079'},
+  {k:'AR',i:'in.ernet.dli.2015.454286'},
+  {k:'WS',i:'bn:অপরাজিত'}]},
+{id:'chander_pahar',e:'🌙',t:'Chander Pahar',n:'চাঁদের পাহাড়',a:'Bibhutibhushan Bandyopadhyay',l:'bn',src:[
+  {k:'AR',i:'in.ernet.dli.2015.454286'},
+  {k:'WS',i:'bn:চাঁদের_পাহাড়'}]},
+{id:'adarsha_hindu_hotel',e:'🏨',t:'Adarsha Hindu Hotel',n:'আদর্শ হিন্দু হোটেল',a:'Bibhutibhushan Bandyopadhyay',l:'bn',src:[
+  {k:'AR',i:'in.ernet.dli.2015.455079'},
+  {k:'WS',i:'bn:আদর্শ_হিন্দু_হোটেল'}]},
+{id:'heera_manik_jwale',e:'💎',t:'Heera Manik Jwale',n:'হীরামানিক জ্বলে',a:'Bibhutibhushan Bandyopadhyay',l:'bn',src:[
+  {k:'WS',i:'bn:হীরামানিক_জ্বলে'},
+  {k:'AR',i:'in.ernet.dli.2015.455079'}]},
+{id:'asani_sanket',e:'⚡',t:'Asani Sanket',n:'আশানি সংকেত',a:'Bibhutibhushan Bandyopadhyay',l:'bn',src:[
+  {k:'WS',i:'bn:আশানি_সংকেত'},
+  {k:'AR',i:'in.ernet.dli.2015.454286'}]},
+// BENGALI - BANKIM CHANDRA
+// in.ernet.dli.2015.354975 = Bankim Rachanabali Vol 2, 1074pp (covers most novels)
+// dli.bengal.10689.5301    = WBPL Bankim Chandrer Upanyas Vol1 (ABBYY OCR)
+{id:'ananda_math',e:'🏔️',t:'Ananda Math',n:'আনন্দমঠ',a:'Bankim Chandra Chattopadhyay',l:'bn',src:[
+  {k:'AR',i:'in.ernet.dli.2015.354975'},
+  {k:'AR',i:'dli.bengal.10689.5301'},
+  {k:'WS',i:'bn:আনন্দমঠ'}]},
+{id:'devi_chowdhurani',e:'⚔️',t:'Devi Chowdhurani',n:'দেবী চৌধুরাণী',a:'Bankim Chandra Chattopadhyay',l:'bn',src:[
+  {k:'AR',i:'in.ernet.dli.2015.354975'},
+  {k:'WS',i:'bn:দেবী_চৌধুরাণী'}]},
+{id:'bishbrikkho',e:'🌳',t:'Bishbrikkho',n:'বিষবৃক্ষ',a:'Bankim Chandra Chattopadhyay',l:'bn',src:[
+  {k:'AR',i:'dli.bengal.10689.5301'},
+  {k:'AR',i:'in.ernet.dli.2015.354975'},
+  {k:'WS',i:'bn:বিষবৃক্ষ'}]},
+{id:'kapalkundala',e:'🌊',t:'Kapalkundala',n:'কপালকুণ্ডলা',a:'Bankim Chandra Chattopadhyay',l:'bn',src:[
+  {k:'AR',i:'dli.bengal.10689.5301'},
+  {k:'WS',i:'bn:কপালকুণ্ডলা'}]},
+{id:'krishnakanter_will',e:'📜',t:'Krishnakanter Will',n:'কৃষ্ণকান্তের উইল',a:'Bankim Chandra Chattopadhyay',l:'bn',src:[
+  {k:'AR',i:'in.ernet.dli.2015.354975'},
+  {k:'WS',i:'bn:কৃষ্ণকান্তের_উইল'}]},
+{id:'durgesh_nandini',e:'🏰',t:'Durgesh Nandini',n:'দুর্গেশনন্দিনী',a:'Bankim Chandra Chattopadhyay',l:'bn',src:[
+  {k:'AR',i:'dli.bengal.10689.5301'},
+  {k:'AR',i:'in.ernet.dli.2015.354975'},
+  {k:'WS',i:'bn:দুর্গেশনন্দিনী'}]},
+{id:'rajsingha',e:'👑',t:'Rajsingha',n:'রাজসিংহ',a:'Bankim Chandra Chattopadhyay',l:'bn',src:[
+  {k:'AR',i:'in.ernet.dli.2015.354975'},
+  {k:'WS',i:'bn:রাজসিংহ'}]},
+{id:'radharani',e:'🎶',t:'Radharani',n:'রাধারাণী',a:'Bankim Chandra Chattopadhyay',l:'bn',src:[
+  {k:'AR',i:'in.ernet.dli.2015.354975'},
+  {k:'WS',i:'bn:রাধারাণী'}]},
+{id:'jugalanguriya',e:'💍',t:'Jugalanguriya',n:'যুগলাঙ্গুরীয়',a:'Bankim Chandra Chattopadhyay',l:'bn',src:[
+  {k:'AR',i:'in.ernet.dli.2015.354975'},
+  {k:'WS',i:'bn:যুগলাঙ্গুরীয়'}]},
+{id:'oitihasik_kahini',e:'🏺',t:'Oitihasik Kahini Samagra',n:'ঐতিহাসিক কাহিনী সমগ্র',a:'Sharadindu Bandyopadhyay',l:'bn',src:[
+  {k:'WS',i:'bn:ঐতিহাসিক_কাহিনী'},
+  {k:'AR',i:'in.ernet.dli.2015.354975'}]},
+// BENGALI - SARAT CHANDRA
+// in.ernet.dli.2015.266432 = Sarat Rachanabali 960pp (Parinita Chandranath Srikanta Bindur Chele Shorashi)
+// in.ernet.dli.2015.456034 = Charitrahin standalone Bengali DLI Tripura
+{id:'devdas',e:'🥃',t:'Devdas',n:'দেবদাস',a:'Sarat Chandra Chattopadhyay',l:'bn',src:[
+  {k:'AR',i:'in.ernet.dli.2015.266432'},
+  {k:'WS',i:'bn:দেবদাস'}]},
+{id:'srikanto',e:'🚢',t:'Srikanto',n:'শ্রীকান্ত',a:'Sarat Chandra Chattopadhyay',l:'bn',src:[
+  {k:'AR',i:'in.ernet.dli.2015.266432'},
+  {k:'WS',i:'bn:শ্রীকান্ত'}]},
+{id:'datta',e:'💌',t:'Datta',n:'দত্তা',a:'Sarat Chandra Chattopadhyay',l:'bn',src:[
+  {k:'AR',i:'in.ernet.dli.2015.266432'},
+  {k:'WS',i:'bn:দত্তা'}]},
+{id:'parineeta',e:'💒',t:'Parineeta',n:'পরিণীতা',a:'Sarat Chandra Chattopadhyay',l:'bn',src:[
+  {k:'AR',i:'in.ernet.dli.2015.266432'},
+  {k:'WS',i:'bn:পরিণীতা'}]},
+{id:'nishkriti',e:'🕊️',t:'Nishkriti',n:'নিষ্কৃতি',a:'Sarat Chandra Chattopadhyay',l:'bn',src:[
+  {k:'AR',i:'in.ernet.dli.2015.266432'},
+  {k:'WS',i:'bn:নিষ্কৃতি'}]},
+{id:'mohesh',e:'🐂',t:'Mohesh',n:'মহেশ',a:'Sarat Chandra Chattopadhyay',l:'bn',src:[
+  {k:'WS',i:'bn:মহেশ'},
+  {k:'AR',i:'in.ernet.dli.2015.266432'}]},
+{id:'grihodaho',e:'🔥',t:'Grihodaho',n:'গৃহদাহ',a:'Sarat Chandra Chattopadhyay',l:'bn',src:[
+  {k:'AR',i:'in.ernet.dli.2015.266432'},
+  {k:'WS',i:'bn:গৃহদাহ'}]},
+{id:'pather_dabi',e:'✊',t:'Pather Dabi',n:'পথের দাবী',a:'Sarat Chandra Chattopadhyay',l:'bn',src:[
+  {k:'WS',i:'bn:পথের_দাবী'},
+  {k:'AR',i:'in.ernet.dli.2015.266432'}]},
+{id:'charitrahin',e:'🌑',t:'Charitrahin',n:'চরিত্রহীন',a:'Sarat Chandra Chattopadhyay',l:'bn',src:[
+  {k:'AR',i:'in.ernet.dli.2015.456034'},
+  {k:'AR',i:'in.ernet.dli.2015.266432'},
+  {k:'WS',i:'bn:চরিত্রহীন'}]},
+{id:'shesh_prasna',e:'❓',t:'Shesh Prasna',n:'শেষ প্রশ্ন',a:'Sarat Chandra Chattopadhyay',l:'bn',src:[
+  {k:'WS',i:'bn:শেষ_প্রশ্ন'},
+  {k:'AR',i:'in.ernet.dli.2015.266432'}]},
+{id:'pallisamaj',e:'🌻',t:'Pallisamaj',n:'পল্লীসমাজ',a:'Sarat Chandra Chattopadhyay',l:'bn',src:[
+  {k:'WS',i:'bn:পল্লীসমাজ'},
+  {k:'AR',i:'in.ernet.dli.2015.266432'}]},
+// BENGALI - MANIK BANDYOPADHYAY
+{id:'janani',e:'🤱',t:'Janani',n:'জননী',a:'Manik Bandyopadhyay',l:'bn',src:[
+  {k:'WS',i:'bn:জননী_(মানিক_বন্দ্যোপাধ্যায়)'}]},
+{id:'dibaratrir_kabya',e:'🌗',t:'Dibaratrir Kabya',n:'দিবারাত্রির কাব্য',a:'Manik Bandyopadhyay',l:'bn',src:[
+  {k:'WS',i:'bn:দিবারাত্রির_কাব্য'}]},
+{id:'putulnacher_itikatha',e:'🎭',t:'Putulnacher Itikatha',n:'পুতুলনাচের ইতিকথা',a:'Manik Bandyopadhyay',l:'bn',src:[
+  {k:'WS',i:'bn:পুতুলনাচের_ইতিকথা'}]},
+{id:'padma_nadir_majhi',e:'🚣',t:'Padma Nadir Majhi',n:'পদ্মা নদীর মাঝি',a:'Manik Bandyopadhyay',l:'bn',src:[
+  {k:'WS',i:'bn:পদ্মা_নদীর_মাঝি'}]},
+{id:'chotushkon',e:'🔷',t:'Chotushkon',n:'চতুষ্কোণ',a:'Manik Bandyopadhyay',l:'bn',src:[
+  {k:'WS',i:'bn:চতুষ্কোণ'}]},
+// BENGALI - SHARADINDU
+{id:'byomkesh_bakshi',e:'🔍',t:'Byomkesh Bakshi Samagra',n:'ব্যোমকেশ বক্সী সমগ্র',a:'Sharadindu Bandyopadhyay',l:'bn',src:[
+  {k:'WS',i:'bn:সত্যান্বেষী'}]},
+// HINDI
+// Verified identifiers from direct Archive.org search
+{id:'godan',e:'🌾',t:'Godan',n:'गोदान',a:'Munshi Premchand',l:'hi',src:[
+  {k:'AR',i:'Godan-Hindi'},
+  {k:'AR',i:'godaan-by-munshi-premchand-ebook'},
+  {k:'AR',i:'premchand-godan'},
+  {k:'AR',i:'GodanByPremchand'},
+  {k:'AR',i:'godan_premchand'},
+  {k:'WS',i:'hi:गोदान'},
+  {k:'SC',u:'https://www.hindisamay.com/contentDetail.aspx?id=4908&pageno=1'}]},
+{id:'nirmala',e:'💐',t:'Nirmala',n:'निर्मला',a:'Munshi Premchand',l:'hi',src:[
+  {k:'AR',i:'nirmala-premchand'},
+  {k:'WS',i:'hi:निर्मला'},
+  {k:'SC',u:'https://www.hindisamay.com/contentDetail.aspx?id=4954&pageno=1'}]},
+{id:'madhushala',e:'🍶',t:'Madhushala',n:'मधुशाला',a:'Harivansh Rai Bachchan',l:'hi',src:[
+  {k:'WS',i:'hi:मधुशाला'},
+  {k:'AR',i:'madhushala-bachchan'}]},
+// MARATHI
+{id:'shyamchi_aai',e:'🙏',t:'Shyamchi Aai',n:'श्यामची आई',a:'Sane Guruji',l:'mr',src:[
+  {k:'AR',i:'ShyamchiAai'},
+  {k:'AR',i:'shyamchiaai00sane'},
+  {k:'WS',i:'mr:श्यामची_आई'}]},
+];
+
+// STATE
+let fbToken=null,running=false,af='all',nDone=0,nSkip=0,nFail=0,totalMB=0;
+const srcHits={},failQ=[],ST={};
+BOOKS.forEach(b=>{ST[b.id]={st:'pending',det:'',pct:0};});
+
+// FETCH: Internet Archive - auto-discovers text file via metadata API
+async function fetchAR(src,onP){
+  const id=src.i;
+  onP(`Archive: querying ${id}...`,5);
+  const mr=await fetch(`https://archive.org/metadata/${id}/files`,{headers:{'User-Agent':'Mozilla/5.0'}});
+  if(!mr.ok)throw new Error(`Archive metadata ${mr.status} for "${id}"`);
+  const mdata=await mr.json();
+  const files=Array.isArray(mdata.result)?mdata.result:[];
+  if(!files.length)throw new Error(`No files in "${id}"`);
+  const pick=files.find(f=>f.name&&f.name.endsWith('_djvu.txt'))
+    ||files.find(f=>f.name&&f.name.endsWith('_full_text.txt'))
+    ||files.find(f=>f.name&&f.name.endsWith('_text.txt'))
+    ||files.find(f=>f.name&&f.name.endsWith('.txt')&&!/meta|readme|files|manifest|toc/i.test(f.name));
+  if(!pick)throw new Error(`No text file in "${id}". Have: ${files.slice(0,4).map(f=>f.name).join(', ')}`);
+  const sz=pick.size?`${(pick.size/1024).toFixed(0)}KB`:'?';
+  const furl=`https://archive.org/download/${id}/${encodeURIComponent(pick.name)}`;
+  onP(`Archive: ${pick.name} (${sz})`,18);
+  const r=await fetch(furl,{headers:{'User-Agent':'Mozilla/5.0'}});
+  if(!r.ok)throw new Error(`Archive download ${r.status}: ${pick.name}`);
+  let text=await r.text();
+  text=cleanOCR(text);
+  onP(`Archive: ${(text.length/1024).toFixed(0)}KB processed`,85);
+  if(text.length<1000)throw new Error(`Too short: ${text.length} chars from ${id}`);
+  return text;
+}
+function cleanOCR(t){
+  return t.replace(/\f/g,'\n').replace(/\r\n/g,'\n').replace(/\r/g,'\n')
+    .replace(/[^\S\n]{3,}/g,' ').replace(/^\s*\d{1,5}\s*$/gm,'')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'').replace(/\n{5,}/g,'\n\n\n').trim();
+}
+
+// FETCH: Gutenberg
+async function fetchGU(src,onP){
+  onP('Gutenberg: downloading...',8);
+  const r=await fetch(src.u,{headers:{'User-Agent':'Mozilla/5.0'}});
+  if(!r.ok)throw new Error(`Gutenberg ${r.status}`);
+  let t=await r.text();
+  const s=t.indexOf('*** START OF');if(s>-1)t=t.slice(t.indexOf('\n',s)+1);
+  const e=t.lastIndexOf('*** END OF');if(e>-1)t=t.slice(0,e);
+  t=t.trim();onP('Gutenberg: done',85);
+  if(t.length<1000)throw new Error(`Too short: ${t.length}`);
+  return t;
+}
+
+// FETCH: Standard Ebooks
+async function fetchSE(src,onP){
+  onP('StdEbooks: downloading...',8);
+  const r=await fetch(src.u,{headers:{'User-Agent':'Mozilla/5.0'}});
+  if(!r.ok)throw new Error(`SE ${r.status}`);
+  let t=await r.text();
+  const pp=t.split(/\n\n+/);
+  t=pp.slice(Math.max(2,Math.floor(pp.length/20))).join('\n\n').trim();
+  onP('StdEbooks: done',85);
+  if(t.length<1000)throw new Error(`Too short: ${t.length}`);
+  return t;
+}
+
+// FETCH: Wikisource API + all chapter subpages
+function wsClean(wt){
+  return wt
+    .replace(/\[\[(?:File|Image|চিত্র|ফাইল)[^\]]+\]\]/gi,'')
+    .replace(/\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/g,'$1')
+    .replace(/\{\{(?:[^{}]|\{[^{}]*\})*\}\}/g,'').replace(/\{\{[^}]*\}\}/g,'')
+    .replace(/\[https?:\/\/[^\] ]+(?:\s[^\]]+)?\]/g,'').replace(/'{2,5}/g,'')
+    .replace(/<ref[^>]*>[\s\S]*?<\/ref>/gi,'').replace(/<[^>]+>/g,'')
+    .replace(/^[=]+\s*(.+?)\s*[=]+\s*$/gm,'$1').replace(/^[*#:;]+\s*/gm,'')
+    .replace(/\|\|/g,' ').replace(/^\|.*/gm,'').replace(/^!.*/gm,'')
+    .replace(/\n{3,}/g,'\n\n').trim();
+}
+async function fetchWS(src,onP){
+  const[lang,...tp]=src.i.split(':');const title=tp.join(':');
+  const base=`https://${lang}.wikisource.org/w/api.php`;
+  onP('Wikisource: main page...',5);
+  const r=await fetch(`${base}?action=query&prop=revisions&rvprop=content&rvslots=main&format=json&origin=*&titles=${encodeURIComponent(title)}`);
+  if(!r.ok)throw new Error(`WS API ${r.status}`);
+  const d=await r.json();
+  const pg=d.query&&Object.values(d.query.pages||{})[0];
+  if(!pg||pg.missing!==undefined)throw new Error(`WS missing: "${title}"`);
+  const wt=pg.revisions?.[0]?.['*']||pg.revisions?.[0]?.slots?.main?.['*'];
+  if(!wt)throw new Error('WS: no wikitext');
+  const subRe=/\[\[\/([^\]|#]+)/g;const subs=new Set();let m;
+  while((m=subRe.exec(wt))!==null){const s=m[1].trim().replace(/\s+/g,'_');if(s)subs.add(`${title}/${s}`);}
+  const subList=[...subs];
+  onP(`WS: ${subList.length} subpages`,12);
+  let all=wsClean(wt);
+  for(let i=0;i<subList.length;i+=5){
+    const batch=subList.slice(i,i+5);
+    const pct=12+Math.round(i/Math.max(subList.length,1)*73);
+    onP(`WS: subpages ${i+1}-${Math.min(i+5,subList.length)}`,pct);
+    try{
+      const br=await fetch(`${base}?action=query&prop=revisions&rvprop=content&rvslots=main&format=json&origin=*&titles=${batch.map(encodeURIComponent).join('|')}`);
+      if(br.ok){const bd=await br.json();const bp=bd.query?.pages;if(bp)Object.values(bp).forEach(p2=>{if(p2.missing!==undefined)return;const w2=p2.revisions?.[0]?.['*']||p2.revisions?.[0]?.slots?.main?.['*'];if(w2)all+='\n\n'+wsClean(w2);});}
+    }catch(e){lg(`  WS batch ${i}: ${e.message}`,'lw');}
+    await sl(200);
+  }
+  all=all.replace(/\n{3,}/g,'\n\n').trim();
+  if(all.length<200)throw new Error(`WS too short: ${all.length} for "${title}"`);
+  return all;
+}
+
+// FETCH: Scraper via allorigins proxy
+async function fetchSC(src,onP){
+  onP('Scraper: fetching...',8);
+  const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent(src.u)}`;
+  const r=await fetch(proxy);
+  if(!r.ok)throw new Error(`Scraper proxy ${r.status}`);
+  const d=await r.json();
+  const div=document.createElement('div');div.innerHTML=d.contents||'';
+  ['script','style','nav','footer','header','aside','noscript'].forEach(t=>div.querySelectorAll(t).forEach(e=>e.remove()));
+  let text=(div.textContent||'').replace(/\s{3,}/g,' ').replace(/\n{5,}/g,'\n\n').trim();
+  onP('Scraper: done',85);
+  if(text.length<1000)throw new Error(`Scraper too short: ${text.length}`);
+  return text;
+}
+
+// SEED ONE BOOK
+async function seedBook(book,force=false){
+  const id=book.id,name=book.n||book.t;
+  setST(id,'running','Checking Firebase...',0);
+  if(!force){try{if(await isSeeded(id)){setST(id,'skipped','Already in Firebase',100);nSkip++;lg(`Skipped ${name}`,'li');upStats();return 'skip';}}catch(e){}}
+  for(let attempt=0;attempt<3;attempt++){
+    for(let si=0;si<book.src.length;si++){
+      const src=book.src[si];const lbl=`[${src.k}#${si+1}]`;
+      setST(id,'running',`${lbl} source ${si+1}/${book.src.length}...`,si*4);
+      try{
+        let text='';const onP=(msg,pct)=>setST(id,'running',`${lbl} ${msg}`,pct);
+        if(src.k==='AR')text=await fetchAR(src,onP);
+        else if(src.k==='GU')text=await fetchGU(src,onP);
+        else if(src.k==='SE')text=await fetchSE(src,onP);
+        else if(src.k==='WS')text=await fetchWS(src,onP);
+        else if(src.k==='SC')text=await fetchSC(src,onP);
+        else throw new Error('Unknown: '+src.k);
+        setST(id,'running',`Saving ${(text.length/1024).toFixed(0)}KB...`,90);
+        const chunks=await saveToFB(id,text,book,src.k);
+        const kb=(text.length/1024).toFixed(0);
+        setST(id,'done',`${src.k} - ${kb}KB - ${chunks} chunks`,100);
+        totalMB+=text.length/1024/1024;nDone++;srcHits[src.k]=(srcHits[src.k]||0)+1;
+        lg(`OK ${name} [${src.k}] ${kb}KB ${chunks}ch`,'lok');
+        upStats();return 'done';
+      }catch(e){lg(`  fail ${name} ${lbl}: ${e.message.slice(0,65)}`,'lw');await sl(350);}
+    }
+    if(attempt<2){lg(`  retry ${attempt+2}/3 for ${name}`,'lw');await sl(1500*(attempt+1));}
+  }
+  setST(id,'failed',`All ${book.src.length} sources failed`,0);nFail++;failQ.push(book);
+  lg(`FAIL ${name}`,'ler');upStats();return 'fail';
+}
+
+// ORCHESTRATION
+async function startAll(){
+  if(running)return;running=true;failQ.length=0;nDone=nSkip=nFail=0;totalMB=0;
+  const ba=document.getElementById('btna');ba.disabled=true;ba.textContent='Seeding...';
+  document.getElementById('btnr').style.display='none';
+  try{setFB(false,'Authenticating...');fbToken=await fbAuth();setFB(true,'Connected');lg('Firebase OK','lok');}
+  catch(e){lg('Auth failed: '+e.message,'ler');rst();return;}
+  for(let i=0;i<BOOKS.length;i++){
+    setCur(`${i+1}/${BOOKS.length}: ${BOOKS[i].n||BOOKS[i].t}`);
+    setGP(i,BOOKS.length);await seedBook(BOOKS[i],false);await sl(200);
+  }
+  setGP(BOOKS.length,BOOKS.length);
+  setCur(`Done - ${nDone} seeded, ${nSkip} cached, ${nFail} failed`);
+  lg(`DONE: ${nDone} seeded ${nSkip} cached ${nFail} failed`,'lok');
+  if(nFail>0)document.getElementById('btnr').style.display='block';
+  rst();
+}
+async function retryFailed(){
+  if(running||!failQ.length)return;running=true;
+  const q=[...failQ];failQ.length=0;nFail=0;
+  document.getElementById('btnr').style.display='none';document.getElementById('btna').disabled=true;
+  if(!fbToken)try{fbToken=await fbAuth();setFB(true,'Connected');}catch(e){lg('Auth: '+e.message,'ler');rst();return;}
+  for(let i=0;i<q.length;i++){setCur(`Retry ${i+1}/${q.length}: ${q[i].n||q[i].t}`);await seedBook(q[i],true);await sl(400);}
+  setCur(`Retry done - ${nFail} still failed`);if(nFail>0)document.getElementById('btnr').style.display='block';rst();
+}
+async function checkStatus(){
+  if(!fbToken)try{fbToken=await fbAuth();setFB(true,'Connected');}catch(e){lg('Auth: '+e.message,'ler');return;}
+  lg('Checking Firebase for all 52 books...','li');
+  for(const b of BOOKS){try{if(await isSeeded(b.id)){if(ST[b.id].st==='pending'){setST(b.id,'skipped','In Firebase',100);nSkip++;}}}catch(e){}await sl(60);}
+  upStats();lg('Status check done','lok');
+}
+async function clearAll(){
+  if(!confirm('Delete ALL book text from Firebase and re-seed from scratch?'))return;
+  if(!fbToken)try{fbToken=await fbAuth();setFB(true,'Connected');}catch(e){lg('Auth: '+e.message,'ler');return;}
+  lg('Clearing all...','lw');
+  for(const b of BOOKS){
+    setST(b.id,'pending','Clearing...',0);
+    try{const d=await fGet(`books/${b.id}`);if(d&&d.fields&&d.fields.chunks){const n=parseInt(d.fields.chunks.integerValue||0);for(let i=0;i<n;i++)await fDel(`books/${b.id}/chunks/${i}`);}await fDel(`books/${b.id}`);}catch(e){}
+    setST(b.id,'pending','',0);await sl(100);
+  }
+  nDone=nSkip=nFail=0;totalMB=0;upStats();lg('Cleared. Starting fresh...','lok');await sl(500);startAll();
+}
+async function seedOne(id){
+  if(running){alert('Seeder running - wait');return;}
+  if(!fbToken)try{fbToken=await fbAuth();setFB(true,'Connected');}catch(e){lg('Auth: '+e.message,'ler');return;}
+  const b=BOOKS.find(x=>x.id===id);if(!b)return;running=true;await seedBook(b,true);running=false;
+}
+
+// UI
+function setST(id,st,det,pct){const s=ST[id];s.st=st;s.det=det;s.pct=pct;rCard(id);}
+function rCard(id){
+  const el=document.getElementById('c-'+id);if(!el)return;const s=ST[id];
+  el.className='bc '+s.st;
+  const LB={done:'Done',failed:'Failed',running:'Running',pending:'-',skipped:'Cached'};
+  const CL={done:'ok',failed:'er',running:'ru',skipped:'sk',pending:'pe'};
+  const badge=el.querySelector('.bx');if(badge){badge.className='badge '+(CL[s.st]||'pe');badge.textContent=LB[s.st]||s.st;}
+  const det=el.querySelector('.bdt');if(det)det.textContent=s.det;
+  const pf=el.querySelector('.bpf');if(pf)pf.style.width=s.pct+'%';
+}
+function render(){
+  const q=document.getElementById('sq').value.toLowerCase();
+  const bl=document.getElementById('bl');bl.innerHTML='';
+  const LC={en:'#6c63ff',bn:'#f5a623',hi:'#ff7a45',mr:'#ff85c2'};
+  const LB={done:'Done',failed:'Failed',running:'Running',pending:'-',skipped:'Cached'};
+  const CL={done:'ok',failed:'er',running:'ru',skipped:'sk',pending:'pe'};
+  BOOKS.filter(b=>{
+    const mf=af==='all'?true:['pending','done','failed','running','skipped'].includes(af)?ST[b.id].st===af:b.l===af;
+    const ms=!q||(b.t+' '+(b.n||'')+' '+b.a+' '+b.l).toLowerCase().includes(q);
+    return mf&&ms;
+  }).forEach(b=>{
+    const s=ST[b.id];const div=document.createElement('div');
+    div.id='c-'+b.id;div.className='bc '+s.st;
+    const srcB=b.src.map(s=>`<span class="sb ${s.k}">${s.k}</span>`).join('');
+    div.innerHTML=`<div class="bi">${b.e}</div><div style="flex:1;min-width:0"><div class="btt">${b.n||b.t}</div><div class="bst"><span style="color:${LC[b.l]||'#888'};font-weight:700;font-size:9px">${b.l.toUpperCase()}</span> · ${b.a}</div><div style="margin-top:3px">${srcB}</div><div class="bdt">${s.det||'Waiting...'}</div><div class="bpr"><div class="bpf" style="width:${s.pct}%"></div></div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px"><span class="badge bx ${CL[s.st]||'pe'}">${LB[s.st]||s.st}</span><button class="btn btn-s btn-sm" onclick="seedOne('${b.id}')">Force</button></div>`;
+    bl.appendChild(div);
+  });
+}
+function setf(f,el){af=f;document.querySelectorAll('.pill').forEach(p=>p.classList.remove('on'));el.classList.add('on');render();}
+function upStats(){
+  document.getElementById('nd').textContent=nDone;document.getElementById('nf').textContent=nFail;
+  document.getElementById('ns').textContent=nSkip;document.getElementById('mb').textContent=totalMB.toFixed(1);
+  const top=Object.entries(srcHits).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('ts').textContent=top?top[0]:'-';
+  const done=nDone+nSkip+nFail;
+  document.getElementById('pl').textContent=`${done} / ${BOOKS.length}`;
+  document.getElementById('pf').style.width=Math.round(done/BOOKS.length*100)+'%';
+}
+function setGP(done,total){document.getElementById('pf').style.width=Math.round(done/total*100)+'%';document.getElementById('pl').textContent=`${done} / ${total}`;}
+function setCur(m){document.getElementById('cur').textContent=m;}
+function setFB(ok,m){document.getElementById('fd').style.background=ok?'var(--gr)':'var(--rd)';document.getElementById('fs').textContent=m;}
+function lg(m,cls=''){const log=document.getElementById('log'),d=document.createElement('div');d.className=cls;d.textContent=m;log.appendChild(d);log.scrollTop=log.scrollHeight;}
+function sl(ms){return new Promise(r=>setTimeout(r,ms));}
+function rst(){running=false;const b=document.getElementById('btna');b.disabled=false;b.textContent='Seed All 52 Books';}
+render();
+</script>
+</body>
+</html>
