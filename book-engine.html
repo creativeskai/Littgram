@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Littgram Book Engine</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0c0a;--surface:#1a1510;--surface2:#231e17;--border:#3a2e20;
+  --text:#f0e8dc;--muted:#9a8878;--accent:#c8624a;--gold:#c9964a;
+  --green:#52c41a;--red:#ff4d6d;--blue:#4a9eff;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;min-height:100vh;padding:0;}
+h1{font-family:Georgia,serif;font-size:24px;font-weight:700;color:var(--gold);}
+h2{font-family:Georgia,serif;font-size:16px;font-weight:700;color:var(--text);margin-bottom:12px;}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:280px 1fr;height:100vh;overflow:hidden;}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;}
+.main{overflow-y:auto;padding:24px;}
+
+/* Stats cards */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.stat{background:var(--surface2);border-radius:10px;padding:12px;text-align:center;}
+.stat-n{font-size:24px;font-weight:700;font-family:Georgia,serif;}
+.stat-l{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* Buttons */
+.btn{border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;width:100%;font-family:'DM Sans',sans-serif;transition:opacity .15s;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-secondary{background:var(--surface2);color:var(--gold);border:1px solid var(--border);}
+.btn-sm{padding:5px 10px;font-size:11px;width:auto;border-radius:6px;}
+.btn-danger{background:#4a1515;color:var(--red);border:1px solid var(--red)40;}
+
+/* Progress */
+.progress-bar{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin:8px 0;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:3px;transition:width .4s;}
+
+/* Book list */
+.book-grid{display:flex;flex-direction:column;gap:6px;}
+.book-card{background:var(--surface);border-radius:10px;border:1px solid var(--border);padding:12px 14px;display:flex;align-items:center;gap:12px;transition:border-color .15s;}
+.book-card.done{border-left:3px solid var(--green);}
+.book-card.failed{border-left:3px solid var(--red);}
+.book-card.running{border-left:3px solid var(--gold);}
+.book-card.pending{border-left:3px solid var(--border);}
+
+.book-icon{width:36px;height:48px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.book-info{flex:1;min-width:0;}
+.book-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.book-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.book-status{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;flex-shrink:0;}
+.status-done{background:rgba(82,196,26,.15);color:var(--green);}
+.status-failed{background:rgba(255,77,109,.15);color:var(--red);}
+.status-running{background:rgba(201,150,74,.15);color:var(--gold);}
+.status-pending{background:rgba(154,136,120,.1);color:var(--muted);}
+.status-skipped{background:rgba(74,158,255,.1);color:var(--blue);}
+
+.book-detail{font-size:10px;color:var(--muted);margin-top:4px;}
+.book-prog{height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-top:6px;}
+.book-prog-fill{height:100%;background:var(--gold);border-radius:2px;transition:width .3s;}
+
+/* Log */
+.log{background:var(--surface2);border-radius:8px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);max-height:180px;overflow-y:auto;line-height:1.6;}
+.log-entry{margin:1px 0;}
+.log-ok{color:var(--green);}
+.log-err{color:var(--red);}
+.log-warn{color:var(--gold);}
+.log-info{color:var(--blue);}
+
+/* Filter pills */
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.pill{padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--muted);transition:all .15s;}
+.pill.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+/* Search */
+.search{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;margin-bottom:12px;}
+.search:focus{outline:none;border-color:var(--accent);}
+
+/* Warning */
+.warning{background:rgba(201,150,74,.1);border:1px solid rgba(201,150,74,.3);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--gold);line-height:1.5;}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<!-- ── SIDEBAR ── -->
+<div class="sidebar">
+  <div>
+    <h1>📚 Book Engine</h1>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px;">Littgram Firebase loader</div>
+  </div>
+
+  <!-- Stats -->
+  <div>
+    <h2>Overview</h2>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-n" id="stat-done" style="color:var(--green)">0</div>
+        <div class="stat-l">Seeded</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="stat-fail" style="color:var(--red)">0</div>
+        <div class="stat-l">Failed</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="stat-skip" style="color:var(--blue)">0</div>
+        <div class="stat-l">Skipped</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="stat-mb" style="color:var(--gold)">0</div>
+        <div class="stat-l">MB stored</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global progress -->
+  <div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px;">
+      <span>Progress</span>
+      <span id="prog-label">0 / 51</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+
+  <!-- Controls -->
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <button class="btn btn-primary" id="btn-start" onclick="startAll()">🌱 Start Seeding All Books</button>
+    <button class="btn btn-secondary" id="btn-retry" onclick="retryFailed()" style="display:none">🔄 Retry Failed</button>
+    <button class="btn btn-secondary btn-danger" onclick="confirmClearAll()" style="display:none;margin-top:4px;" id="btn-clear">🗑 Clear All &amp; Re-seed</button>
+  </div>
+
+  <!-- Firebase status -->
+  <div style="font-size:11px;color:var(--muted);">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+      <div id="fb-dot" style="width:8px;height:8px;border-radius:50%;background:var(--muted);"></div>
+      <span id="fb-status">Not authenticated</span>
+    </div>
+    <div style="color:var(--border);font-size:10px;">littgram-54427</div>
+  </div>
+
+  <!-- Warning -->
+  <div class="warning">
+    ⚠️ Ensure Firestore rules allow anonymous writes to <code>books/</code> before running.
+  </div>
+
+  <!-- Log -->
+  <div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Activity log</div>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+
+<!-- ── MAIN ── -->
+<div class="main">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+    <h2 style="margin:0;">All Books (51)</h2>
+    <div style="font-size:12px;color:var(--muted);" id="running-status"></div>
+  </div>
+
+  <!-- Filter + Search -->
+  <input class="search" id="search-box" placeholder="Search books…" oninput="renderList()">
+  <div class="pills" id="filter-pills">
+    <div class="pill active" data-filter="all" onclick="setFilter('all',this)">All</div>
+    <div class="pill" data-filter="pending" onclick="setFilter('pending',this)">Pending</div>
+    <div class="pill" data-filter="done" onclick="setFilter('done',this)">Seeded</div>
+    <div class="pill" data-filter="failed" onclick="setFilter('failed',this)">Failed</div>
+    <div class="pill" data-filter="bn" onclick="setFilter('bn',this)">Bengali</div>
+    <div class="pill" data-filter="hi" onclick="setFilter('hi',this)">Hindi</div>
+    <div class="pill" data-filter="mr" onclick="setFilter('mr',this)">Marathi</div>
+    <div class="pill" data-filter="en" onclick="setFilter('en',this)">English</div>
+  </div>
+
+  <div class="book-grid" id="book-grid"></div>
+</div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════
+const FB_KEY     = 'AIzaSyA3aB2fNYzSSiWGNL5SM9EmRPGAM71nyQI';
+const FB_PROJECT = 'littgram-54427';
+const CHUNK_SIZE = 480 * 1024;   // 480KB per Firestore doc chunk
+const MIN_LEN    = 50;           // min chars after cleaning
+const BATCH_MS   = 250;          // delay between Wikisource API batch calls
+const RETRY_MAX  = 3;            // max retries per book
+
+// ══════════════════════════════════════════════════════
+// BOOK CATALOGUE — 51 books with source URLs
+// ══════════════════════════════════════════════════════
+const BOOKS = [
+  // English — Gutenberg
+  {id:'meditations',       title:'Meditations',              native:null,                    lang:'en', emoji:'🏛️', source:'GUT', url:'https://www.gutenberg.org/cache/epub/55317/pg55317.txt'},
+  {id:'crime',             title:'Crime and Punishment',     native:null,                    lang:'en', emoji:'⚖️', source:'GUT', url:'https://www.gutenberg.org/cache/epub/2554/pg2554.txt'},
+  {id:'siddhartha',        title:'Siddhartha',               native:null,                    lang:'en', emoji:'🧘', source:'GUT', url:'https://www.gutenberg.org/cache/epub/2413/pg2413.txt'},
+  {id:'little_prince',     title:'The Little Prince',        native:null,                    lang:'en', emoji:'🌹', source:'GUT', url:'https://www.gutenberg.org/cache/epub/71975/pg71975.txt'},
+  {id:'gitanjali',         title:'Gitanjali',                native:'গীতাঞ্জলি',             lang:'en', emoji:'🌸', source:'GUT', url:'https://www.gutenberg.org/cache/epub/7164/pg7164.txt'},
+  // Bengali — Wikisource
+  {id:'gora',              title:'Gora',                     native:'গোরা',                  lang:'bn', emoji:'📖', source:'WS',  url:'WIKISOURCE:bn:গোরা'},
+  {id:'pather_panchali',   title:'Pather Panchali',          native:'পথের পাঁচালী',           lang:'bn', emoji:'🌾', source:'WS',  url:'WIKISOURCE:bn:পথের_পাঁচালী'},
+  {id:'chokher_bali',      title:'Chokher Bali',             native:'চোখের বালি',             lang:'bn', emoji:'💧', source:'WS',  url:'WIKISOURCE:bn:চোখের_বালি'},
+  {id:'aranyak',           title:'Aranyak',                  native:'আরণ্যক',                lang:'bn', emoji:'🌿', source:'WS',  url:'WIKISOURCE:bn:আরণ্যক'},
+  {id:'devdas',            title:'Devdas',                   native:'দেবদাস',                lang:'bn', emoji:'🥃', source:'WS',  url:'WIKISOURCE:bn:দেবদাস'},
+  {id:'ananda_math',       title:'Ananda Math',              native:'আনন্দমঠ',               lang:'bn', emoji:'🏔️', source:'WS',  url:'WIKISOURCE:bn:আনন্দমঠ'},
+  {id:'devi_chowdhurani',  title:'Devi Chowdhurani',         native:'দেবী চৌধুরাণী',         lang:'bn', emoji:'⚔️', source:'WS',  url:'WIKISOURCE:bn:দেবী_চৌধুরাণী'},
+  {id:'bishbrikkho',       title:'Bishbrikkho',              native:'বিষবৃক্ষ',              lang:'bn', emoji:'🌳', source:'WS',  url:'WIKISOURCE:bn:বিষবৃক্ষ'},
+  {id:'kapalkundala',      title:'Kapalkundala',             native:'কপালকুণ্ডলা',            lang:'bn', emoji:'🌊', source:'WS',  url:'WIKISOURCE:bn:কপালকুণ্ডলা'},
+  {id:'krishnakanter_will',title:'Krishnakanter Will',       native:'কৃষ্ণকান্তের উইল',       lang:'bn', emoji:'📜', source:'WS',  url:'WIKISOURCE:bn:কৃষ্ণকান্তের_উইল'},
+  {id:'durgesh_nandini',   title:'Durgesh Nandini',          native:'দুর্গেশনন্দিনী',          lang:'bn', emoji:'🏰', source:'WS',  url:'WIKISOURCE:bn:দুর্গেশনন্দিনী'},
+  {id:'rajsingha',         title:'Rajsingha',                native:'রাজসিংহ',               lang:'bn', emoji:'👑', source:'WS',  url:'WIKISOURCE:bn:রাজসিংহ'},
+  {id:'radharani',         title:'Radharani',                native:'রাধারাণী',              lang:'bn', emoji:'🎶', source:'WS',  url:'WIKISOURCE:bn:রাধারাণী'},
+  {id:'jugalanguriya',     title:'Jugalanguriya',            native:'যুগলাঙ্গুরীয়',          lang:'bn', emoji:'💍', source:'WS',  url:'WIKISOURCE:bn:যুগলাঙ্গুরীয়'},
+  {id:'noukadubi',         title:'Noukadubi',                native:'নৌকাডুবি',              lang:'bn', emoji:'⛵', source:'WS',  url:'WIKISOURCE:bn:নৌকাডুবি'},
+  {id:'ghore_baire',       title:'Ghore Baire',              native:'ঘরে বাইরে',             lang:'bn', emoji:'🏡', source:'WS',  url:'WIKISOURCE:bn:ঘরে_বাইরে'},
+  {id:'shesher_kabita',    title:'Shesher Kabita',           native:'শেষের কবিতা',           lang:'bn', emoji:'✍️', source:'WS',  url:'WIKISOURCE:bn:শেষের_কবিতা'},
+  {id:'golpoguchho',       title:'Golpoguchho',              native:'গল্পগুচ্ছ',             lang:'bn', emoji:'📚', source:'WS',  url:'WIKISOURCE:bn:গল্পগুচ্ছ'},
+  {id:'chitrangada',       title:'Chitrangada',              native:'চিত্রাঙ্গদা',            lang:'bn', emoji:'🏹', source:'WS',  url:'WIKISOURCE:bn:চিত্রাঙ্গদা'},
+  {id:'gitabitan',         title:'Gitabitan',                native:'গীতবিতান',              lang:'bn', emoji:'🎵', source:'WS',  url:'WIKISOURCE:bn:গীতবিতান'},
+  {id:'chander_pahar',     title:'Chander Pahar',            native:'চাঁদের পাহাড়',           lang:'bn', emoji:'🌙', source:'WS',  url:'WIKISOURCE:bn:চাঁদের_পাহাড়'},
+  {id:'adarsha_hindu_hotel',title:'Adarsha Hindu Hotel',     native:'আদর্শ হিন্দু হোটেল',    lang:'bn', emoji:'🏨', source:'WS',  url:'WIKISOURCE:bn:আদর্শ_হিন্দু_হোটেল'},
+  {id:'aparajito',         title:'Aparajito',                native:'অপরাজিত',               lang:'bn', emoji:'🌅', source:'WS',  url:'WIKISOURCE:bn:অপরাজিত'},
+  {id:'heera_manik_jwale', title:'Heera Manik Jwale',        native:'হীরামানিক জ্বলে',        lang:'bn', emoji:'💎', source:'WS',  url:'WIKISOURCE:bn:হীরামানিক_জ্বলে'},
+  {id:'asani_sanket',      title:'Asani Sanket',             native:'আশানি সংকেত',           lang:'bn', emoji:'⚡', source:'WS',  url:'WIKISOURCE:bn:আশানি_সংকেত'},
+  {id:'srikanto',          title:'Srikanto',                 native:'শ্রীকান্ত',              lang:'bn', emoji:'🚢', source:'WS',  url:'WIKISOURCE:bn:শ্রীকান্ত'},
+  {id:'datta',             title:'Datta',                    native:'দত্তা',                 lang:'bn', emoji:'💌', source:'WS',  url:'WIKISOURCE:bn:দত্তা'},
+  {id:'parineeta',         title:'Parineeta',                native:'পরিণীতা',               lang:'bn', emoji:'💒', source:'WS',  url:'WIKISOURCE:bn:পরিণীতা'},
+  {id:'nishkriti',         title:'Nishkriti',                native:'নিষ্কৃতি',              lang:'bn', emoji:'🕊️', source:'WS',  url:'WIKISOURCE:bn:নিষ্কৃতি'},
+  {id:'mohesh',            title:'Mohesh',                   native:'মহেশ',                  lang:'bn', emoji:'🐂', source:'WS',  url:'WIKISOURCE:bn:মহেশ'},
+  {id:'grihodaho',         title:'Grihodaho',                native:'গৃহদাহ',                lang:'bn', emoji:'🔥', source:'WS',  url:'WIKISOURCE:bn:গৃহদাহ'},
+  {id:'pather_dabi',       title:'Pather Dabi',              native:'পথের দাবী',             lang:'bn', emoji:'✊', source:'WS',  url:'WIKISOURCE:bn:পথের_দাবী'},
+  {id:'charitrahin',       title:'Charitrahin',              native:'চরিত্রহীন',             lang:'bn', emoji:'🌑', source:'WS',  url:'WIKISOURCE:bn:চরিত্রহীন'},
+  {id:'shesh_prasna',      title:'Shesh Prasna',             native:'শেষ প্রশ্ন',            lang:'bn', emoji:'❓', source:'WS',  url:'WIKISOURCE:bn:শেষ_প্রশ্ন'},
+  {id:'pallisamaj',        title:'Pallisamaj',               native:'পল্লীসমাজ',             lang:'bn', emoji:'🌻', source:'WS',  url:'WIKISOURCE:bn:পল্লীসমাজ'},
+  {id:'janani',            title:'Janani',                   native:'জননী',                 lang:'bn', emoji:'🤱', source:'WS',  url:'WIKISOURCE:bn:জননী_(মানিক_বন্দ্যোপাধ্যায়)'},
+  {id:'dibaratrir_kabya',  title:'Dibaratrir Kabya',         native:'দিবারাত্রির কাব্য',      lang:'bn', emoji:'🌗', source:'WS',  url:'WIKISOURCE:bn:দিবারাত্রির_কাব্য'},
+  {id:'putulnacher_itikatha',title:'Putulnacher Itikatha',   native:'পুতুলনাচের ইতিকথা',     lang:'bn', emoji:'🎭', source:'WS',  url:'WIKISOURCE:bn:পুতুলনাচের_ইতিকথা'},
+  {id:'padma_nadir_majhi', title:'Padma Nadir Majhi',        native:'পদ্মা নদীর মাঝি',        lang:'bn', emoji:'🚣', source:'WS',  url:'WIKISOURCE:bn:পদ্মা_নদীর_মাঝি'},
+  {id:'chotushkon',        title:'Chotushkon',               native:'চতুষ্কোণ',              lang:'bn', emoji:'🔷', source:'WS',  url:'WIKISOURCE:bn:চতুষ্কোণ'},
+  {id:'byomkesh_bakshi',   title:'Byomkesh Bakshi',          native:'ব্যোমকেশ বক্সী সমগ্র',  lang:'bn', emoji:'🔍', source:'WS',  url:'WIKISOURCE:bn:সত্যান্বেষী'},
+  {id:'oitihasik_kahini',  title:'Oitihasik Kahini',         native:'ঐতিহাসিক কাহিনী সমগ্র', lang:'bn', emoji:'🏺', source:'WS',  url:'WIKISOURCE:bn:ঐতিহাসিক_কাহিনী'},
+  // Hindi — Wikisource
+  {id:'godan',             title:'Godan',                    native:'गोदान',                 lang:'hi', emoji:'🌾', source:'WS',  url:'WIKISOURCE:hi:गोदान'},
+  {id:'madhushala',        title:'Madhushala',               native:'मधुशाला',               lang:'hi', emoji:'🍶', source:'WS',  url:'WIKISOURCE:hi:मधुशाला'},
+  {id:'nirmala',           title:'Nirmala',                  native:'निर्मला',               lang:'hi', emoji:'💐', source:'WS',  url:'WIKISOURCE:hi:निर्मला'},
+  // Marathi — Wikisource
+  {id:'shyamchi_aai',      title:'Shyamchi Aai',             native:'श्यामची आई',            lang:'mr', emoji:'🙏', source:'WS',  url:'WIKISOURCE:mr:श्यामची_आई'},
+];
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+let fbToken = null;
+let running  = false;
+let activeFilter = 'all';
+let totalBytes = 0;
+
+const bookState = {};  // bookId → { status, detail, progress, bytes, chunks, retries }
+BOOKS.forEach(b => { bookState[b.id] = { status:'pending', detail:'', progress:0, bytes:0, chunks:0, retries:0 }; });
+
+// ══════════════════════════════════════════════════════
+// FIREBASE
+// ══════════════════════════════════════════════════════
+function fbUrl(path) {
+  return `https://firestore.googleapis.com/v1/projects/${FB_PROJECT}/databases/(default)/documents/${path}`;
+}
+
+function toFs(obj) {
+  const f = {};
+  Object.entries(obj).forEach(([k,v]) => {
+    if      (typeof v === 'string')  f[k] = { stringValue: v };
+    else if (typeof v === 'number')  f[k] = { integerValue: String(Math.round(v)) };
+    else if (typeof v === 'boolean') f[k] = { booleanValue: v };
+  });
+  return f;
+}
+
+async function fbAuth() {
+  const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB_KEY}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ returnSecureToken: true })
+  });
+  const d = await r.json();
+  if (!d.idToken) throw new Error('Auth failed: ' + JSON.stringify(d));
+  return d.idToken;
+}
+
+async function fbGet(path) {
+  const r = await fetch(fbUrl(path), { headers:{ Authorization:`Bearer ${fbToken}` } });
+  if (!r.ok) return null;
+  return r.json();
+}
+
+async function fbSet(path, fields) {
+  const r = await fetch(fbUrl(path), {
+    method: 'PATCH',
+    headers: { Authorization:`Bearer ${fbToken}`, 'Content-Type':'application/json' },
+    body: JSON.stringify({ fields: toFs(fields) })
+  });
+  if (!r.ok) throw new Error(`Firestore write failed: ${r.status} ${await r.text()}`);
+  return r.json();
+}
+
+async function fbDelete(path) {
+  await fetch(fbUrl(path), { method:'DELETE', headers:{ Authorization:`Bearer ${fbToken}` } });
+}
+
+async function isSeeded(bookId) {
+  try {
+    const d = await fbGet(`books/${bookId}`);
+    return d && d.fields && d.fields.seeded && d.fields.seeded.booleanValue === true;
+  } catch(e) { return false; }
+}
+
+async function saveBook(bookId, text, meta) {
+  // Split into chunks
+  const chunks = [];
+  for (let pos = 0; pos < text.length; pos += CHUNK_SIZE) {
+    chunks.push(text.slice(pos, pos + CHUNK_SIZE));
+  }
+
+  // Save metadata
+  await fbSet(`books/${bookId}`, {
+    title:      meta.title,
+    lang:       meta.lang,
+    source:     meta.source,
+    bytes:      text.length,
+    chunks:     chunks.length,
+    seededAt:   Date.now(),
+    seeded:     true,
+    version:    2,
+  });
+
+  // Save chunks sequentially with small delay to avoid rate limiting
+  for (let i = 0; i < chunks.length; i++) {
+    await fbSet(`books/${bookId}/chunks/${i}`, { text: chunks[i], index: i });
+    bookState[bookId].progress = Math.round(((i+1) / chunks.length) * 100);
+    bookState[bookId].detail = `Chunk ${i+1}/${chunks.length} saved`;
+    renderCard(bookId);
+    if (i < chunks.length - 1) await delay(80);
+  }
+
+  return chunks.length;
+}
+
+async function clearBook(bookId) {
+  try {
+    // Get chunk count
+    const d = await fbGet(`books/${bookId}`);
+    if (d && d.fields && d.fields.chunks) {
+      const n = parseInt(d.fields.chunks.integerValue || 0);
+      for (let i = 0; i < n; i++) {
+        await fbDelete(`books/${bookId}/chunks/${i}`);
+      }
+    }
+    await fbDelete(`books/${bookId}`);
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════════════════
+// TEXT FETCHING
+// ══════════════════════════════════════════════════════
+async function fetchGutenberg(url, onProgress) {
+  onProgress('Downloading from Gutenberg…', 15);
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  let text = await r.text();
+  // Strip Gutenberg header/footer
+  const start = text.indexOf('*** START OF');
+  if (start > -1) text = text.slice(text.indexOf('\n', start) + 1);
+  const end = text.lastIndexOf('*** END OF');
+  if (end > -1) text = text.slice(0, end);
+  onProgress('Processing…', 80);
+  text = text.trim();
+  if (text.length < MIN_LEN) throw new Error(`Too short: ${text.length} chars`);
+  return text;
+}
+
+function cleanWikitext(wt) {
+  return wt
+    .replace(/\[\[(File|Image|চিত্র|ফাইল|Файл):[^\]]+\]\]/gi, '')
+    .replace(/\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/g, '$1')
+    .replace(/\{\{(?:[^{}]|\{[^{}]*\})*\}\}/g, '')
+    .replace(/\{\{[^}]*\}\}/g, '')
+    .replace(/\[https?:\/\/[^\] ]+(?:\s[^\]]+)?\]/g, '')
+    .replace(/'{2,5}/g, '')
+    .replace(/<ref[^>]*>[\s\S]*?<\/ref>/gi, '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/^[=]+\s*(.+?)\s*[=]+\s*$/gm, '$1')
+    .replace(/^[*#:;]+\s*/gm, '')
+    .replace(/\|\|/g, ' ')
+    .replace(/^\|.*/gm, '')
+    .replace(/^!.*/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+async function fetchWikisource(wsUrl, onProgress) {
+  const parts = wsUrl.split(':');
+  const lang  = parts[1];
+  const title = parts.slice(2).join(':');
+  const base  = `https://${lang}.wikisource.org/w/api.php`;
+
+  onProgress('Fetching main page…', 5);
+
+  const r = await fetch(`${base}?action=query&prop=revisions&rvprop=content&rvslots=main&format=json&origin=*&titles=${encodeURIComponent(title)}`);
+  if (!r.ok) throw new Error(`Wikisource HTTP ${r.status}`);
+  const d = await r.json();
+  const pg = d.query && d.query.pages && Object.values(d.query.pages)[0];
+  if (!pg || pg.missing !== undefined) throw new Error('Page not found on Wikisource');
+  const wt = pg.revisions?.[0]?.['*'] || pg.revisions?.[0]?.slots?.main?.['*'];
+  if (!wt) throw new Error('No wikitext content');
+
+  // Find subpages (chapters)
+  const subRe = /\[\[\/([^\]|#]+)/g;
+  const subs  = new Set();
+  let m;
+  while ((m = subRe.exec(wt)) !== null) {
+    const sub = m[1].trim().replace(/\s+/g, '_');
+    if (sub) subs.add(`${title}/${sub}`);
+  }
+  const subList = [...subs];
+
+  onProgress(`Found ${subList.length} chapter(s)…`, 12);
+
+  let allText = cleanWikitext(wt);
+
+  // Fetch chapters in batches of 5
+  for (let i = 0; i < subList.length; i += 5) {
+    const batch = subList.slice(i, i + 5);
+    const pct   = 12 + Math.round((i / Math.max(subList.length, 1)) * 75);
+    onProgress(`Chapters ${i+1}–${Math.min(i+5, subList.length)} of ${subList.length}`, pct);
+
+    try {
+      const br = await fetch(`${base}?action=query&prop=revisions&rvprop=content&rvslots=main&format=json&origin=*&titles=${batch.map(encodeURIComponent).join('|')}`);
+      if (br.ok) {
+        const bd = await br.json();
+        const bp = bd.query?.pages;
+        if (bp) {
+          Object.values(bp).forEach(p2 => {
+            if (p2.missing !== undefined) return;
+            const w2 = p2.revisions?.[0]?.['*'] || p2.revisions?.[0]?.slots?.main?.['*'];
+            if (w2) allText += '\n\n' + cleanWikitext(w2);
+          });
+        }
+      }
+    } catch(e) { addLog(`  ⚠ Batch ${i} error: ${e.message}`, 'warn'); }
+
+    await delay(BATCH_MS);
+  }
+
+  // Final clean
+  allText = allText.replace(/\n{3,}/g, '\n\n').trim();
+  if (allText.length < MIN_LEN) throw new Error(`Too short after cleaning: ${allText.length} chars`);
+  return allText;
+}
+
+// ══════════════════════════════════════════════════════
+// SEEDING LOGIC
+// ══════════════════════════════════════════════════════
+const failedBooks = [];
+let seededCount = 0, failedCount = 0, skippedCount = 0;
+
+async function seedBook(book, forceReseed = false) {
+  const id   = book.id;
+  const name = book.native || book.title;
+  const st   = bookState[id];
+
+  setState(id, 'running', 'Checking…', 0);
+
+  // Check if already seeded
+  if (!forceReseed) {
+    try {
+      const already = await isSeeded(id);
+      if (already) {
+        setState(id, 'skipped', 'Already in Firebase ✓', 100);
+        skippedCount++;
+        addLog(`⏭ ${name} — skipped (already seeded)`, 'info');
+        updateStats();
+        return 'skip';
+      }
+    } catch(e) {}
+  }
+
+  let attempt = 0;
+  while (attempt < RETRY_MAX) {
+    attempt++;
+    try {
+      setState(id, 'running', attempt > 1 ? `Attempt ${attempt}…` : 'Fetching…', 0);
+
+      function onProgress(msg, pct) {
+        setState(id, 'running', msg, pct);
+      }
+
+      let text = '';
+      if (book.source === 'GUT') {
+        text = await fetchGutenberg(book.url, onProgress);
+      } else {
+        text = await fetchWikisource(book.url, onProgress);
+      }
+
+      setState(id, 'running', `Saving ${(text.length/1024).toFixed(0)}KB…`, 90);
+      const chunks = await saveBook(id, text, book);
+
+      const kb = (text.length/1024).toFixed(0);
+      setState(id, 'done', `${kb}KB · ${chunks} chunk${chunks>1?'s':''}`, 100);
+      bookState[id].bytes  = text.length;
+      bookState[id].chunks = chunks;
+      totalBytes += text.length;
+      seededCount++;
+      addLog(`✅ ${name} — ${kb}KB, ${chunks} chunks`, 'ok');
+      updateStats();
+      return 'done';
+
+    } catch(e) {
+      if (attempt >= RETRY_MAX) {
+        setState(id, 'failed', e.message.slice(0, 60), 0);
+        failedCount++;
+        failedBooks.push(book);
+        addLog(`❌ ${name} — ${e.message}`, 'err');
+        updateStats();
+        return 'fail';
+      }
+      addLog(`⚠ ${name} attempt ${attempt} failed: ${e.message} — retrying…`, 'warn');
+      await delay(1000 * attempt);
+    }
+  }
+}
+
+async function startAll() {
+  if (running) return;
+  running = true;
+  failedBooks.length = 0;
+  seededCount = skippedCount = failedCount = 0;
+  totalBytes = 0;
+
+  document.getElementById('btn-start').disabled = true;
+  document.getElementById('btn-start').textContent = '⏳ Seeding…';
+  document.getElementById('btn-retry').style.display = 'none';
+  document.getElementById('btn-clear').style.display = 'none';
+
+  // Authenticate
+  try {
+    updateStatus('Authenticating…');
+    fbToken = await fbAuth();
+    setFbStatus(true, 'Authenticated');
+    addLog('✅ Firebase authenticated', 'ok');
+  } catch(e) {
+    addLog(`❌ Auth failed: ${e.message}`, 'err');
+    document.getElementById('btn-start').disabled = false;
+    document.getElementById('btn-start').textContent = '🌱 Start Seeding All Books';
+    running = false;
+    return;
+  }
+
+  for (let i = 0; i < BOOKS.length; i++) {
+    const b = BOOKS[i];
+    updateStatus(`(${i+1}/${BOOKS.length}) ${b.native || b.title}`);
+    updateGlobalProgress(i, BOOKS.length);
+    await seedBook(b, false);
+    await delay(300);
+  }
+
+  updateGlobalProgress(BOOKS.length, BOOKS.length);
+  updateStatus(`Done — ${seededCount} seeded, ${skippedCount} skipped, ${failedCount} failed`);
+  document.getElementById('btn-start').disabled = false;
+  document.getElementById('btn-start').textContent = '🌱 Start Seeding All Books';
+  if (failedCount > 0) document.getElementById('btn-retry').style.display = 'block';
+  document.getElementById('btn-clear').style.display = 'block';
+  addLog(`\n=== COMPLETE: ${seededCount} seeded, ${skippedCount} skipped, ${failedCount} failed ===`, 'ok');
+  running = false;
+}
+
+async function retryFailed() {
+  if (running || !failedBooks.length) return;
+  running = true;
+  const toRetry = [...failedBooks];
+  failedBooks.length = 0;
+  failedCount = 0;
+  document.getElementById('btn-retry').style.display = 'none';
+  document.getElementById('btn-start').disabled = true;
+
+  if (!fbToken) {
+    try { fbToken = await fbAuth(); setFbStatus(true, 'Authenticated'); } catch(e) {
+      addLog(`❌ Auth: ${e.message}`, 'err'); running = false; return;
+    }
+  }
+
+  for (let i = 0; i < toRetry.length; i++) {
+    const b = toRetry[i];
+    updateStatus(`Retry ${i+1}/${toRetry.length}: ${b.native || b.title}`);
+    await seedBook(b, true);
+    await delay(500);
+  }
+
+  document.getElementById('btn-start').disabled = false;
+  if (failedCount > 0) document.getElementById('btn-retry').style.display = 'block';
+  running = false;
+}
+
+async function seedSingle(bookId) {
+  if (running) { alert('Seeder is running — wait for it to finish'); return; }
+  if (!fbToken) {
+    try { fbToken = await fbAuth(); setFbStatus(true, 'Authenticated'); } catch(e) {
+      addLog(`❌ Auth: ${e.message}`, 'err'); return;
+    }
+  }
+  const book = BOOKS.find(b => b.id === bookId);
+  if (!book) return;
+  running = true;
+  await seedBook(book, true);
+  running = false;
+}
+
+async function confirmClearAll() {
+  if (!confirm('Clear ALL book data from Firebase and re-seed everything? This will delete all stored text.')) return;
+  if (!fbToken) { try { fbToken = await fbAuth(); } catch(e) { addLog(`❌ Auth: ${e.message}`, 'err'); return; } }
+  addLog('🗑 Clearing all books…', 'warn');
+  for (const b of BOOKS) {
+    setState(b.id, 'pending', 'Cleared', 0);
+    await clearBook(b.id);
+  }
+  seededCount = skippedCount = failedCount = 0; totalBytes = 0;
+  updateStats();
+  addLog('✅ All cleared — ready to re-seed', 'ok');
+}
+
+// ══════════════════════════════════════════════════════
+// UI
+// ══════════════════════════════════════════════════════
+function setState(id, status, detail, progress) {
+  bookState[id].status   = status;
+  bookState[id].detail   = detail;
+  bookState[id].progress = progress;
+  renderCard(id);
+}
+
+function renderCard(id) {
+  const el = document.getElementById('card-' + id);
+  if (!el) return;
+  const st  = bookState[id];
+  const b   = BOOKS.find(x => x.id === id);
+
+  // Update card class
+  el.className = `book-card ${st.status}`;
+
+  // Status badge
+  const badge = el.querySelector('.book-status');
+  if (badge) {
+    badge.className = `book-status status-${st.status}`;
+    badge.textContent = { done:'✓ Seeded', failed:'✗ Failed', running:'⏳', pending:'Pending', skipped:'↩ Cached' }[st.status] || st.status;
+  }
+
+  // Detail text
+  const detail = el.querySelector('.book-detail');
+  if (detail) detail.textContent = st.detail;
+
+  // Progress bar
+  const prog = el.querySelector('.book-prog-fill');
+  if (prog) prog.style.width = st.progress + '%';
+}
+
+function renderList() {
+  const q    = document.getElementById('search-box').value.toLowerCase();
+  const grid = document.getElementById('book-grid');
+  grid.innerHTML = '';
+
+  const filtered = BOOKS.filter(b => {
+    const matchFilter = activeFilter === 'all' ? true
+      : ['pending','done','failed','running','skipped'].includes(activeFilter)
+        ? bookState[b.id].status === activeFilter
+        : b.lang === activeFilter;
+    const matchSearch = !q || (b.title+' '+(b.native||'')+' '+b.lang).toLowerCase().includes(q);
+    return matchFilter && matchSearch;
+  });
+
+  filtered.forEach(b => {
+    const st  = bookState[b.id];
+    const div = document.createElement('div');
+    div.id = 'card-' + b.id;
+    div.className = `book-card ${st.status}`;
+
+    const langColors = { en:'#6c63ff', bn:'#f5a623', hi:'#ff7a45', mr:'#ff85c2' };
+    const sourceLabel = b.source === 'GUT' ? 'Gutenberg' : 'Wikisource';
+    const kb = st.bytes ? `${(st.bytes/1024).toFixed(0)}KB` : '';
+
+    div.innerHTML = `
+      <div class="book-icon" style="background:linear-gradient(160deg,#1a1a2e,#2e2e4a)">${b.emoji}</div>
+      <div class="book-info">
+        <div class="book-name">${b.native || b.title}</div>
+        <div class="book-sub">
+          <span style="color:${langColors[b.lang]||'#888'};font-weight:600;font-size:10px;">${b.lang.toUpperCase()}</span>
+          · ${b.title} · ${sourceLabel}${kb ? ' · ' + kb : ''}
+        </div>
+        <div class="book-detail">${st.detail}</div>
+        <div class="book-prog"><div class="book-prog-fill" style="width:${st.progress}%"></div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+        <div class="book-status status-${st.status}">${{ done:'✓ Seeded', failed:'✗ Failed', running:'⏳ Running', pending:'Pending', skipped:'↩ Cached' }[st.status] || st.status}</div>
+        <button class="btn btn-secondary btn-sm" onclick="seedSingle('${b.id}')" style="font-size:10px;padding:3px 8px;">↺ Force</button>
+      </div>
+    `;
+    grid.appendChild(div);
+  });
+}
+
+function setFilter(f, el) {
+  activeFilter = f;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderList();
+}
+
+function updateStats() {
+  document.getElementById('stat-done').textContent = seededCount;
+  document.getElementById('stat-fail').textContent = failedCount;
+  document.getElementById('stat-skip').textContent = skippedCount;
+  document.getElementById('stat-mb').textContent   = (totalBytes / 1024 / 1024).toFixed(1);
+  document.getElementById('prog-label').textContent = `${seededCount + skippedCount + failedCount} / ${BOOKS.length}`;
+  const pct = Math.round((seededCount + skippedCount + failedCount) / BOOKS.length * 100);
+  document.getElementById('prog-fill').style.width = pct + '%';
+}
+
+function updateGlobalProgress(done, total) {
+  const pct = Math.round(done / total * 100);
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-label').textContent = `${done} / ${total}`;
+}
+
+function updateStatus(msg) {
+  document.getElementById('running-status').textContent = msg;
+}
+
+function setFbStatus(ok, msg) {
+  document.getElementById('fb-dot').style.background = ok ? 'var(--green)' : 'var(--red)';
+  document.getElementById('fb-status').textContent = msg;
+}
+
+function addLog(msg, type = '') {
+  const log = document.getElementById('log');
+  const div = document.createElement('div');
+  div.className = `log-entry log-${type}`;
+  div.textContent = msg;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Init
+renderList();
+</script>
+</body>
+</html>
