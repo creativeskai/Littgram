@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Littgram — Firebase Book Status</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d0b09;--s1:#181410;--s2:#201c16;--bor:#352b1e;--tx:#ede5d8;--mu:#8a7a6a;--ac:#c8624a;--go:#c9964a;--gr:#4caf50;--rd:#e53935;--bl:#1e88e5;--pu:#8e24aa}
+body{background:var(--bg);color:var(--tx);font-family:'DM Sans',system-ui,sans-serif;padding:20px 16px;max-width:700px;margin:0 auto}
+h1{font-family:Georgia,serif;font-size:20px;font-weight:700;color:var(--go);margin-bottom:4px}
+.sub{font-size:12px;color:var(--mu);margin-bottom:20px}
+.card{background:var(--s1);border-radius:10px;border:1px solid var(--bor);padding:16px;margin-bottom:14px}
+.btn{border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-p{background:var(--ac);color:#fff}
+.btn-s{background:var(--s2);color:var(--go);border:1px solid var(--bor)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
+.stat{background:var(--s2);border-radius:8px;padding:10px;text-align:center}
+.sn{font-size:22px;font-weight:700;font-family:Georgia,serif}
+.sl{font-size:10px;color:var(--mu);margin-top:2px}
+.pb{height:5px;background:var(--s2);border-radius:3px;overflow:hidden;margin:8px 0}
+.pf{height:100%;background:linear-gradient(90deg,var(--ac),var(--go));border-radius:3px;transition:width .4s}
+.row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bor)}
+.row:last-child{border-bottom:none}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dot-ok{background:var(--gr)}.dot-er{background:var(--rd)}.dot-na{background:var(--mu)}
+.book-id{font-size:11px;color:var(--mu);font-family:monospace;min-width:140px}
+.book-title{font-size:12px;font-weight:600;flex:1}
+.book-detail{font-size:10px;color:var(--mu);text-align:right;min-width:100px}
+.badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px}
+.bd-ok{background:rgba(76,175,80,.15);color:var(--gr)}
+.bd-er{background:rgba(229,57,53,.15);color:var(--rd)}
+.bd-na{background:rgba(138,122,106,.1);color:var(--mu)}
+.lang-tag{font-size:9px;padding:1px 5px;border-radius:4px;font-weight:700;margin-right:4px}
+.en{background:rgba(108,99,255,.15);color:#8c86ff}
+.bn{background:rgba(245,166,35,.12);color:#f5a623}
+.hi{background:rgba(255,122,69,.12);color:#ff7a45}
+.mr{background:rgba(255,133,194,.12);color:#ff85c2}
+.msg{font-size:12px;color:var(--mu);margin-top:4px}
+.warn{background:rgba(201,150,74,.08);border:1px solid rgba(201,150,74,.2);border-radius:8px;padding:10px 13px;font-size:12px;color:var(--go);line-height:1.6;margin-bottom:14px}
+</style>
+</head>
+<body>
+
+<h1>📚 Littgram — Firebase Book Status</h1>
+<div class="sub">Checks which books are seeded in Firebase and available to read in the Kindle viewer</div>
+
+<div class="card">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:8px;flex:1">
+      <div id="fb-dot" style="width:9px;height:9px;border-radius:50%;background:var(--mu);flex-shrink:0"></div>
+      <div style="font-size:13px;font-weight:600" id="fb-status">Not connected</div>
+    </div>
+    <button class="btn btn-p" id="btn-check" onclick="runCheck()">🔍 Check Firebase Now</button>
+    <button class="btn btn-s" onclick="window.location='book-uploader.html'" style="font-size:12px">📤 Upload Books</button>
+  </div>
+  <div class="pb"><div class="pf" id="pb" style="width:0%"></div></div>
+  <div class="msg" id="msg">Click "Check Firebase Now" to query seeding status</div>
+</div>
+
+<div id="stats-section" style="display:none">
+  <div class="stats">
+    <div class="stat"><div class="sn" id="s-total" style="color:var(--tx)">52</div><div class="sl">Total Books</div></div>
+    <div class="stat"><div class="sn" id="s-seeded" style="color:var(--gr)">0</div><div class="sl">Seeded ✅</div></div>
+    <div class="stat"><div class="sn" id="s-missing" style="color:var(--rd)">0</div><div class="sl">Not Seeded</div></div>
+    <div class="stat"><div class="sn" id="s-mb" style="color:var(--go)">0</div><div class="sl">MB stored</div></div>
+  </div>
+</div>
+
+<div id="results" style="display:none">
+  <div class="card" id="seeded-card">
+    <div style="font-size:13px;font-weight:700;color:var(--gr);margin-bottom:10px">✅ SEEDED — Available to Read</div>
+    <div id="seeded-list"></div>
+  </div>
+  <div class="card" id="missing-card" style="margin-top:14px">
+    <div style="font-size:13px;font-weight:700;color:var(--rd);margin-bottom:10px">❌ NOT SEEDED — Read button hidden</div>
+    <div class="warn" style="margin-bottom:10px">
+      Upload these books via <strong>book-uploader.html</strong> to make them readable.<br>
+      Use the <code>seed.js</code> Node.js script for bulk seeding from open-source archives.
+    </div>
+    <div id="missing-list"></div>
+  </div>
+</div>
+
+<script>
+const FB_KEY = 'AIzaSyA3aB2fNYzSSiWGNL5SM9EmRPGAM71nyQI';
+const FB_PRJ = 'littgram-54427';
+
+// All 52 books
+const ALL_BOOKS = [
+  {id:'meditations',l:'en',t:'Meditations',n:'Meditations',a:'Marcus Aurelius'},
+  {id:'crime',l:'en',t:'Crime and Punishment',n:'Crime and Punishment',a:'Fyodor Dostoevsky'},
+  {id:'siddhartha',l:'en',t:'Siddhartha',n:'Siddhartha',a:'Hermann Hesse'},
+  {id:'1984',l:'en',t:'1984',n:'1984',a:'George Orwell'},
+  {id:'little_prince',l:'en',t:'The Little Prince',n:'The Little Prince',a:'A. de Saint-Exupery'},
+  {id:'gora',l:'bn',t:'Gora',n:'গোরা',a:'Rabindranath Tagore'},
+  {id:'chokher_bali',l:'bn',t:'Chokher Bali',n:'চোখের বালি',a:'Rabindranath Tagore'},
+  {id:'noukadubi',l:'bn',t:'Noukadubi',n:'নৌকাডুবি',a:'Rabindranath Tagore'},
+  {id:'ghore_baire',l:'bn',t:'Ghore Baire',n:'ঘরে বাইরে',a:'Rabindranath Tagore'},
+  {id:'shesher_kabita',l:'bn',t:'Shesher Kabita',n:'শেষের কবিতা',a:'Rabindranath Tagore'},
+  {id:'golpoguchho',l:'bn',t:'Golpoguchho',n:'গল্পগুচ্ছ',a:'Rabindranath Tagore'},
+  {id:'chitrangada',l:'bn',t:'Chitrangada',n:'চিত্রাঙ্গদা',a:'Rabindranath Tagore'},
+  {id:'gitabitan',l:'bn',t:'Gitabitan',n:'গীতবিতান',a:'Rabindranath Tagore'},
+  {id:'gitanjali',l:'bn',t:'Gitanjali',n:'গীতাঞ্জলি',a:'Rabindranath Tagore'},
+  {id:'pather_panchali',l:'bn',t:'Pather Panchali',n:'পথের পাঁচালী',a:'Bibhutibhushan Bandyopadhyay'},
+  {id:'aranyak',l:'bn',t:'Aranyak',n:'আরণ্যক',a:'Bibhutibhushan Bandyopadhyay'},
+  {id:'aparajito',l:'bn',t:'Aparajito',n:'অপরাজিত',a:'Bibhutibhushan Bandyopadhyay'},
+  {id:'chander_pahar',l:'bn',t:'Chander Pahar',n:'চাঁদের পাহাড়',a:'Bibhutibhushan Bandyopadhyay'},
+  {id:'adarsha_hindu_hotel',l:'bn',t:'Adarsha Hindu Hotel',n:'আদর্শ হিন্দু হোটেল',a:'Bibhutibhushan Bandyopadhyay'},
+  {id:'heera_manik_jwale',l:'bn',t:'Heera Manik Jwale',n:'হীরামানিক জ্বলে',a:'Bibhutibhushan Bandyopadhyay'},
+  {id:'asani_sanket',l:'bn',t:'Asani Sanket',n:'আশানি সংকেত',a:'Bibhutibhushan Bandyopadhyay'},
+  {id:'ananda_math',l:'bn',t:'Ananda Math',n:'আনন্দমঠ',a:'Bankim Chandra Chattopadhyay'},
+  {id:'devi_chowdhurani',l:'bn',t:'Devi Chowdhurani',n:'দেবী চৌধুরাণী',a:'Bankim Chandra Chattopadhyay'},
+  {id:'bishbrikkho',l:'bn',t:'Bishbrikkho',n:'বিষবৃক্ষ',a:'Bankim Chandra Chattopadhyay'},
+  {id:'kapalkundala',l:'bn',t:'Kapalkundala',n:'কপালকুণ্ডলা',a:'Bankim Chandra Chattopadhyay'},
+  {id:'krishnakanter_will',l:'bn',t:'Krishnakanter Will',n:'কৃষ্ণকান্তের উইল',a:'Bankim Chandra Chattopadhyay'},
+  {id:'durgesh_nandini',l:'bn',t:'Durgesh Nandini',n:'দুর্গেশনন্দিনী',a:'Bankim Chandra Chattopadhyay'},
+  {id:'rajsingha',l:'bn',t:'Rajsingha',n:'রাজসিংহ',a:'Bankim Chandra Chattopadhyay'},
+  {id:'radharani',l:'bn',t:'Radharani',n:'রাধারাণী',a:'Bankim Chandra Chattopadhyay'},
+  {id:'jugalanguriya',l:'bn',t:'Jugalanguriya',n:'যুগলাঙ্গুরীয়',a:'Bankim Chandra Chattopadhyay'},
+  {id:'oitihasik_kahini',l:'bn',t:'Oitihasik Kahini',n:'ঐতিহাসিক কাহিনী',a:'Sharadindu Bandyopadhyay'},
+  {id:'devdas',l:'bn',t:'Devdas',n:'দেবদাস',a:'Sarat Chandra Chattopadhyay'},
+  {id:'srikanto',l:'bn',t:'Srikanto',n:'শ্রীকান্ত',a:'Sarat Chandra Chattopadhyay'},
+  {id:'datta',l:'bn',t:'Datta',n:'দত্তা',a:'Sarat Chandra Chattopadhyay'},
+  {id:'parineeta',l:'bn',t:'Parineeta',n:'পরিণীতা',a:'Sarat Chandra Chattopadhyay'},
+  {id:'nishkriti',l:'bn',t:'Nishkriti',n:'নিষ্কৃতি',a:'Sarat Chandra Chattopadhyay'},
+  {id:'mohesh',l:'bn',t:'Mohesh',n:'মহেশ',a:'Sarat Chandra Chattopadhyay'},
+  {id:'grihodaho',l:'bn',t:'Grihodaho',n:'গৃহদাহ',a:'Sarat Chandra Chattopadhyay'},
+  {id:'pather_dabi',l:'bn',t:'Pather Dabi',n:'পথের দাবী',a:'Sarat Chandra Chattopadhyay'},
+  {id:'charitrahin',l:'bn',t:'Charitrahin',n:'চরিত্রহীন',a:'Sarat Chandra Chattopadhyay'},
+  {id:'shesh_prasna',l:'bn',t:'Shesh Prasna',n:'শেষ প্রশ্ন',a:'Sarat Chandra Chattopadhyay'},
+  {id:'pallisamaj',l:'bn',t:'Pallisamaj',n:'পল্লীসমাজ',a:'Sarat Chandra Chattopadhyay'},
+  {id:'janani',l:'bn',t:'Janani',n:'জননী',a:'Manik Bandyopadhyay'},
+  {id:'dibaratrir_kabya',l:'bn',t:'Dibaratrir Kabya',n:'দিবারাত্রির কাব্য',a:'Manik Bandyopadhyay'},
+  {id:'putulnacher_itikatha',l:'bn',t:'Putulnacher Itikatha',n:'পুতুলনাচের ইতিকথা',a:'Manik Bandyopadhyay'},
+  {id:'padma_nadir_majhi',l:'bn',t:'Padma Nadir Majhi',n:'পদ্মা নদীর মাঝি',a:'Manik Bandyopadhyay'},
+  {id:'chotushkon',l:'bn',t:'Chotushkon',n:'চতুষ্কোণ',a:'Manik Bandyopadhyay'},
+  {id:'byomkesh_bakshi',l:'bn',t:'Byomkesh Bakshi',n:'ব্যোমকেশ বক্সী সমগ্র',a:'Sharadindu Bandyopadhyay'},
+  {id:'godan',l:'hi',t:'Godan',n:'गोदान',a:'Munshi Premchand'},
+  {id:'nirmala',l:'hi',t:'Nirmala',n:'निर्मला',a:'Munshi Premchand'},
+  {id:'madhushala',l:'hi',t:'Madhushala',n:'मधुशाला',a:'Harivansh Rai Bachchan'},
+  {id:'shyamchi_aai',l:'mr',t:"Shyamchi Aai",n:'श्यामची आई',a:'Sane Guruji'},
+];
+
+let fbToken = null;
+
+async function fbAuth() {
+  const r = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB_KEY}`,
+    { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ returnSecureToken: true }) }
+  );
+  const d = await r.json();
+  if (!d.idToken) throw new Error('Auth failed');
+  return d.idToken;
+}
+
+async function fbGet(path) {
+  const url = `https://firestore.googleapis.com/v1/projects/${FB_PRJ}/databases/(default)/documents/${path}`;
+  const r = await fetch(url, { headers: { Authorization: `Bearer ${fbToken}` } });
+  return r.ok ? r.json() : null;
+}
+
+function fv(field) {
+  if (!field) return null;
+  return field.stringValue ?? field.integerValue ?? field.booleanValue ?? null;
+}
+
+async function runCheck() {
+  const btn = document.getElementById('btn-check');
+  btn.disabled = true;
+  btn.textContent = 'Checking...';
+
+  setMsg('Connecting to Firebase...', 5);
+  setFB(false, 'Connecting...');
+
+  try {
+    fbToken = await fbAuth();
+    setFB(true, 'Connected');
+    setMsg('Querying books collection...', 15);
+
+    // Try to get all books at once via collection list
+    const url = `https://firestore.googleapis.com/v1/projects/${FB_PRJ}/databases/(default)/documents/books?pageSize=100`;
+    const r = await fetch(url, { headers: { Authorization: `Bearer ${fbToken}` } });
+    const data = r.ok ? await r.json() : {};
+    const docs = data.documents || [];
+
+    // Build a map of id -> Firebase data
+    const fbMap = {};
+    for (const doc of docs) {
+      const id = doc.name.split('/').pop();
+      const f  = doc.fields || {};
+      fbMap[id] = {
+        seeded: f.seeded && f.seeded.booleanValue === true,
+        chunks: parseInt(fv(f.chunks || f.totalChunks) || 0),
+        bytes:  parseInt(fv(f.bytes) || 0),
+        source: fv(f.source) || '?',
+        title:  fv(f.title) || id,
+      };
+    }
+
+    // If collection query didn't work, check each book individually
+    let checkedIndividually = false;
+    if (docs.length === 0) {
+      setMsg('Checking each book individually...', 20);
+      checkedIndividually = true;
+      for (let i = 0; i < ALL_BOOKS.length; i++) {
+        const b = ALL_BOOKS[i];
+        const pct = 20 + Math.round(i / ALL_BOOKS.length * 70);
+        setMsg(`Checking ${b.id}...`, pct);
+        try {
+          const doc = await fbGet('books/' + b.id);
+          if (doc && doc.fields) {
+            const f = doc.fields;
+            fbMap[b.id] = {
+              seeded: f.seeded && f.seeded.booleanValue === true,
+              chunks: parseInt(fv(f.chunks || f.totalChunks) || 0),
+              bytes:  parseInt(fv(f.bytes) || 0),
+              source: fv(f.source) || '?',
+              title:  fv(f.title) || b.id,
+            };
+          }
+        } catch(e) {}
+        await new Promise(r => setTimeout(r, 60));
+      }
+    }
+
+    // Render results
+    const seeded  = [];
+    const missing = [];
+    let totalBytes = 0;
+
+    for (const b of ALL_BOOKS) {
+      const fb = fbMap[b.id];
+      if (fb && fb.seeded) {
+        seeded.push({ ...b, ...fb });
+        totalBytes += fb.bytes || 0;
+      } else {
+        missing.push(b);
+      }
+    }
+
+    // Update stats
+    document.getElementById('s-seeded').textContent  = seeded.length;
+    document.getElementById('s-missing').textContent = missing.length;
+    document.getElementById('s-mb').textContent = (totalBytes / 1024 / 1024).toFixed(1);
+    document.getElementById('stats-section').style.display = 'block';
+
+    // Render seeded list
+    const sl = document.getElementById('seeded-list');
+    sl.innerHTML = '';
+    if (seeded.length === 0) {
+      sl.innerHTML = '<div style="font-size:13px;color:var(--mu);padding:10px 0">No books seeded yet. Use the Book Uploader or seed.js to add books.</div>';
+    } else {
+      for (const b of seeded) {
+        const sz = b.bytes > 1048576 ? (b.bytes/1048576).toFixed(1)+'MB' : Math.round(b.bytes/1024)+'KB';
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `
+          <div class="dot dot-ok"></div>
+          <div class="book-id">${b.id}</div>
+          <div class="book-title">
+            <span class="lang-tag ${b.l}">${b.l.toUpperCase()}</span>
+            ${b.n !== b.t ? b.n + ' · ' : ''}${b.t}
+            <div style="font-size:10px;color:var(--mu);font-weight:400">${b.a}</div>
+          </div>
+          <div class="book-detail">
+            <span class="badge bd-ok">✓ Readable</span><br>
+            <span style="font-size:10px;color:var(--mu)">${b.chunks} chunks · ${sz}</span><br>
+            <span style="font-size:10px;color:var(--mu)">src: ${b.source}</span>
+          </div>`;
+        sl.appendChild(row);
+      }
+    }
+
+    // Render missing list
+    const ml = document.getElementById('missing-list');
+    ml.innerHTML = '';
+    for (const b of missing) {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `
+        <div class="dot dot-er"></div>
+        <div class="book-id">${b.id}</div>
+        <div class="book-title">
+          <span class="lang-tag ${b.l}">${b.l.toUpperCase()}</span>
+          ${b.n !== b.t ? b.n + ' · ' : ''}${b.t}
+          <div style="font-size:10px;color:var(--mu);font-weight:400">${b.a}</div>
+        </div>
+        <div class="book-detail">
+          <span class="badge bd-er">Not seeded</span>
+        </div>`;
+      ml.appendChild(row);
+    }
+
+    document.getElementById('results').style.display = 'block';
+    setMsg(`Done — ${seeded.length} seeded, ${missing.length} not seeded${checkedIndividually ? ' (checked individually)' : ''}`, 100);
+
+  } catch(e) {
+    setFB(false, 'Error: ' + e.message.slice(0, 50));
+    setMsg('Error: ' + e.message, 0);
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🔍 Check Firebase Now';
+}
+
+function setFB(ok, msg) {
+  document.getElementById('fb-dot').style.background = ok ? 'var(--gr)' : 'var(--rd)';
+  document.getElementById('fb-status').textContent = msg;
+}
+
+function setMsg(msg, pct) {
+  document.getElementById('msg').textContent = msg;
+  document.getElementById('pb').style.width = (pct || 0) + '%';
+}
+
+// Auto-run on load
+window.addEventListener('load', () => setTimeout(runCheck, 400));
+</script>
+</body>
+</html>
