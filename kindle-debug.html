@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kindle Debug — Littgram</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0b09;color:#ede5d8;font-family:monospace;font-size:13px;padding:16px}
+h1{font-size:16px;color:#c9964a;margin-bottom:16px}
+.step{background:#181410;border:1px solid #352b1e;border-radius:8px;padding:14px;margin-bottom:10px}
+.step-title{font-size:12px;font-weight:700;color:#c9964a;margin-bottom:8px}
+.ok{color:#4caf50}.err{color:#e53935}.warn{color:#f5a623}.info{color:#42a5f5}.muted{color:#8a7a6a}
+pre{white-space:pre-wrap;word-break:break-all;font-size:11px;line-height:1.7}
+button{background:#c8624a;border:none;border-radius:6px;color:#fff;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:monospace;margin-right:8px;margin-bottom:8px}
+button.s{background:#201c16;border:1px solid #352b1e;color:#c9964a}
+input,select{background:#201c16;border:1px solid #352b1e;border-radius:6px;color:#ede5d8;padding:8px 10px;font-size:12px;font-family:monospace;outline:none;width:100%;margin-bottom:8px}
+.row{display:flex;gap:8px;margin-bottom:8px}
+.row input{margin:0}
+</style>
+</head>
+<body>
+<h1>🔍 Kindle Reader — Firebase Diagnostic</h1>
+<p class="muted" style="margin-bottom:16px;font-size:11px">Tests every step of the read chain. Open browser console to see full logs.</p>
+
+<div class="step">
+  <div class="step-title">Config</div>
+  <div class="row">
+    <input id="book-id" value="meditations" placeholder="Book ID (e.g. meditations, chokher_bali)">
+  </div>
+  <button onclick="runAll()">▶ Run All Tests</button>
+  <button class="s" onclick="testAuth()">1. Auth Only</button>
+  <button class="s" onclick="testMeta()">2. Meta Doc</button>
+  <button class="s" onclick="testChunk()">3. Chunk 0</button>
+  <button class="s" onclick="testFullLoad()">4. Full Load</button>
+</div>
+
+<div id="out"></div>
+
+<script>
+const FB_KEY = 'AIzaSyA3aB2fNYzSSiWGNL5SM9EmRPGAM71nyQI';
+const FB_PRJ = 'littgram-54427';
+const FB_BASE = `https://firestore.googleapis.com/v1/projects/${FB_PRJ}/databases/(default)/documents`;
+
+let anonToken = null;
+let googleToken = null;
+
+function log(stepId, html) {
+  let el = document.getElementById('step-'+stepId);
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'step';
+    el.id = 'step-'+stepId;
+    document.getElementById('out').appendChild(el);
+  }
+  el.innerHTML = html;
+}
+
+function fmtJSON(obj) {
+  return JSON.stringify(obj, null, 2);
+}
+
+function fv(field) {
+  if (!field) return null;
+  if ('stringValue'  in field) return field.stringValue;
+  if ('integerValue' in field) return parseInt(field.integerValue);
+  if ('booleanValue' in field) return field.booleanValue;
+  if ('doubleValue'  in field) return field.doubleValue;
+  return JSON.stringify(field);
+}
+
+// ── STEP 1: Anonymous auth ────────────────────────────────
+async function testAuth() {
+  log('auth', `<div class="step-title">Step 1: Anonymous Firebase Auth</div><div class="muted">Testing...</div>`);
+  try {
+    const r = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB_KEY}`,
+      { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ returnSecureToken: true }) }
+    );
+    const d = await r.json();
+    if (!d.idToken) throw new Error('No idToken: ' + JSON.stringify(d));
+    anonToken = d.idToken;
+    log('auth', `<div class="step-title">Step 1: Anonymous Firebase Auth</div>
+      <div class="ok">✅ Anonymous auth OK</div>
+      <pre class="muted">UID: ${d.localId}
+Token (first 40): ${d.idToken.slice(0,40)}...
+Expires in: ${d.expiresIn}s</pre>`);
+    return anonToken;
+  } catch(e) {
+    log('auth', `<div class="step-title">Step 1: Anonymous Firebase Auth</div><div class="err">❌ Auth failed: ${e.message}</div>`);
+    return null;
+  }
+}
+
+// ── STEP 2: Fetch book metadata doc ──────────────────────
+async function testMeta() {
+  const bookId = document.getElementById('book-id').value.trim();
+  log('meta', `<div class="step-title">Step 2: Fetch books/${bookId} metadata</div><div class="muted">Testing...</div>`);
+  
+  const results = [];
+  
+  // Try 1: No auth
+  try {
+    const r = await fetch(`${FB_BASE}/books/${bookId}`);
+    const d = await r.json();
+    results.push({ method: 'No auth', status: r.status, ok: r.ok, data: d });
+  } catch(e) { results.push({ method: 'No auth', error: e.message }); }
+
+  // Try 2: Anonymous auth
+  if (!anonToken) await testAuth();
+  if (anonToken) {
+    try {
+      const r = await fetch(`${FB_BASE}/books/${bookId}`, 
+        { headers: { Authorization: `Bearer ${anonToken}` } });
+      const d = await r.json();
+      results.push({ method: 'Anon auth', status: r.status, ok: r.ok, data: d });
+    } catch(e) { results.push({ method: 'Anon auth', error: e.message }); }
+  }
+
+  let html = `<div class="step-title">Step 2: Fetch books/${bookId} metadata</div>`;
+  
+  for (const res of results) {
+    if (res.error) {
+      html += `<div class="err">❌ ${res.method}: ${res.error}</div>`;
+      continue;
+    }
+    
+    const color = res.ok ? 'ok' : 'err';
+    const icon  = res.ok ? '✅' : '❌';
+    html += `<div class="${color}">${icon} ${res.method}: HTTP ${res.status}</div>`;
+    
+    if (res.ok && res.data && res.data.fields) {
+      const f = res.data.fields;
+      html += `<pre class="muted">Fields found: ${Object.keys(f).join(', ')}
+chunks: ${fv(f.chunks)} | totalChunks: ${fv(f.totalChunks)} | seeded: ${fv(f.seeded)}
+bytes: ${fv(f.bytes)} | source: ${fv(f.source)}</pre>`;
+      
+      if (!f.chunks && !f.totalChunks) {
+        html += `<div class="err">❌ CRITICAL: Neither 'chunks' nor 'totalChunks' field found!</div>`;
+        html += `<div class="warn">⚠ Raw fields: ${JSON.stringify(Object.keys(f))}</div>`;
+      }
+    } else if (!res.ok) {
+      html += `<pre class="err">Response: ${JSON.stringify(res.data).slice(0,200)}</pre>`;
+    }
+  }
+  
+  log('meta', html);
+  return results.find(r => r.ok && r.data);
+}
+
+// ── STEP 3: Fetch chunk 0 ─────────────────────────────────
+async function testChunk() {
+  const bookId = document.getElementById('book-id').value.trim();
+  log('chunk', `<div class="step-title">Step 3: Fetch books/${bookId}/chunks/0</div><div class="muted">Testing...</div>`);
+  
+  const results = [];
+  
+  // No auth
+  try {
+    const r = await fetch(`${FB_BASE}/books/${bookId}/chunks/0`);
+    const d = await r.json();
+    results.push({ method: 'No auth', status: r.status, ok: r.ok, data: d });
+  } catch(e) { results.push({ method: 'No auth', error: e.message }); }
+
+  // Anon auth
+  if (!anonToken) await testAuth();
+  if (anonToken) {
+    try {
+      const r = await fetch(`${FB_BASE}/books/${bookId}/chunks/0`,
+        { headers: { Authorization: `Bearer ${anonToken}` } });
+      const d = await r.json();
+      results.push({ method: 'Anon auth', status: r.status, ok: r.ok, data: d });
+    } catch(e) { results.push({ method: 'Anon auth', error: e.message }); }
+  }
+
+  let html = `<div class="step-title">Step 3: Fetch books/${bookId}/chunks/0</div>`;
+  
+  for (const res of results) {
+    if (res.error) { html += `<div class="err">❌ ${res.method}: ${res.error}</div>`; continue; }
+    const color = res.ok ? 'ok' : 'err';
+    const icon  = res.ok ? '✅' : '❌';
+    html += `<div class="${color}">${icon} ${res.method}: HTTP ${res.status}</div>`;
+    
+    if (res.ok && res.data && res.data.fields) {
+      const text = fv(res.data.fields.text) || '';
+      html += `<pre class="muted">text field length: ${text.length} chars
+index: ${fv(res.data.fields.index)}
+First 150 chars: "${text.slice(0,150).replace(/</g,'&lt;')}"</pre>`;
+    } else {
+      html += `<pre class="err">Response: ${JSON.stringify(res.data).slice(0,300)}</pre>`;
+    }
+  }
+  
+  log('chunk', html);
+}
+
+// ── STEP 4: Full load simulation ─────────────────────────
+async function testFullLoad() {
+  const bookId = document.getElementById('book-id').value.trim();
+  log('full', `<div class="step-title">Step 4: Full Load Simulation (mimics _kindleLoadFromFirebase)</div><div class="muted">Running...</div>`);
+  
+  let html = `<div class="step-title">Step 4: Full Load Simulation</div>`;
+  
+  try {
+    // Get metadata - try no auth first
+    html += `<div class="info">→ Fetching metadata...</div>`;
+    log('full', html);
+    
+    let meta = null;
+    let usedAuth = false;
+    
+    // Try without auth
+    const r1 = await fetch(`${FB_BASE}/books/${bookId}`);
+    if (r1.ok) {
+      meta = await r1.json();
+      html += `<div class="ok">  Metadata: HTTP 200 (no auth)</div>`;
+    } else {
+      html += `<div class="warn">  No-auth HTTP ${r1.status}, trying with anon token...</div>`;
+      if (!anonToken) await testAuth();
+      if (anonToken) {
+        const r2 = await fetch(`${FB_BASE}/books/${bookId}`,
+          { headers: { Authorization: `Bearer ${anonToken}` } });
+        if (r2.ok) { meta = await r2.json(); usedAuth = true; html += `<div class="ok">  Metadata: HTTP 200 (anon auth)</div>`; }
+        else { html += `<div class="err">  Anon auth also failed: HTTP ${r2.status}</div>`; }
+      }
+    }
+    
+    log('full', html);
+    if (!meta || !meta.fields) { html += `<div class="err">❌ Cannot read metadata. Check Firestore rules.</div>`; log('full', html); return; }
+    
+    // Parse chunks count
+    const cf = meta.fields.chunks || meta.fields.totalChunks;
+    if (!cf) {
+      html += `<div class="err">❌ No chunk count field. Fields found: ${JSON.stringify(Object.keys(meta.fields))}</div>`;
+      log('full', html); return;
+    }
+    const total = parseInt(cf.integerValue || cf.stringValue || '0');
+    html += `<div class="ok">  Chunk count: ${total} (field: '${meta.fields.chunks ? 'chunks' : 'totalChunks'}')</div>`;
+    log('full', html);
+    
+    if (total < 1) { html += `<div class="err">❌ total=${total}, invalid.</div>`; log('full', html); return; }
+    
+    // Fetch all chunks
+    html += `<div class="info">→ Fetching ${total} chunks...</div>`;
+    log('full', html);
+    
+    const authHdr = usedAuth && anonToken ? { Authorization: `Bearer ${anonToken}` } : {};
+    const proms = [];
+    for (let i = 0; i < total; i++) {
+      proms.push(
+        fetch(`${FB_BASE}/books/${bookId}/chunks/${i}`, { headers: authHdr })
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null)
+      );
+    }
+    
+    const docs = await Promise.all(proms);
+    const okDocs = docs.filter(d => d && d.fields && d.fields.text);
+    html += `<div class="${okDocs.length === total ? 'ok' : 'warn'}">  Chunks loaded: ${okDocs.length}/${total}</div>`;
+    
+    const text = okDocs.map(d => (d.fields.text.stringValue || '')).join('');
+    html += `<div class="${text.length > 200 ? 'ok' : 'err'}">  Total text: ${text.length} chars</div>`;
+    
+    if (text.length > 0) {
+      html += `<pre class="muted">First 300 chars:
+"${text.slice(0,300).replace(/</g,'&lt;')}"</pre>`;
+    }
+    
+    if (text.length > 200) {
+      html += `<div class="ok" style="margin-top:8px">✅ SUCCESS — Book can be loaded. ${text.length} chars in ${total} chunks.</div>`;
+      html += `<div class="muted" style="font-size:11px;margin-top:4px">If app still shows summaries, the issue is in the app code receiving this data.</div>`;
+    } else {
+      html += `<div class="err">❌ Text too short (${text.length} chars) — book may not be properly seeded.</div>`;
+    }
+    
+  } catch(e) {
+    html += `<div class="err">❌ Exception: ${e.message}</div>`;
+  }
+  
+  log('full', html);
+}
+
+// ── STEP 5: Check Firestore rules by testing raw response ─
+async function checkRules() {
+  const bookId = document.getElementById('book-id').value.trim();
+  log('rules', `<div class="step-title">Step 5: Firestore Rules Check</div><div class="muted">Testing all access patterns...</div>`);
+  
+  const tests = [
+    { label: 'books/ collection (no auth)', url: `${FB_BASE}/books?pageSize=5` },
+    { label: `books/${bookId} (no auth)`, url: `${FB_BASE}/books/${bookId}` },
+    { label: `books/${bookId}/chunks/0 (no auth)`, url: `${FB_BASE}/books/${bookId}/chunks/0` },
+  ];
+  
+  let html = `<div class="step-title">Step 5: Firestore Rules Check</div>`;
+  
+  for (const t of tests) {
+    try {
+      const r = await fetch(t.url);
+      const d = await r.json();
+      const blocked = d.error && (d.error.status === 'PERMISSION_DENIED' || r.status === 403);
+      const color = blocked ? 'err' : (r.ok ? 'ok' : 'warn');
+      html += `<div class="${color}">${r.ok ? '✅' : blocked ? '🚫' : '⚠'} ${t.label}: HTTP ${r.status} ${blocked ? '(PERMISSION DENIED)' : r.ok ? '(OK)' : ''}</div>`;
+      if (blocked) html += `<div class="warn" style="font-size:11px;padding-left:16px">Fix: In Firebase Console → Firestore → Rules, add: allow read: if true;</div>`;
+    } catch(e) {
+      html += `<div class="err">❌ ${t.label}: ${e.message}</div>`;
+    }
+  }
+  
+  html += `<div class="muted" style="margin-top:10px;font-size:11px">If you see PERMISSION_DENIED, set these Firestore rules:</div>`;
+  html += `<pre class="info" style="margin-top:6px">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /books/{bookId} {
+      allow read: if true;
+      match /chunks/{chunkId} { allow read: if true; }
+    }
+    match /meta/{doc} { allow read: if true; }
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}</pre>`;
+
+  log('rules', html);
+}
+
+async function runAll() {
+  document.getElementById('out').innerHTML = '';
+  await testAuth();
+  await testMeta();
+  await testChunk();
+  await testFullLoad();
+  await checkRules();
+}
+</script>
+</body>
+</html>
