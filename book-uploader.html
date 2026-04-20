@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Littgram Book Uploader v3</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d0b09;--s1:#181410;--s2:#201c16;--bor:#352b1e;--tx:#ede5d8;--mu:#8a7a6a;--ac:#c8624a;--go:#c9964a;--gr:#4caf50;--rd:#e53935;--bl:#1e88e5;--or:#ff9800}
+body{background:var(--bg);color:var(--tx);font-family:'DM Sans',system-ui,sans-serif}
+h1{font-family:Georgia,serif;font-size:20px;font-weight:700;color:var(--go)}
+h2{font-family:Georgia,serif;font-size:14px;font-weight:700;color:var(--go);margin-bottom:10px}
+.wrap{max-width:820px;margin:0 auto;padding:20px 16px}
+.card{background:var(--s1);border-radius:12px;border:1px solid var(--bor);padding:18px;margin-bottom:14px}
+.btn{border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-p{background:var(--ac);color:#fff}
+.btn-s{background:var(--s2);color:var(--go);border:1px solid var(--bor)}
+.btn-g{background:var(--gr);color:#fff}
+.btn-r{background:var(--rd);color:#fff}
+select,input{width:100%;background:var(--s2);border:1px solid var(--bor);border-radius:8px;padding:9px 12px;color:var(--tx);font-size:13px;font-family:inherit;outline:none;margin-bottom:8px}
+label{font-size:11px;color:var(--mu);display:block;margin-bottom:3px}
+.drop{border:2px dashed var(--bor);border-radius:10px;padding:32px;text-align:center;cursor:pointer;background:var(--s2);transition:.2s}
+.drop.over{border-color:var(--go)}.drop.has-file{border-color:var(--gr)}
+.pb{height:5px;background:var(--s2);border-radius:3px;overflow:hidden;margin:8px 0}
+.pf{height:100%;background:linear-gradient(90deg,var(--ac),var(--go));border-radius:3px;transition:width .3s}
+.log{background:var(--s2);border-radius:8px;padding:10px;font-family:monospace;font-size:11px;color:var(--mu);max-height:220px;overflow-y:auto;line-height:1.8}
+.lok{color:var(--gr)}.ler{color:var(--rd)}.lw{color:var(--go)}.li{color:var(--bl)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.stat{background:var(--s2);border-radius:8px;padding:10px;text-align:center}
+.sn{font-size:20px;font-weight:700;font-family:Georgia,serif}
+.sl{font-size:10px;color:var(--mu);margin-top:2px}
+.preview{background:var(--s2);border-radius:8px;padding:10px;font-size:12px;line-height:1.7;color:#ede5d8;max-height:160px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;font-family:'Noto Serif Bengali','Noto Serif Devanagari',Georgia,serif}
+.badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;display:inline-block}
+.bok{background:rgba(76,175,80,.15);color:var(--gr)}.ber{background:rgba(229,57,53,.15);color:var(--rd)}.bmu{background:rgba(138,122,106,.1);color:var(--mu)}
+.tabs{display:flex;gap:3px;margin-bottom:0;flex-wrap:wrap}
+.tab{padding:8px 14px;border-radius:8px 8px 0 0;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--bor);background:var(--s2);color:var(--mu);border-bottom:none}
+.tab.active{background:var(--s1);color:var(--go)}
+.tp{display:none}.tp.active{display:block}
+.info{background:rgba(30,136,229,.07);border:1px solid rgba(30,136,229,.2);border-radius:8px;padding:10px 13px;font-size:11px;color:var(--bl);line-height:1.7;margin-bottom:12px}
+.warning{background:rgba(255,152,0,.08);border:1px solid rgba(255,152,0,.3);border-radius:8px;padding:10px 13px;font-size:12px;color:var(--or);line-height:1.6;margin:8px 0}
+.danger{background:rgba(229,57,53,.07);border:1px solid rgba(229,57,53,.3);border-radius:8px;padding:10px 13px;font-size:12px;color:var(--rd);line-height:1.6;margin:8px 0}
+.current-upload{background:linear-gradient(135deg,#2a1810,#1a0f08);border:1.5px solid var(--go);border-radius:10px;padding:12px;margin:10px 0;text-align:center}
+.current-upload-label{font-size:10px;color:var(--mu);letter-spacing:1.5px;margin-bottom:4px}
+.current-upload-title{font-size:16px;font-weight:700;color:var(--go);font-family:Georgia,serif}
+.current-upload-file{font-size:11px;color:var(--tx);margin-top:4px;opacity:.8}
+/* Confirmation modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.show{display:flex}
+.modal{background:var(--s1);border:1px solid var(--bor);border-radius:14px;padding:20px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto}
+.modal h3{font-family:Georgia,serif;color:var(--go);font-size:17px;margin-bottom:10px}
+.modal .pair{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--bor);font-size:12px}
+.modal .pair:last-child{border-bottom:none}
+.modal .pair-lbl{color:var(--mu);min-width:100px}
+.modal .pair-val{flex:1;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div style="margin-bottom:18px">
+  <h1>📚 Littgram Book Uploader v3</h1>
+  <div style="font-size:11px;color:var(--mu)">Hardened: duplicate detection · state-safe · confirmation before save</div>
+</div>
+
+<div class="card" style="padding:14px">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div id="fb-dot" style="width:8px;height:8px;border-radius:50%;background:var(--mu);flex-shrink:0"></div>
+    <div style="font-size:13px;font-weight:600" id="fb-st">Not connected</div>
+    <button class="btn btn-s" onclick="connect()" style="margin-left:auto;font-size:11px;padding:5px 11px">Connect</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="tab('up',this)">📤 Upload Book</div>
+  <div class="tab" onclick="tab('nuke',this)">🧹 Nuke All Books</div>
+  <div class="tab" onclick="tab('st',this)">📊 Status</div>
+</div>
+
+<!-- ── UPLOAD TAB ── -->
+<div id="tp-up" class="tp active">
+<div class="card">
+  <h2>Step 1: Select Book</h2>
+  <div class="info">
+    <strong>Important workflow:</strong><br>
+    1. Pick a book ID from dropdown<br>
+    2. Drop the correct PDF for that exact book<br>
+    3. Preview the Bengali/Hindi/Marathi text to verify<br>
+    4. Confirm in modal before saving
+  </div>
+  <label>Book ID</label>
+  <select id="bsel" onchange="onSel()">
+    <option value="">-- Choose book --</option>
+    <optgroup label="English">
+      <option value="meditations">meditations — Meditations (Marcus Aurelius)</option>
+      <option value="crime">crime — Crime and Punishment (Dostoevsky)</option>
+      <option value="siddhartha">siddhartha — Siddhartha (Hermann Hesse)</option>
+      <option value="1984">1984 — 1984 (George Orwell)</option>
+      <option value="little_prince">little_prince — The Little Prince</option>
+    </optgroup>
+    <optgroup label="Bengali — Tagore">
+      <option value="gora">gora — গোরা</option>
+      <option value="chokher_bali">chokher_bali — চোখের বালি</option>
+      <option value="noukadubi">noukadubi — নৌকাডুবি</option>
+      <option value="ghore_baire">ghore_baire — ঘরে বাইরে</option>
+      <option value="shesher_kabita">shesher_kabita — শেষের কবিতা</option>
+      <option value="golpoguchho">golpoguchho — গল্পগুচ্ছ</option>
+      <option value="chitrangada">chitrangada — চিত্রাঙ্গদা</option>
+      <option value="gitabitan">gitabitan — গীতবিতান</option>
+      <option value="gitanjali">gitanjali — গীতাঞ্জলি</option>
+    </optgroup>
+    <optgroup label="Bengali — Bibhutibhushan">
+      <option value="pather_panchali">pather_panchali — পথের পাঁচালী</option>
+      <option value="aranyak">aranyak — আরণ্যক</option>
+      <option value="aparajito">aparajito — অপরাজিত</option>
+      <option value="chander_pahar">chander_pahar — চাঁদের পাহাড়</option>
+      <option value="adarsha_hindu_hotel">adarsha_hindu_hotel — আদর্শ হিন্দু হোটেল</option>
+      <option value="heera_manik_jwale">heera_manik_jwale — হীরামানিক জ্বলে</option>
+      <option value="asani_sanket">asani_sanket — আশানি সংকেত</option>
+    </optgroup>
+    <optgroup label="Bengali — Bankim Chandra">
+      <option value="ananda_math">ananda_math — আনন্দমঠ</option>
+      <option value="devi_chowdhurani">devi_chowdhurani — দেবী চৌধুরাণী</option>
+      <option value="bishbrikkho">bishbrikkho — বিষবৃক্ষ</option>
+      <option value="kapalkundala">kapalkundala — কপালকুণ্ডলা</option>
+      <option value="krishnakanter_will">krishnakanter_will — কৃষ্ণকান্তের উইল</option>
+      <option value="durgesh_nandini">durgesh_nandini — দুর্গেশনন্দিনী</option>
+      <option value="rajsingha">rajsingha — রাজসিংহ</option>
+      <option value="radharani">radharani — রাধারাণী</option>
+      <option value="jugalanguriya">jugalanguriya — যুগলাঙ্গুরীয়</option>
+    </optgroup>
+    <optgroup label="Bengali — Sarat Chandra">
+      <option value="devdas">devdas — দেবদাস</option>
+      <option value="srikanto">srikanto — শ্রীকান্ত</option>
+      <option value="datta">datta — দত্তা</option>
+      <option value="parineeta">parineeta — পরিণীতা</option>
+      <option value="nishkriti">nishkriti — নিষ্কৃতি</option>
+      <option value="mohesh">mohesh — মহেশ</option>
+      <option value="grihodaho">grihodaho — গৃহদাহ</option>
+      <option value="pather_dabi">pather_dabi — পথের দাবী</option>
+      <option value="charitrahin">charitrahin — চরিত্রহীন</option>
+      <option value="shesh_prasna">shesh_prasna — শেষ প্রশ্ন</option>
+      <option value="pallisamaj">pallisamaj — পল্লীসমাজ</option>
+    </optgroup>
+    <optgroup label="Bengali — Manik">
+      <option value="janani">janani — জননী</option>
+      <option value="dibaratrir_kabya">dibaratrir_kabya — দিবারাত্রির কাব্য</option>
+      <option value="putulnacher_itikatha">putulnacher_itikatha — পুতুলনাচের ইতিকথা</option>
+      <option value="padma_nadir_majhi">padma_nadir_majhi — পদ্মা নদীর মাঝি</option>
+      <option value="chotushkon">chotushkon — চতুষ্কোণ</option>
+    </optgroup>
+    <optgroup label="Bengali — Sharadindu">
+      <option value="oitihasik_kahini">oitihasik_kahini — ঐতিহাসিক কাহিনী</option>
+      <option value="byomkesh_bakshi">byomkesh_bakshi — ব্যোমকেশ বক্সী</option>
+    </optgroup>
+    <optgroup label="Hindi">
+      <option value="godan">godan — गोदान (Premchand)</option>
+      <option value="nirmala">nirmala — निर्मला (Premchand)</option>
+      <option value="madhushala">madhushala — मधुशाला (Bachchan)</option>
+    </optgroup>
+    <optgroup label="Marathi">
+      <option value="shyamchi_aai">shyamchi_aai — श्यामची आई (Sane Guruji)</option>
+    </optgroup>
+  </select>
+
+  <!-- CURRENT UPLOAD BANNER - shows which book you're uploading -->
+  <div id="currentBanner" class="current-upload" style="display:none">
+    <div class="current-upload-label">UPLOADING FOR</div>
+    <div class="current-upload-title" id="currentBookTitle">—</div>
+    <div class="current-upload-file" id="currentFileName">No file selected</div>
+  </div>
+
+  <div style="display:flex;gap:8px;align-items:center;margin:8px 0 4px">
+    <div id="bst" class="badge bmu">Not checked</div>
+    <div style="font-size:11px;color:var(--mu)" id="blang"></div>
+  </div>
+  <label style="margin-top:8px">OCR Language (auto-set)</label>
+  <select id="olang">
+    <option value="ben">Bengali (বাংলা)</option>
+    <option value="hin">Hindi (हिंदी)</option>
+    <option value="mar">Marathi (मराठी)</option>
+    <option value="eng">English</option>
+  </select>
+</div>
+
+<div class="card">
+  <h2>Step 2: Drop PDF</h2>
+  <div class="drop" id="dz" onclick="document.getElementById('fi').click()"
+    ondragover="event.preventDefault();this.classList.add('over')"
+    ondragleave="this.classList.remove('over')"
+    ondrop="onDrop(event)">
+    <div style="font-size:32px;margin-bottom:8px">📄</div>
+    <div style="font-size:14px;font-weight:600" id="dzMsg">Drop PDF for selected book</div>
+    <div style="font-size:11px;color:var(--mu);margin-top:4px">Scanned or text PDF · Also .txt .epub</div>
+  </div>
+  <input type="file" id="fi" accept=".pdf,.txt,.epub,.html" style="display:none" onchange="onFile(this.files[0])">
+
+  <div id="finfo" style="display:none;margin-top:12px">
+    <div class="stats">
+      <div class="stat"><div class="sn" id="spg" style="color:var(--bl)">—</div><div class="sl">Pages</div></div>
+      <div class="stat"><div class="sn" id="sraw" style="color:var(--mu)">—</div><div class="sl">Raw</div></div>
+      <div class="stat"><div class="sn" id="scln" style="color:var(--gr)">—</div><div class="sl">Clean</div></div>
+      <div class="stat"><div class="sn" id="sch" style="color:var(--go)">—</div><div class="sl">Chunks</div></div>
+    </div>
+    <label>📖 Preview — verify this is the right book's text:</label>
+    <div class="preview" id="prev"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Step 3: Verify & Save</h2>
+  <div class="pb"><div class="pf" id="ubar" style="width:0%"></div></div>
+  <div style="font-size:11px;color:var(--mu);margin-bottom:10px" id="umsg">Select book, drop PDF, verify preview.</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-g" id="btnup" onclick="askConfirm()" disabled style="flex:1">💾 Review & Save</button>
+    <button class="btn btn-s" onclick="chkBook()" style="font-size:11px">🔍 Check</button>
+    <button class="btn btn-s" onclick="delBook()" style="font-size:11px;color:var(--rd)">🗑 Delete</button>
+    <button class="btn btn-s" onclick="clearAll()" style="font-size:11px">↺ Reset</button>
+  </div>
+</div>
+</div>
+
+<!-- ── NUKE TAB ── -->
+<div id="tp-nuke" class="tp">
+<div class="card">
+  <h2>Delete All Books from Firebase</h2>
+  <div class="danger">
+    <strong>⚠ DANGER ZONE</strong><br><br>
+    This deletes EVERY book document + all chunks from Firebase. Use this to start fresh after the duplicate-content discovery.<br><br>
+    After deletion, upload books one by one via the Upload tab — each with verification.
+  </div>
+  <button class="btn btn-r" onclick="nukeAll()" style="width:100%;margin-bottom:10px">💣 DELETE ALL BOOKS from Firebase</button>
+  <div class="pb"><div class="pf" id="nbar" style="width:0%"></div></div>
+  <div style="font-size:11px;color:var(--mu);margin-top:4px" id="nmsg">Ready</div>
+  <div id="nres" style="margin-top:12px"></div>
+</div>
+</div>
+
+<!-- ── STATUS TAB ── -->
+<div id="tp-st" class="tp">
+<div class="card">
+  <h2>All Books Status (with Content Check)</h2>
+  <div class="info">
+    This now shows the first 100 characters of each book's text, so you can verify each contains unique content.
+  </div>
+  <button class="btn btn-p" onclick="runSt()" style="margin-bottom:10px">🔍 Check with Content Preview</button>
+  <div class="pb"><div class="pf" id="stbar" style="width:0%"></div></div>
+  <div style="font-size:11px;color:var(--mu);margin-top:4px" id="stmsg"></div>
+  <div id="stres" style="margin-top:12px"></div>
+</div>
+</div>
+
+<div class="card">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+    <h2 style="margin:0">Log</h2>
+    <button class="btn btn-s" onclick="document.getElementById('log').innerHTML=''" style="font-size:10px;padding:2px 7px;margin-left:auto">Clear</button>
+  </div>
+  <div class="log" id="log"></div>
+</div>
+
+</div>
+
+<!-- ── CONFIRMATION MODAL ── -->
+<div class="modal-bg" id="confirmModal">
+  <div class="modal">
+    <h3>⚠ Confirm Upload</h3>
+    <p style="font-size:12px;color:var(--mu);margin-bottom:14px">Review carefully before saving. The preview below is what will be stored.</p>
+    <div class="pair"><div class="pair-lbl">Book ID</div><div class="pair-val" style="color:var(--go);font-family:monospace" id="cmBid">—</div></div>
+    <div class="pair"><div class="pair-lbl">File</div><div class="pair-val" id="cmFile">—</div></div>
+    <div class="pair"><div class="pair-lbl">Text length</div><div class="pair-val" id="cmLen">—</div></div>
+    <div class="pair"><div class="pair-lbl">Text hash</div><div class="pair-val" style="font-family:monospace;font-size:11px" id="cmHash">—</div></div>
+    <div class="pair"><div class="pair-lbl">Duplicate?</div><div class="pair-val" id="cmDup">—</div></div>
+    <div style="margin-top:14px">
+      <label>📖 First 400 characters of what will be saved:</label>
+      <div class="preview" id="cmPreview" style="max-height:180px"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-s" onclick="closeModal()" style="flex:1">Cancel</button>
+      <button class="btn btn-g" id="cmConfirmBtn" onclick="upload()" style="flex:1">✓ Save to Firebase</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const FBK = 'AIzaSyA3aB2fNYzSSiWGNL5SM9EmRPGAM71nyQI';
+const FBP = 'littgram-54427';
+const FBB = 'https://firestore.googleapis.com/v1/projects/'+FBP+'/databases/(default)/documents';
+const CK = 460*1024;
+const LANGS = {meditations:'en',crime:'en',siddhartha:'en','1984':'en',little_prince:'en',
+  gora:'bn',chokher_bali:'bn',noukadubi:'bn',ghore_baire:'bn',shesher_kabita:'bn',
+  golpoguchho:'bn',chitrangada:'bn',gitabitan:'bn',gitanjali:'bn',
+  pather_panchali:'bn',aranyak:'bn',aparajito:'bn',chander_pahar:'bn',
+  adarsha_hindu_hotel:'bn',heera_manik_jwale:'bn',asani_sanket:'bn',
+  ananda_math:'bn',devi_chowdhurani:'bn',bishbrikkho:'bn',kapalkundala:'bn',
+  krishnakanter_will:'bn',durgesh_nandini:'bn',rajsingha:'bn',radharani:'bn',
+  jugalanguriya:'bn',oitihasik_kahini:'bn',devdas:'bn',srikanto:'bn',
+  datta:'bn',parineeta:'bn',nishkriti:'bn',mohesh:'bn',grihodaho:'bn',
+  pather_dabi:'bn',charitrahin:'bn',shesh_prasna:'bn',pallisamaj:'bn',
+  janani:'bn',dibaratrir_kabya:'bn',putulnacher_itikatha:'bn',
+  padma_nadir_majhi:'bn',chotushkon:'bn',byomkesh_bakshi:'bn',
+  godan:'hi',nirmala:'hi',madhushala:'hi',shyamchi_aai:'mr'};
+const OCR_LANG = {en:'eng',bn:'ben',hi:'hin',mr:'mar'};
+
+// ── STATE: everything tied to bid to prevent stale data ──
+var State = {
+  tok: null,
+  bid: '',
+  txt: '',
+  fileName: '',
+  fileHash: '',
+  extractedAt: 0,    // Timestamp of last successful extraction
+  extractedForBid: '', // The bid that the current txt was extracted for
+  otherHashes: {}
+};
+
+function tab(id,el){
+  document.querySelectorAll('.tp').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tp-'+id).classList.add('active');
+  el.classList.add('active');
+}
+
+async function connect(){
+  setFB(false,'Connecting...');
+  try{
+    const r=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key='+FBK,
+      {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({returnSecureToken:true})});
+    const d=await r.json();
+    if(!d.idToken) throw new Error('No token');
+    State.tok = d.idToken;
+    setFB(true,'Connected'); 
+    log('Firebase connected','lok');
+    // Pre-load other books' hashes for duplicate detection
+    loadOtherHashes();
+    chkBook();
+  }catch(e){setFB(false,'Failed'); log('Auth: '+e.message,'ler');}
+}
+
+async function loadOtherHashes(){
+  log('Loading existing book hashes for duplicate detection...','li');
+  try{
+    const r = await fetch(FBB+'/books?pageSize=100');
+    if(!r.ok) return;
+    const d = await r.json();
+    const docs = d.documents || [];
+    let loaded = 0;
+    for(const doc of docs){
+      const id = doc.name.split('/').pop();
+      const bytes = parseInt((doc.fields&&doc.fields.bytes&&(doc.fields.bytes.integerValue||doc.fields.bytes.stringValue))||0);
+      if(bytes < 5000) continue;
+      // Fetch chunk 0 to hash it
+      try{
+        const ch = await fetch(FBB+'/books/'+id+'/chunks/0');
+        if(!ch.ok) continue;
+        const chD = await ch.json();
+        const t = (chD.fields&&chD.fields.text&&chD.fields.text.stringValue)||'';
+        if(t.length > 200){
+          State.otherHashes[id] = await hashStr(t.slice(0, 500));
+          loaded++;
+        }
+      }catch(e){}
+    }
+    log('Loaded '+loaded+' existing hashes','lok');
+  }catch(e){ log('Hash load failed: '+e.message,'lw'); }
+}
+
+async function hashStr(s){
+  const buf = new TextEncoder().encode(s);
+  const h = await crypto.subtle.digest('SHA-256', buf);
+  return [...new Uint8Array(h)].slice(0,6).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function toFs(o){
+  const f={};
+  Object.entries(o).forEach(([k,v])=>{
+    if(typeof v==='string') f[k]={stringValue:v};
+    else if(typeof v==='number') f[k]={integerValue:String(Math.round(v))};
+    else if(typeof v==='boolean') f[k]={booleanValue:v};
+  });
+  return f;
+}
+async function fbP(path,fields){
+  const r=await fetch(FBB+'/'+path,{method:'PATCH',
+    headers:{Authorization:'Bearer '+State.tok,'Content-Type':'application/json'},
+    body:JSON.stringify({fields:toFs(fields)})});
+  if(!r.ok) throw new Error('HTTP '+r.status+': '+(await r.text()).slice(0,60));
+  return r.json();
+}
+async function fbG(path){
+  const r=await fetch(FBB+'/'+path,{headers:{Authorization:'Bearer '+State.tok}});
+  return r.ok?r.json():null;
+}
+async function fbD(path){
+  return fetch(FBB+'/'+path,{method:'DELETE',headers:{Authorization:'Bearer '+State.tok}});
+}
+
+// ── Text cleaning ──
+function stripWiki(t){
+  let res='',dep=0,i=0;
+  while(i<t.length){
+    if(t[i]=='{'&&t[i+1]=='{'){dep++;i+=2;continue;}
+    if(t[i]=='}'&&t[i+1]=='}'){if(dep>0)dep--;i+=2;continue;}
+    if(dep===0) res+=t[i];
+    i++;
+  }
+  t=res;
+  t=t.replace(/\[\[(?:[^\]|]*\|)?([^\]]+)\]\]/g,'$1');
+  t=t.replace(/\[https?:\/\/[^\s\]]+\s+([^\]]+)\]/g,'$1').replace(/\[https?:\/\/[^\]]+\]/g,'');
+  t=t.replace(/<[^>]+>/g,'');
+  t=t.split('\n').filter(l=>{
+    const lt=l.trim();
+    if(/select\s+(distinct\s+)?\?|filter\s*\(|group\s+by\s+\?|bind\s*\(/i.test(lt)) return false;
+    if(/\?edition|%edition|wdt:P\d|sparql\s*=/i.test(lt)) return false;
+    return true;
+  }).join('\n');
+  return t;
+}
+
+function clean(raw){
+  let t=raw.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'');
+  t=stripWiki(t);
+  const gs=t.indexOf('*** START OF'); if(gs>-1) t=t.slice(t.indexOf('\n',gs)+1);
+  const ge=t.lastIndexOf('*** END OF'); if(ge>-1) t=t.slice(0,ge);
+  t=t.replace(/^\d+\s*$/gm,'').replace(/^[=\-_]{5,}$/gm,'');
+  const lines=t.split('\n'), freq={};
+  lines.forEach(l=>{const k=l.trim();if(k.length>3&&k.length<80)freq[k]=(freq[k]||0)+1;});
+  const heads=new Set(Object.entries(freq).filter(([k,n])=>n>4&&k.length<60).map(([k])=>k));
+  if(heads.size>0&&heads.size<30){t=lines.filter(l=>!heads.has(l.trim())).join('\n');}
+  t=t.replace(/^ISBN[\s:-][\d-]{10,17}\s*$/gim,'').replace(/^Published by .{0,80}$/gim,'').replace(/^Copyright .{0,80}$/gim,'').replace(/^All rights reserved.{0,80}$/gim,'').replace(/^\[image\]$/gim,'');
+  return t.replace(/[^\S\n]{3,}/g,' ').replace(/\n{5,}/g,'\n\n\n').trim();
+}
+
+function loadSc(src){
+  return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+}
+
+async function getPdf(file){
+  if(!window.pdfjsLib){
+    await loadSc('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  const buf=await file.arrayBuffer();
+  return pdfjsLib.getDocument({data:buf}).promise;
+}
+
+async function extractText(file){
+  const pdf=await getPdf(file);
+  document.getElementById('spg').textContent=pdf.numPages;
+  let full='';
+  for(let p=1;p<=pdf.numPages;p++){
+    setU('Extracting page '+p+'/'+pdf.numPages,(p/pdf.numPages*65));
+    const page=await pdf.getPage(p);
+    const ct=await page.getTextContent();
+    let pt=''; let ly=null;
+    for(const it of ct.items){if(!it.str)continue;if(ly!==null&&Math.abs(it.transform[5]-ly)>5)pt+='\n';pt+=it.str;ly=it.transform[5];}
+    full+=pt+'\n\n';
+  }
+  return full;
+}
+
+async function ocrFile(file){
+  const olang=document.getElementById('olang').value;
+  log('OCR language: '+olang,'lw');
+  const pdf=await getPdf(file);
+  const total=pdf.numPages;
+  document.getElementById('spg').textContent=total;
+  if(!window.Tesseract){
+    setU('Loading Tesseract OCR engine...',5);
+    await loadSc('https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js');
+  }
+  log('OCR '+total+' pages (~'+Math.round(total*12)+'s)','lw');
+  const worker=await Tesseract.createWorker(olang,1,{logger:()=>{}});
+  let full='';
+  for(let p=1;p<=total;p++){
+    const pct=Math.round(p/total*85);
+    setU('OCR page '+p+'/'+total,pct);
+    log('OCR page '+p+'/'+total,'li');
+    const page=await pdf.getPage(p);
+    const scale=2.0;
+    const vp=page.getViewport({scale});
+    const cv=document.createElement('canvas');
+    cv.width=vp.width; cv.height=vp.height;
+    await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
+    const {data:{text}}=await worker.recognize(cv);
+    full+=text+'\n\n';
+    cv.width=cv.height=1;
+  }
+  await worker.terminate();
+  log('OCR done: '+full.length+' chars','lok');
+  return full;
+}
+
+async function onDrop(e){
+  e.preventDefault();
+  document.getElementById('dz').classList.remove('over');
+  const f=e.dataTransfer.files[0];
+  if(f) onFile(f);
+}
+
+async function onFile(file){
+  if(!file) return;
+  if(!State.bid){
+    alert('Select a book ID from the dropdown FIRST, then drop the PDF.');
+    return;
+  }
+  // CRITICAL: Reset state completely before processing new file
+  State.txt = '';
+  State.fileName = file.name;
+  State.fileHash = '';
+  document.getElementById('btnup').disabled = true;
+  document.getElementById('currentFileName').textContent = file.name + ' (processing...)';
+
+  log('File: '+file.name+' ('+(file.size/1024).toFixed(0)+' KB) for book: '+State.bid,'li');
+  document.getElementById('dz').classList.add('has-file');
+  document.getElementById('dzMsg').textContent = file.name;
+  setU('Detecting file type...',5);
+
+  // Capture the bid at start - if user changes it mid-extraction, abort
+  const startBid = State.bid;
+
+  try{
+    const ext=file.name.split('.').pop().toLowerCase();
+    let raw='';
+    if(ext==='pdf'){
+      const pdf=await getPdf(file);
+      const p1=await pdf.getPage(1);
+      const ct=await p1.getTextContent();
+      const tlen=ct.items.reduce((s,i)=>s+(i.str||'').length,0);
+      log('Page 1 text chars: '+tlen+' → '+(tlen<50?'SCANNED (OCR)':'TEXT (direct)'),'li');
+      raw=tlen<50?await ocrFile(file):await extractText(file);
+    } else if(ext==='epub'){
+      raw=await extractEpub(file);
+    } else {
+      raw=await new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;r.readAsText(file,'UTF-8');});
+    }
+
+    // CRITICAL: verify bid hasn't changed during processing
+    if(State.bid !== startBid){
+      log('Book ID changed during extraction. Discarding result.','ler');
+      return;
+    }
+
+    log('Raw: '+raw.length+' chars','li');
+    setU('Cleaning text...',90);
+
+    const cleaned = clean(raw);
+    
+    // Compute hash of cleaned text
+    const hash = await hashStr(cleaned.slice(0, 500));
+
+    // Check duplicate against other books
+    let dupOf = null;
+    for(const [otherId, otherHash] of Object.entries(State.otherHashes)){
+      if(otherId !== State.bid && otherHash === hash){
+        dupOf = otherId;
+        break;
+      }
+    }
+
+    // Store in state
+    State.txt = cleaned;
+    State.fileHash = hash;
+    State.extractedAt = Date.now();
+    State.extractedForBid = State.bid;  // Lock to current book ID
+
+    const nch = Math.ceil(cleaned.length/CK);
+    document.getElementById('sraw').textContent = fmtN(raw.length);
+    document.getElementById('scln').textContent = fmtN(cleaned.length);
+    document.getElementById('sch').textContent = nch;
+    document.getElementById('prev').textContent = cleaned.slice(0,500);
+    document.getElementById('finfo').style.display = 'block';
+    document.getElementById('currentFileName').textContent = file.name + ' · ' + fmtN(cleaned.length) + ' chars · hash:' + hash;
+
+    if(dupOf){
+      setU('⚠ DUPLICATE of '+dupOf+' — review before saving!', 100);
+      log('⚠ Content matches existing book: '+dupOf, 'ler');
+    } else {
+      setU('Ready — '+fmtN(cleaned.length)+' chars, '+nch+' chunks, hash: '+hash, 100);
+      log('Clean: '+cleaned.length+' chars, '+nch+' chunks, hash: '+hash,'lok');
+    }
+
+    if(cleaned.length < 5000) log('⚠ Very short text - check source','lw');
+    updBtn();
+  }catch(e){
+    log('Error: '+(e.message||e.toString()||'unknown'),'ler');
+    setU('Extraction failed — reset and try again',0);
+    // HARD RESET on error
+    State.txt = '';
+    State.fileName = '';
+    State.fileHash = '';
+    State.extractedAt = 0;
+    State.extractedForBid = '';
+    document.getElementById('finfo').style.display='none';
+    document.getElementById('dz').classList.remove('has-file');
+    document.getElementById('dzMsg').textContent = 'Drop PDF for: '+State.bid+' (last attempt failed — try again)';
+    document.getElementById('fi').value='';
+    document.getElementById('currentFileName').textContent = 'Last extraction failed — try dropping again';
+    updBtn();
+  }
+}
+
+async function extractEpub(file){
+  if(!window.JSZip) await loadSc('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+  const buf=await file.arrayBuffer();
+  const zip=await JSZip.loadAsync(buf);
+  let so=[];
+  const cont=zip.file('META-INF/container.xml');
+  if(cont){const xml=await cont.async('string');const op=xml.match(/full-path="([^"]+\.opf)"/)?.[1];if(op){const opf=zip.file(op);if(opf){const ox=await opf.async('string');const od=op.replace(/[^/]+$/,'');const si=[...ox.matchAll(/<itemref\s+idref="([^"]+)"/g)].map(m=>m[1]);const ih={};for(const m of ox.matchAll(/<item\s[^>]*id="([^"]+)"[^>]*href="([^"]+)"/g))ih[m[1]]=od+m[2];so=si.map(id=>ih[id]).filter(Boolean);}}}
+  if(!so.length) so=Object.keys(zip.files).filter(n=>/\.(html|xhtml)$/i.test(n)).sort();
+  let full='';
+  for(let i=0;i<so.length;i++){const e=zip.file(so[i]);if(!e)continue;const h=await e.async('string');const d=document.createElement('div');d.innerHTML=h;['nav','aside','script','style'].forEach(t=>d.querySelectorAll(t).forEach(el=>el.remove()));const t=d.textContent.replace(/\s{3,}/g,' ').replace(/\n{4,}/g,'\n\n').trim();if(t.length>50)full+=t+'\n\n';setU('EPUB '+(i+1)+'/'+so.length,(i+1)/so.length*70);}
+  return full;
+}
+
+function clearAll(){
+  State.txt=''; State.fileName=''; State.fileHash='';
+  document.getElementById('finfo').style.display='none';
+  document.getElementById('dz').classList.remove('has-file');
+  document.getElementById('dzMsg').textContent = State.bid ? 'Drop PDF for: '+State.bid : 'Drop PDF for selected book';
+  document.getElementById('fi').value='';
+  document.getElementById('currentFileName').textContent = State.bid ? 'No file yet' : 'Select a book first';
+  updBtn(); setU('Reset. Ready for new file.',0);
+  log('State cleared','lw');
+}
+
+function onSel(){
+  const newBid = document.getElementById('bsel').value;
+  if(newBid !== State.bid){
+    // Clear ALL stale data when switching books
+    State.txt=''; State.fileName=''; State.fileHash='';
+    State.extractedAt=0; State.extractedForBid='';
+    document.getElementById('finfo').style.display='none';
+    document.getElementById('dz').classList.remove('has-file');
+    document.getElementById('dzMsg').textContent = newBid ? 'Drop PDF for: '+newBid : 'Drop PDF for selected book';
+    document.getElementById('fi').value='';
+    log('Book changed to '+newBid+' — all previous state cleared','lw');
+  }
+  State.bid = newBid;
+  const bookText = document.getElementById('bsel').options[document.getElementById('bsel').selectedIndex].textContent;
+  
+  if(State.bid){
+    document.getElementById('currentBanner').style.display='block';
+    document.getElementById('currentBookTitle').textContent = bookText;
+    document.getElementById('currentFileName').textContent = 'No file yet - drop PDF below';
+    const lang=LANGS[State.bid]||'en';
+    const ol=OCR_LANG[lang]||'eng';
+    const s=document.getElementById('olang');
+    for(const o of s.options) if(o.value===ol){s.value=ol;break;}
+    document.getElementById('blang').textContent='Language: '+lang.toUpperCase();
+    if(State.tok) chkBook();
+  } else {
+    document.getElementById('currentBanner').style.display='none';
+  }
+  updBtn();
+}
+
+function updBtn(){
+  var btn = document.getElementById('btnup');
+  // All conditions must be true:
+  // 1. Have a book ID
+  // 2. Have text
+  // 3. Connected to Firebase
+  // 4. Text was extracted for THIS exact book ID (not leftover from another book)
+  // 5. Text was extracted within the last 10 minutes (freshness check)
+  var now = Date.now();
+  var isFresh = State.extractedAt > 0 && (now - State.extractedAt) < 600000;
+  var bidMatches = State.extractedForBid === State.bid;
+  var canSave = State.bid && State.txt && State.tok && isFresh && bidMatches;
+  btn.disabled = !canSave;
+  if (State.txt && !bidMatches && State.bid) {
+    log('⚠ Text was extracted for '+State.extractedForBid+' but current book is '+State.bid+' - save disabled','ler');
+    setU('Text mismatch: extracted for '+State.extractedForBid+' — re-drop PDF',0);
+  }
+}
+
+async function chkBook(){
+  if(!State.tok||!State.bid) return;
+  try{
+    const m=await fbG('books/'+State.bid);
+    const el=document.getElementById('bst');
+    if(m&&m.fields&&m.fields.seeded&&m.fields.seeded.booleanValue){
+      const by=parseInt((m.fields.bytes&&(m.fields.bytes.integerValue||m.fields.bytes.stringValue))||0);
+      const ok=by>5000;
+      el.className='badge '+(ok?'bok':'ber');
+      el.textContent=ok?'In Firebase ✓':'BROKEN (~1KB)';
+    }else{el.className='badge bmu';el.textContent='Not in Firebase yet';}
+  }catch(e){}
+}
+
+// ── CONFIRMATION MODAL ──
+async function askConfirm(){
+  if(!State.bid || !State.txt){
+    alert('Need book ID and file text before saving.'); return;
+  }
+  // Populate modal
+  document.getElementById('cmBid').textContent = State.bid;
+  document.getElementById('cmFile').textContent = State.fileName;
+  document.getElementById('cmLen').textContent = fmtN(State.txt.length) + ' characters';
+  document.getElementById('cmHash').textContent = State.fileHash;
+  document.getElementById('cmPreview').textContent = State.txt.slice(0,400);
+  
+  // Check duplicate
+  let dupOf = null;
+  for(const [otherId, otherHash] of Object.entries(State.otherHashes)){
+    if(otherId !== State.bid && otherHash === State.fileHash){
+      dupOf = otherId;
+      break;
+    }
+  }
+  const dupEl = document.getElementById('cmDup');
+  const btn = document.getElementById('cmConfirmBtn');
+  if(dupOf){
+    dupEl.innerHTML = '<span style="color:var(--rd);font-weight:700">⚠ MATCHES '+dupOf+'</span>';
+    btn.className = 'btn btn-r';
+    btn.textContent = '⚠ Save anyway (will overwrite)';
+  } else {
+    dupEl.innerHTML = '<span style="color:var(--gr)">✓ Unique content</span>';
+    btn.className = 'btn btn-g';
+    btn.textContent = '✓ Save to Firebase';
+  }
+  document.getElementById('confirmModal').classList.add('show');
+}
+
+function closeModal(){
+  document.getElementById('confirmModal').classList.remove('show');
+}
+
+async function upload(){
+  closeModal();
+  if(!State.tok||!State.bid||!State.txt) return;
+  
+  // SAFETY CHECK 1: Was text extracted for THIS book?
+  if(State.extractedForBid !== State.bid){
+    alert('SAFETY BLOCK: The text in memory was extracted for "'+State.extractedForBid+'" but you are trying to save for "'+State.bid+'".\n\nDrop the PDF again for the correct book.');
+    log('BLOCKED: bid mismatch','ler');
+    return;
+  }
+  // SAFETY CHECK 2: Is extraction recent?
+  if(Date.now() - State.extractedAt > 600000){
+    alert('SAFETY BLOCK: Text was extracted more than 10 minutes ago. Drop the PDF again to ensure it is fresh.');
+    log('BLOCKED: stale extraction','ler');
+    return;
+  }
+  // SAFETY CHECK 3: Does preview match what we're about to save?
+  var previewEl = document.getElementById('prev');
+  if(previewEl && previewEl.textContent.length > 50){
+    var previewFirst100 = previewEl.textContent.slice(0,100).replace(/\s+/g,' ').trim();
+    var stateFirst100 = State.txt.slice(0,100).replace(/\s+/g,' ').trim();
+    if(previewFirst100 !== stateFirst100){
+      alert('SAFETY BLOCK: The preview shown on screen does not match the text in memory.\n\nPreview: '+previewFirst100.slice(0,60)+'...\nMemory:  '+stateFirst100.slice(0,60)+'...\n\nDrop the PDF again.');
+      log('BLOCKED: preview/memory mismatch','ler');
+      return;
+    }
+  }
+  
+  const btn=document.getElementById('btnup');
+  btn.disabled=true;
+  
+  // Capture state at upload time to prevent drift
+  const upBid = State.bid;
+  const upTxt = State.txt;
+  const upHash = State.fileHash;
+  const upFile = State.fileName;
+
+  try{
+    // Delete existing chunks first to prevent stale chunks remaining
+    const existing = await fbG('books/'+upBid);
+    if(existing && existing.fields && existing.fields.chunks){
+      const oldN = parseInt(existing.fields.chunks.integerValue||existing.fields.chunks.stringValue||0);
+      log('Clearing '+oldN+' old chunks first...','lw');
+      for(let i=0;i<oldN+2;i++) await fbD('books/'+upBid+'/chunks/'+i);
+    }
+
+    const chunks=[];
+    for(let p=0;p<upTxt.length;p+=CK) chunks.push(upTxt.slice(p,p+CK));
+    log('Upload '+upBid+': '+chunks.length+' chunks, '+fmtN(upTxt.length)+' chars, hash:'+upHash,'li');
+    setU('Writing metadata...',5);
+    await fbP('books/'+upBid,{
+      chunks:chunks.length,
+      bytes:upTxt.length,
+      source:'upload',
+      seeded:true,
+      seededAt:Date.now(),
+      contentHash:upHash,
+      sourceFile:upFile,
+      version:6
+    });
+    for(let i=0;i<chunks.length;i++){
+      setU('Chunk '+(i+1)+'/'+chunks.length,5+Math.round((i+1)/chunks.length*90));
+      await fbP('books/'+upBid+'/chunks/'+i,{text:chunks[i],index:i});
+      if(i<chunks.length-1) await sleep(150);
+    }
+    setU('Done! '+chunks.length+' chunks saved for '+upBid,100);
+    log('✅ '+upBid+' saved to Firebase ✓','lok');
+    document.getElementById('bst').className='badge bok';
+    document.getElementById('bst').textContent='In Firebase ✓';
+    // Update other hashes cache
+    State.otherHashes[upBid] = upHash;
+    
+    // Clear state after successful upload
+    setTimeout(function(){
+      if(confirm('✅ '+upBid+' saved.\n\nReady for next book?\n\n• OK = Reset form for next upload\n• Cancel = Keep form as-is')){
+        clearAll();
+        document.getElementById('bsel').value = '';
+        State.bid = '';
+        document.getElementById('currentBanner').style.display='none';
+      }
+    }, 300);
+  }catch(e){
+    log('Upload failed: '+e.message,'ler');
+    setU('Failed: '+e.message.slice(0,60),0);
+  }
+  btn.disabled=false; updBtn();
+}
+
+async function delBook(){
+  if(!State.tok||!State.bid||!confirm('Delete "'+State.bid+'" from Firebase?')) return;
+  await delOne(State.bid);
+  chkBook();
+}
+
+async function delOne(id){
+  log('Deleting '+id+'...','lw');
+  try{
+    const m=await fbG('books/'+id);
+    if(m&&m.fields){
+      const n=parseInt((m.fields.chunks&&(m.fields.chunks.integerValue||m.fields.chunks.stringValue))||1);
+      for(let i=0;i<n+2;i++) await fbD('books/'+id+'/chunks/'+i);
+    }
+    await fbD('books/'+id);
+    log('✓ '+id+' deleted','lok'); 
+    delete State.otherHashes[id];
+    return true;
+  }catch(e){log('Delete error '+id+': '+e.message,'ler'); return false;}
+}
+
+async function nukeAll(){
+  if(!State.tok){ alert('Connect to Firebase first'); return; }
+  if(!confirm('⚠ DELETE ALL BOOKS from Firebase?\n\nThis cannot be undone. Every book will be removed.')) return;
+  if(!confirm('Second confirmation required.\n\nType YES below to proceed.')) return;
+  const userIn = prompt('Type "DELETE ALL" to confirm:');
+  if(userIn !== 'DELETE ALL'){ alert('Cancelled.'); return; }
+
+  log('💣 Nuking all books...','ler');
+  const bar = document.getElementById('nbar');
+  const msg = document.getElementById('nmsg');
+  const res = document.getElementById('nres');
+  res.innerHTML = '';
+  
+  try{
+    // List all books
+    const r = await fetch(FBB+'/books?pageSize=100');
+    const d = r.ok ? await r.json() : {};
+    const docs = d.documents || [];
+    log('Found '+docs.length+' books to delete','li');
+    
+    for(let i=0;i<docs.length;i++){
+      const id = docs[i].name.split('/').pop();
+      msg.textContent = 'Deleting '+id+' ('+(i+1)+'/'+docs.length+')...';
+      bar.style.width = Math.round((i+1)/docs.length*100)+'%';
+      const ok = await delOne(id);
+      const row = document.createElement('div');
+      row.style.cssText = 'font-size:11px;padding:4px 0;border-bottom:1px solid var(--bor);color:'+(ok?'var(--gr)':'var(--rd)');
+      row.textContent = (ok?'✓ ':'✗ ')+id;
+      res.appendChild(row);
+      await sleep(100);
+    }
+    msg.textContent = '💥 All '+docs.length+' books deleted. Firebase is now empty.';
+    log('All books nuked. Ready for fresh uploads.','lok');
+    State.otherHashes = {};
+  }catch(e){
+    msg.textContent = 'Error: '+e.message;
+    log('Nuke error: '+e.message,'ler');
+  }
+}
+
+const ALLB=[
+  {id:'meditations',l:'en',n:'Meditations'},{id:'crime',l:'en',n:'Crime and Punishment'},
+  {id:'siddhartha',l:'en',n:'Siddhartha'},{id:'1984',l:'en',n:'1984'},
+  {id:'little_prince',l:'en',n:'The Little Prince'},{id:'gora',l:'bn',n:'গোরা'},
+  {id:'chokher_bali',l:'bn',n:'চোখের বালি'},{id:'noukadubi',l:'bn',n:'নৌকাডুবি'},
+  {id:'ghore_baire',l:'bn',n:'ঘরে বাইরে'},{id:'shesher_kabita',l:'bn',n:'শেষের কবিতা'},
+  {id:'golpoguchho',l:'bn',n:'গল্পগুচ্ছ'},{id:'chitrangada',l:'bn',n:'চিত্রাঙ্গদা'},
+  {id:'gitabitan',l:'bn',n:'গীতবিতান'},{id:'gitanjali',l:'bn',n:'গীতাঞ্জলি'},
+  {id:'pather_panchali',l:'bn',n:'পথের পাঁচালী'},{id:'aranyak',l:'bn',n:'আরণ্যক'},
+  {id:'aparajito',l:'bn',n:'অপরাজিত'},{id:'chander_pahar',l:'bn',n:'চাঁদের পাহাড়'},
+  {id:'adarsha_hindu_hotel',l:'bn',n:'আদর্শ হিন্দু হোটেল'},{id:'heera_manik_jwale',l:'bn',n:'হীরামানিক জ্বলে'},
+  {id:'asani_sanket',l:'bn',n:'আশানি সংকেত'},{id:'ananda_math',l:'bn',n:'আনন্দমঠ'},
+  {id:'devi_chowdhurani',l:'bn',n:'দেবী চৌধুরাণী'},{id:'bishbrikkho',l:'bn',n:'বিষবৃক্ষ'},
+  {id:'kapalkundala',l:'bn',n:'কপালকুণ্ডলা'},{id:'krishnakanter_will',l:'bn',n:'কৃষ্ণকান্তের উইল'},
+  {id:'durgesh_nandini',l:'bn',n:'দুর্গেশনন্দিনী'},{id:'rajsingha',l:'bn',n:'রাজসিংহ'},
+  {id:'radharani',l:'bn',n:'রাধারাণী'},{id:'jugalanguriya',l:'bn',n:'যুগলাঙ্গুরীয়'},
+  {id:'oitihasik_kahini',l:'bn',n:'ঐতিহাসিক কাহিনী'},{id:'devdas',l:'bn',n:'দেবদাস'},
+  {id:'srikanto',l:'bn',n:'শ্রীকান্ত'},{id:'datta',l:'bn',n:'দত্তা'},
+  {id:'parineeta',l:'bn',n:'পরিণীতা'},{id:'nishkriti',l:'bn',n:'নিষ্কৃতি'},
+  {id:'mohesh',l:'bn',n:'মহেশ'},{id:'grihodaho',l:'bn',n:'গৃহদাহ'},
+  {id:'pather_dabi',l:'bn',n:'পথের দাবী'},{id:'charitrahin',l:'bn',n:'চরিত্রহীন'},
+  {id:'shesh_prasna',l:'bn',n:'শেষ প্রশ্ন'},{id:'pallisamaj',l:'bn',n:'পল্লীসমাজ'},
+  {id:'janani',l:'bn',n:'জননী'},{id:'dibaratrir_kabya',l:'bn',n:'দিবারাত্রির কাব্য'},
+  {id:'putulnacher_itikatha',l:'bn',n:'পুতুলনাচের ইতিকথা'},{id:'padma_nadir_majhi',l:'bn',n:'পদ্মা নদীর মাঝি'},
+  {id:'chotushkon',l:'bn',n:'চতুষ্কোণ'},{id:'byomkesh_bakshi',l:'bn',n:'ব্যোমকেশ বক্সী সমগ্র'},
+  {id:'godan',l:'hi',n:'गोदान'},{id:'nirmala',l:'hi',n:'निर्मला'},
+  {id:'madhushala',l:'hi',n:'मधुशाला'},{id:'shyamchi_aai',l:'mr',n:'श्यामची आई'}
+];
+
+async function runSt(){
+  if(!State.tok) await connect();
+  const res=document.getElementById('stres'); res.innerHTML='';
+  let g=0,b=0,m=0,dup=0;
+  const hashSeen = {};
+  for(let i=0;i<ALLB.length;i++){
+    const bk=ALLB[i];
+    document.getElementById('stbar').style.width=Math.round((i+1)/ALLB.length*100)+'%';
+    document.getElementById('stmsg').textContent='Checking '+bk.id+'...';
+    let st='missing',by=0,ch=0,src='',preview='',hash='',isDup='';
+    try{
+      const d=await fbG('books/'+bk.id);
+      if(d&&d.fields&&d.fields.seeded&&d.fields.seeded.booleanValue){
+        by=parseInt((d.fields.bytes&&(d.fields.bytes.integerValue||d.fields.bytes.stringValue))||0);
+        ch=parseInt((d.fields.chunks&&(d.fields.chunks.integerValue||d.fields.chunks.stringValue))||0);
+        src=(d.fields.source||{}).stringValue||'?';
+        st=by>5000?'ok':'broken';
+        if(st==='ok'){
+          try{
+            const c0=await fetch(FBB+'/books/'+bk.id+'/chunks/0');
+            if(c0.ok){
+              const cd=await c0.json();
+              const t=(cd.fields&&cd.fields.text&&cd.fields.text.stringValue)||'';
+              preview=t.slice(0,100).replace(/\n+/g,' ');
+              hash=await hashStr(t.slice(0,500));
+              if(hashSeen[hash]){ isDup='DUPLICATE of '+hashSeen[hash]; dup++; }
+              else hashSeen[hash]=bk.id;
+            }
+          }catch(e){}
+        }
+      }
+    }catch(e){}
+    if(st==='ok')g++; else if(st==='broken')b++; else m++;
+    const col=st==='ok'?(isDup?'var(--rd)':'var(--gr)'):st==='broken'?'var(--rd)':'var(--mu)';
+    const ic=st==='ok'?(isDup?'❌':'✅'):st==='broken'?'❌':'○';
+    const sz=by>1048576?(by/1048576).toFixed(1)+'MB':by>1024?Math.round(by/1024)+'KB':by+'B';
+    const row=document.createElement('div');
+    row.style.cssText='padding:7px 0;border-bottom:1px solid var(--bor);font-size:11px;';
+    row.innerHTML='<div style="display:flex;gap:8px;align-items:center"><span style="width:18px">'+ic+'</span><span style="font-family:monospace;min-width:145px;color:var(--mu)">'+bk.id+'</span><span style="flex:1">'+bk.n+'</span><span style="color:'+col+';font-size:10px">'+(st==='ok'?sz+'·'+ch+'ch':st==='broken'?'BROKEN':'-')+'</span></div>'+(preview?'<div style="font-family:\'Noto Serif Bengali\',\'Noto Serif Devanagari\',Georgia,serif;font-size:11px;color:'+(isDup?'var(--rd)':'var(--tx)')+';margin-top:4px;padding-left:26px">"'+preview.replace(/</g,'&lt;')+'..."'+(isDup?' <span style="color:var(--rd);font-size:10px">['+isDup+']</span>':'')+'</div>':'');
+    res.appendChild(row);
+    await sleep(80);
+  }
+  document.getElementById('stmsg').textContent='✅ '+g+' good · ❌ '+dup+' duplicates · ○ '+m+' missing · '+b+' broken';
+}
+
+function setFB(ok,msg){document.getElementById('fb-dot').style.background=ok?'var(--gr)':'var(--rd)';document.getElementById('fb-st').textContent=msg;if(ok)updBtn();}
+function setU(msg,pct){document.getElementById('umsg').textContent=msg;document.getElementById('ubar').style.width=(pct||0)+'%';}
+function log(msg,cls){const l=document.getElementById('log');const d=document.createElement('div');d.className=cls||'';d.textContent=new Date().toLocaleTimeString()+'  '+msg;l.appendChild(d);l.scrollTop=l.scrollHeight;}
+function fmtN(n){return n>=1000000?(n/1000000).toFixed(1)+'M':n>=1000?Math.round(n/1000)+'K':String(n);}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+window.addEventListener('load',()=>setTimeout(connect,400));
+</script>
+</body>
+</html>
