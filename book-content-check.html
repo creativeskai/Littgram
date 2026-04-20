@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Littgram — Content Verification</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0b09;color:#ede5d8;font-family:system-ui,sans-serif;padding:16px;max-width:780px;margin:0 auto}
+h1{font-family:Georgia,serif;font-size:19px;color:#c9964a;margin-bottom:4px}
+.sub{font-size:12px;color:#8a7a6a;margin-bottom:16px}
+.btn{background:#c8624a;border:none;border-radius:8px;padding:10px 18px;color:#fff;font-weight:700;cursor:pointer;font-size:13px;margin-bottom:14px}
+.book-card{background:#181410;border:1px solid #352b1e;border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.book-head{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.book-id{font-family:monospace;font-size:12px;color:#c9964a;min-width:160px}
+.book-meta{flex:1;font-size:11px;color:#8a7a6a}
+.book-badge{font-size:10px;font-weight:700;padding:3px 7px;border-radius:5px}
+.b-ok{background:rgba(76,175,80,.15);color:#4caf50}
+.b-er{background:rgba(229,57,53,.15);color:#e53935}
+.b-dup{background:rgba(255,152,0,.2);color:#ff9800}
+.book-preview{background:#0d0b09;border-left:3px solid #c9964a;padding:10px 12px;font-size:12px;line-height:1.6;color:#d8cdbb;word-break:break-word;max-height:90px;overflow:hidden;font-family:'Noto Serif Bengali','Noto Serif Devanagari','Noto Serif',serif}
+.status{font-size:12px;color:#8a7a6a;margin-bottom:12px}
+.pb{height:5px;background:#201c16;border-radius:3px;overflow:hidden;margin:8px 0 14px}
+.pf{height:100%;background:linear-gradient(90deg,#c8624a,#c9964a);transition:width .3s}
+.dup-warning{background:rgba(229,57,53,.08);border:1px solid rgba(229,57,53,.3);border-radius:8px;padding:12px;margin:14px 0;font-size:13px;color:#e53935}
+.summary{background:#181410;border:1px solid #352b1e;border-radius:10px;padding:14px;margin-bottom:14px}
+.summary h3{font-size:14px;color:#c9964a;margin-bottom:8px}
+.summary-row{display:flex;gap:12px;font-size:12px;padding:4px 0;border-bottom:1px solid #352b1e}
+.summary-row:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+<h1>📚 Content Verification</h1>
+<div class="sub">Fetches first 200 chars of every seeded book to verify each has unique content</div>
+
+<button class="btn" onclick="runCheck()" id="btn">🔍 Verify All Book Content</button>
+<div class="pb"><div class="pf" id="pb" style="width:0%"></div></div>
+<div class="status" id="status">Click to check all books</div>
+
+<div id="summary" style="display:none"></div>
+<div id="results"></div>
+
+<script>
+const FB_BASE = 'https://firestore.googleapis.com/v1/projects/littgram-54427/databases/(default)/documents';
+
+const BOOKS = [
+  {id:'meditations',l:'en',a:'Marcus Aurelius'},
+  {id:'crime',l:'en',a:'Dostoevsky'},
+  {id:'siddhartha',l:'en',a:'Hermann Hesse'},
+  {id:'1984',l:'en',a:'George Orwell'},
+  {id:'chokher_bali',l:'bn',a:'Tagore'},
+  {id:'noukadubi',l:'bn',a:'Tagore'},
+  {id:'ghore_baire',l:'bn',a:'Tagore'},
+  {id:'shesher_kabita',l:'bn',a:'Tagore'},
+  {id:'gitabitan',l:'bn',a:'Tagore'},
+  {id:'gitanjali',l:'bn',a:'Tagore'},
+  {id:'pather_panchali',l:'bn',a:'Bibhutibhushan'},
+  {id:'aranyak',l:'bn',a:'Bibhutibhushan'},
+  {id:'aparajito',l:'bn',a:'Bibhutibhushan'},
+  {id:'chander_pahar',l:'bn',a:'Bibhutibhushan'},
+  {id:'adarsha_hindu_hotel',l:'bn',a:'Bibhutibhushan'},
+  {id:'heera_manik_jwale',l:'bn',a:'Bibhutibhushan'},
+  {id:'asani_sanket',l:'bn',a:'Bibhutibhushan'},
+  {id:'godan',l:'hi',a:'Premchand'},
+  {id:'nirmala',l:'hi',a:'Premchand'},
+  {id:'madhushala',l:'hi',a:'Bachchan'},
+  {id:'shyamchi_aai',l:'mr',a:'Sane Guruji'}
+];
+
+function fv(f){if(!f)return null;return f.stringValue??f.integerValue??f.booleanValue??null;}
+function setStatus(m,p){document.getElementById('status').textContent=m;document.getElementById('pb').style.width=(p||0)+'%';}
+
+async function fetchBookContent(id){
+  try{
+    // Get metadata
+    const m = await fetch(`${FB_BASE}/books/${id}`).then(r=>r.ok?r.json():null);
+    if(!m||!m.fields) return {id,status:'missing'};
+    const bytes = parseInt((m.fields.bytes&&(m.fields.bytes.integerValue||m.fields.bytes.stringValue))||0);
+    const chunks = parseInt((m.fields.chunks&&(m.fields.chunks.integerValue||m.fields.chunks.stringValue))||0);
+    const src = (m.fields.source||{}).stringValue||'?';
+    
+    // Get chunk 0
+    const c0 = await fetch(`${FB_BASE}/books/${id}/chunks/0`).then(r=>r.ok?r.json():null);
+    let preview = '';
+    if(c0&&c0.fields&&c0.fields.text) preview = (c0.fields.text.stringValue||'').slice(0,200);
+    
+    return {id,status:'ok',bytes,chunks,src,preview};
+  }catch(e){ return {id,status:'error',err:e.message}; }
+}
+
+async function runCheck(){
+  document.getElementById('btn').disabled=true;
+  document.getElementById('results').innerHTML='';
+  document.getElementById('summary').style.display='none';
+  
+  const results = [];
+  for(let i=0;i<BOOKS.length;i++){
+    const b = BOOKS[i];
+    setStatus('Fetching '+b.id+'... ('+(i+1)+'/'+BOOKS.length+')', Math.round((i+1)/BOOKS.length*100));
+    const r = await fetchBookContent(b.id);
+    r.meta = b;
+    results.push(r);
+    renderResult(r);
+    await new Promise(r=>setTimeout(r,80));
+  }
+  
+  // Duplicate detection
+  const previewMap = {};
+  for(const r of results){
+    if(r.status!=='ok'||!r.preview) continue;
+    const sig = r.preview.slice(0,80).replace(/\s+/g,' ').trim();
+    if(!previewMap[sig]) previewMap[sig] = [];
+    previewMap[sig].push(r.id);
+  }
+  
+  // Find duplicate groups
+  const dupGroups = Object.entries(previewMap).filter(([k,v])=>v.length>1);
+  
+  // Summary
+  const ok = results.filter(r=>r.status==='ok').length;
+  const missing = results.filter(r=>r.status==='missing').length;
+  const dups = dupGroups.reduce((s,[k,v])=>s+v.length,0);
+  const unique = ok - dups;
+  
+  let sumHTML = '<div class="summary"><h3>📊 Summary</h3>';
+  sumHTML += `<div class="summary-row"><span style="flex:1">Total books checked</span><span><strong>${results.length}</strong></span></div>`;
+  sumHTML += `<div class="summary-row"><span style="flex:1;color:#4caf50">✅ With content in Firebase</span><span><strong>${ok}</strong></span></div>`;
+  sumHTML += `<div class="summary-row"><span style="flex:1;color:#8a7a6a">○ Missing from Firebase</span><span><strong>${missing}</strong></span></div>`;
+  sumHTML += `<div class="summary-row"><span style="flex:1;color:${dups>0?'#e53935':'#4caf50'}">${dups>0?'❌':'✅'} Duplicate-content books</span><span><strong>${dups}</strong></span></div>`;
+  sumHTML += `<div class="summary-row"><span style="flex:1;color:#c9964a">🎯 Books with unique content</span><span><strong>${unique}</strong></span></div>`;
+  sumHTML += '</div>';
+  
+  if(dupGroups.length>0){
+    sumHTML += '<div class="dup-warning"><strong>⚠ DUPLICATE CONTENT DETECTED</strong><br><br>These books have the same first 80 characters — meaning multiple book IDs point to the same stored text:<br><br>';
+    for(const [sig,ids] of dupGroups){
+      sumHTML += `<div style="margin:8px 0;padding:8px;background:rgba(0,0,0,.3);border-radius:6px">`;
+      sumHTML += `<strong>${ids.length} duplicates:</strong> ${ids.join(', ')}<br>`;
+      sumHTML += `<span style="font-size:11px;color:#8a7a6a">Content starts with: "${sig.slice(0,60).replace(/</g,'&lt;')}..."</span>`;
+      sumHTML += `</div>`;
+    }
+    sumHTML += '</div>';
+  }
+  
+  document.getElementById('summary').innerHTML = sumHTML;
+  document.getElementById('summary').style.display = 'block';
+  document.getElementById('btn').disabled = false;
+  setStatus('Done', 100);
+}
+
+function renderResult(r){
+  const b = r.meta;
+  const div = document.createElement('div');
+  div.className = 'book-card';
+  
+  let badge = '';
+  if(r.status==='ok') badge = `<span class="book-badge b-ok">✓ ${Math.round(r.bytes/1024)}KB</span>`;
+  else if(r.status==='missing') badge = `<span class="book-badge b-er">Missing</span>`;
+  else badge = `<span class="book-badge b-er">Error</span>`;
+  
+  let preview = r.preview ? `<div class="book-preview">${r.preview.replace(/</g,'&lt;')}</div>` : '<div class="book-preview" style="color:#8a7a6a;font-style:italic">No content available</div>';
+  
+  div.innerHTML = `
+    <div class="book-head">
+      <div class="book-id">${b.id}</div>
+      <div class="book-meta">[${b.l.toUpperCase()}] ${b.a}${r.status==='ok'?' · '+r.chunks+' chunks · src:'+r.src:''}</div>
+      ${badge}
+    </div>
+    ${preview}
+  `;
+  document.getElementById('results').appendChild(div);
+}
+</script>
+</body>
+</html>
