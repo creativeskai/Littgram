@@ -1,46 +1,49 @@
 // /api/sarvam-upload.js
-// Vercel serverless function - proxies ZIP upload to Azure Blob Storage
-// Browser can't PUT directly to Azure (CORS), but server-to-server has no restriction
+// Vercel serverless proxy — forwards ZIP to Azure Blob Storage server-side
 
 export default async function handler(req, res) {
-  // Allow from same origin only
-  res.setHeader('Access-Control-Allow-Origin', 'https://littgram.vercel.app');
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-upload-headers');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { uploadUrl, contentType } = req.query;
+    const { uploadUrl } = req.query;
+    if (!uploadUrl) return res.status(400).json({ error: 'Missing uploadUrl' });
 
-    if (!uploadUrl) {
-      return res.status(400).json({ error: 'Missing uploadUrl parameter' });
-    }
-
-    // Decode the URL (passed as query param)
     const azureUrl = decodeURIComponent(uploadUrl);
 
-    // Collect the raw body (the ZIP file bytes)
+    // Collect raw body bytes
     const chunks = [];
-    for await (const chunk of req) {
-      chunks.push(chunk);
-    }
+    for await (const chunk of req) chunks.push(chunk);
     const body = Buffer.concat(chunks);
 
-    // Forward to Azure with required headers
+    // Required Azure blob headers
+    const azureHeaders = {
+      'x-ms-blob-type': 'BlockBlob',
+      'Content-Type': 'application/zip',
+      'Content-Length': String(body.length),
+    };
+
+    // Merge extra headers from client
+    const extraHeaders = req.headers['x-upload-headers'];
+    if (extraHeaders) {
+      try {
+        const parsed = JSON.parse(extraHeaders);
+        for (const [k, v] of Object.entries(parsed)) {
+          const kl = k.toLowerCase();
+          if (kl !== 'content-length' && kl !== 'host' && kl !== 'transfer-encoding') {
+            azureHeaders[k] = v;
+          }
+        }
+      } catch(e) {}
+    }
+
     const azureRes = await fetch(azureUrl, {
       method: 'PUT',
-      headers: {
-        'Content-Type': contentType || 'application/zip',
-        'x-ms-blob-type': 'BlockBlob',
-        'Content-Length': String(body.length),
-      },
+      headers: azureHeaders,
       body: body,
     });
 
@@ -61,8 +64,5 @@ export default async function handler(req, res) {
 }
 
 export const config = {
-  api: {
-    bodyParser: false, // We read raw bytes manually
-    sizeLimit: '10mb',
-  },
+  api: { bodyParser: false, sizeLimit: '10mb' },
 };
