@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Littgram — Gitanjali Translator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d0b09;--s1:#181410;--s2:#201c16;--bor:#352b1e;--tx:#ede5d8;--mu:#8a7a6a;--ac:#c8624a;--go:#c9964a;--gr:#4caf50;--rd:#e53935;--bl:#1e88e5}
+body{background:var(--bg);color:var(--tx);font-family:'DM Sans',system-ui,sans-serif;padding:20px;max-width:900px;margin:0 auto}
+h1{font-family:Georgia,serif;color:var(--go);font-size:22px;margin-bottom:3px}
+.sub{font-size:12px;color:var(--mu);margin-bottom:20px}
+.card{background:var(--s1);border:1px solid var(--bor);border-radius:12px;padding:16px;margin-bottom:14px}
+h2{font-family:Georgia,serif;color:var(--go);font-size:14px;margin-bottom:10px}
+.btn{border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-p{background:var(--ac);color:#fff}
+.btn-s{background:var(--s2);color:var(--go);border:1px solid var(--bor)}
+.btn-g{background:var(--gr);color:#fff}
+select,input{width:100%;background:var(--s2);border:1px solid var(--bor);border-radius:8px;padding:9px 12px;color:var(--tx);font-size:13px;font-family:inherit;margin-bottom:8px}
+.drop{border:2px dashed var(--bor);border-radius:10px;padding:24px;text-align:center;cursor:pointer;background:var(--s2);transition:.2s;margin-bottom:10px}
+.drop.has{border-color:var(--gr)}
+.pb{height:5px;background:var(--s2);border-radius:3px;overflow:hidden;margin:8px 0}
+.pf{height:100%;background:linear-gradient(90deg,var(--ac),var(--go));border-radius:3px;transition:width .4s}
+.log{background:var(--bg);border-radius:8px;padding:10px;font-family:monospace;font-size:11px;max-height:180px;overflow-y:auto;line-height:1.9}
+.lok{color:var(--gr)}.ler{color:var(--rd)}.lw{color:var(--go)}.li{color:#90caf9}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.pane{background:var(--s2);border-radius:10px;padding:14px}
+.pane-title{font-size:11px;color:var(--mu);letter-spacing:1.5px;margin-bottom:8px;font-weight:700}
+.pane-text{font-size:13px;line-height:1.85;white-space:pre-wrap;word-break:break-word;max-height:500px;overflow-y:auto}
+.bn{font-family:'Noto Serif Bengali','Noto Serif',Georgia,serif}
+.en{font-family:Georgia,'Noto Serif',serif}
+.poem-block{border-bottom:1px solid var(--bor);padding:14px 0}
+.poem-block:last-child{border-bottom:none}
+.poem-num{font-size:11px;color:var(--mu);margin-bottom:6px}
+.stats{display:flex;gap:12px;font-size:11px;color:var(--mu);margin-bottom:12px;flex-wrap:wrap}
+.stat-val{color:var(--go);font-weight:700;font-family:Georgia,serif}
+.dl-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<h1>📜 Gitanjali — Transcribe & Translate</h1>
+<div class="sub">Sarvam Vision OCR (Bengali → Bengali text) + Sarvam Mayura (Bengali → English) · Stores both to Firebase</div>
+
+<!-- CONFIG -->
+<div class="card">
+  <h2>Configuration</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div>
+      <label style="font-size:11px;color:var(--mu);display:block;margin-bottom:3px">Page range (start)</label>
+      <input type="number" id="pageFrom" value="9" min="1" style="margin-bottom:0">
+    </div>
+    <div>
+      <label style="font-size:11px;color:var(--mu);display:block;margin-bottom:3px">Page range (end)</label>
+      <input type="number" id="pageTo" value="18" min="1" style="margin-bottom:0">
+    </div>
+  </div>
+  <div style="margin-top:8px;font-size:11px;color:var(--mu)">
+    Pages 1-8 are blank/cover/TOC. First poem starts ~page 9. Recommend 10 pages per run.
+  </div>
+</div>
+
+<!-- PDF UPLOAD -->
+<div class="card">
+  <h2>Drop Gitanjali PDF</h2>
+  <div class="drop" id="dz" onclick="document.getElementById('fi').click()">
+    <div style="font-size:28px;margin-bottom:6px">📄</div>
+    <div id="dzMsg">Drop geetanjali.pdf here</div>
+  </div>
+  <input type="file" id="fi" accept=".pdf" style="display:none" onchange="onFile(this.files[0])">
+  <button class="btn btn-p" id="btnRun" onclick="runPipeline()" disabled style="width:100%">🚀 Transcribe + Translate</button>
+</div>
+
+<!-- PROGRESS -->
+<div class="pb"><div class="pf" id="pb" style="width:0%"></div></div>
+<div style="font-size:11px;color:var(--mu);margin-bottom:8px" id="pMsg">Ready</div>
+<div class="log" id="log"></div>
+
+<!-- RESULTS -->
+<div id="results" style="display:none">
+  <div class="card" style="margin-top:16px">
+    <h2>Results</h2>
+    <div class="stats">
+      <div><span class="stat-val" id="statPages">0</span> pages processed</div>
+      <div><span class="stat-val" id="statBnChars">0</span> Bengali chars</div>
+      <div><span class="stat-val" id="statEnChars">0</span> English chars</div>
+    </div>
+    <div class="dl-row">
+      <button class="btn btn-s" onclick="downloadText('bn')">⬇ Download Bengali</button>
+      <button class="btn btn-s" onclick="downloadText('en')">⬇ Download English</button>
+      <button class="btn btn-g" id="btnSave" onclick="saveToFirebase()">💾 Save both to Firebase</button>
+    </div>
+  </div>
+
+  <div id="poemList" class="card" style="margin-top:0"></div>
+</div>
+
+<script>
+// ── CONSTANTS ──
+const SARVAM_KEY  = 'sk_g4hrq8kx_J4OSdp0GNejDMfEM8D61AcNJ';
+const SARVAM_DOC  = 'https://api.sarvam.ai/doc-digitization/job/v1';
+const SARVAM_TL   = 'https://api.sarvam.ai/translate';
+const FBK         = 'AIzaSyA3aB2fNYzSSiWGNL5SM9EmRPGAM71nyQI';
+const FBP         = 'littgram-54427';
+const FBB         = 'https://firestore.googleapis.com/v1/projects/'+FBP+'/databases/(default)/documents';
+const CHUNK_SIZE  = 460 * 1024;
+
+let pdfFile = null;
+let fbTok   = null;
+let bnText  = '';
+let enText  = '';
+
+// ── HELPERS ──
+function log(m,c){const l=document.getElementById('log');const d=document.createElement('div');d.className=c||'li';d.textContent=new Date().toLocaleTimeString()+' '+m;l.appendChild(d);l.scrollTop=l.scrollHeight;}
+function setP(pct,msg){document.getElementById('pb').style.width=pct+'%';document.getElementById('pMsg').textContent=msg;}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+async function loadSc(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=()=>{log('✓ '+src.split('/').pop(),'lok');res();};s.onerror=()=>rej(new Error('Failed: '+src));document.head.appendChild(s);});}
+
+// ── FIREBASE AUTH ──
+async function fbConnect(){
+  const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key='+FBK,
+    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({returnSecureToken:true})});
+  const d = await r.json();
+  if(!d.idToken) throw new Error('Firebase auth failed');
+  fbTok = d.idToken;
+  log('Firebase connected','lok');
+}
+function toFs(o){const f={};Object.entries(o).forEach(([k,v])=>{if(typeof v==='string')f[k]={stringValue:v};else if(typeof v==='number')f[k]={integerValue:String(Math.round(v))};else if(typeof v==='boolean')f[k]={booleanValue:v};});return f;}
+async function fbP(path,fields){
+  const r=await fetch(FBB+'/'+path,{method:'PATCH',headers:{Authorization:'Bearer '+fbTok,'Content-Type':'application/json'},body:JSON.stringify({fields:toFs(fields)})});
+  if(!r.ok) throw new Error('Firebase write failed: '+r.status);
+  return r.json();
+}
+
+// ── FILE HANDLING ──
+async function onFile(file){
+  pdfFile=file;
+  document.getElementById('dz').classList.add('has');
+  document.getElementById('dzMsg').textContent=file.name+' ('+Math.round(file.size/1024)+'KB)';
+  document.getElementById('btnRun').disabled=false;
+  log('File ready: '+file.name,'lok');
+}
+document.getElementById('dz').addEventListener('dragover',e=>{e.preventDefault();});
+document.getElementById('dz').addEventListener('drop',e=>{e.preventDefault();onFile(e.dataTransfer.files[0]);});
+
+// ── MAIN PIPELINE ──
+async function runPipeline(){
+  if(!pdfFile){alert('Drop the PDF first');return;}
+  document.getElementById('btnRun').disabled=true;
+  document.getElementById('results').style.display='none';
+  document.getElementById('log').innerHTML='';
+  bnText=''; enText='';
+
+  const pageFrom = parseInt(document.getElementById('pageFrom').value)||9;
+  const pageTo   = parseInt(document.getElementById('pageTo').value)||18;
+
+  try{
+    // Load deps
+    if(!window.pdfjsLib){
+      setP(2,'Loading PDF.js...');
+      await loadSc('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js');
+      pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    }
+    if(!window.JSZip){
+      setP(4,'Loading JSZip...');
+      await loadSc('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    }
+
+    // Connect Firebase
+    setP(5,'Connecting Firebase...');
+    await fbConnect();
+
+    // Load PDF
+    setP(8,'Parsing PDF...');
+    const buf = await pdfFile.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+    const totalPages = Math.min(pageTo, pdf.numPages);
+    const startPage  = Math.max(1, pageFrom);
+    const numPages   = totalPages - startPage + 1;
+    log('PDF: '+pdf.numPages+' pages total, processing '+startPage+'–'+totalPages,'lok');
+
+    // ── STEP 1: OCR via Sarvam Vision (Bengali → Bengali text) ──
+    log('── STEP 1: Sarvam Vision OCR ──','lw');
+    bnText = await sarvamOCR(pdf, startPage, totalPages, numPages);
+    log('Bengali text: '+bnText.length+' chars','lok');
+
+    // ── STEP 2: Translate via Sarvam Mayura (Bengali → English) ──
+    log('── STEP 2: Sarvam Mayura Translation ──','lw');
+    enText = await sarvamTranslate(bnText);
+    log('English text: '+enText.length+' chars','lok');
+
+    // ── Show results ──
+    showResults(bnText, enText, numPages);
+    setP(100,'Done!');
+
+  }catch(e){
+    log('❌ '+e.message,'ler');
+    console.error(e);
+  }
+  document.getElementById('btnRun').disabled=false;
+}
+
+// ── SARVAM VISION OCR ──
+async function sarvamOCR(pdf, startPage, endPage, numPages){
+  // Process in batches of 5 pages
+  const BATCH = 5;
+  let fullText = '';
+  const numBatches = Math.ceil(numPages / BATCH);
+
+  for(let b=0; b<numBatches; b++){
+    const bStart = startPage + b * BATCH;
+    const bEnd   = Math.min(bStart + BATCH - 1, endPage);
+    const label  = 'OCR Batch '+(b+1)+'/'+numBatches+' (pp '+bStart+'–'+bEnd+')';
+    setP(10 + Math.round(b/numBatches*35), label);
+    log(label,'li');
+
+    const batchText = await sarvamOCRBatch(pdf, bStart, bEnd);
+    fullText += batchText + '\n\n';
+    log('✓ Batch '+(b+1)+': '+batchText.length+' chars','lok');
+    if(b < numBatches-1) await sleep(500);
+  }
+  return fullText.trim();
+}
+
+async function sarvamOCRBatch(pdf, startPage, endPage){
+  // Render pages
+  const zip = new JSZip();
+  for(let p=startPage; p<=endPage; p++){
+    const page = await pdf.getPage(p);
+    const vp   = page.getViewport({scale:1.5});
+    const cv   = document.createElement('canvas');
+    cv.width=vp.width; cv.height=vp.height;
+    await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
+    const blob = await new Promise(res=>cv.toBlob(res,'image/jpeg',0.75));
+    const buf  = await blob.arrayBuffer();
+    zip.file('page_'+String(p).padStart(4,'0')+'.jpg', buf);
+    cv.width=cv.height=1;
+  }
+  const zipBlob = await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+  log('  ZIP: '+Math.round(zipBlob.size/1024)+'KB','li');
+
+  // Create job
+  const cr = await fetch(SARVAM_DOC, {
+    method:'POST',
+    headers:{'api-subscription-key':SARVAM_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({job_parameters:{language:'bn-IN',output_format:'md'}})
+  });
+  if(!cr.ok) throw new Error('Create job: '+cr.status+' '+(await cr.text()).slice(0,100));
+  const {job_id} = await cr.json();
+  log('  Job: '+job_id,'li');
+
+  // Get upload URL
+  const ur = await fetch(SARVAM_DOC+'/upload-files', {
+    method:'POST',
+    headers:{'api-subscription-key':SARVAM_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({job_id,files:['pages.zip']})
+  });
+  if(!ur.ok) throw new Error('Upload URL: '+ur.status);
+  const ud = await ur.json();
+  const uploadInfo = ud.upload_urls['pages.zip'];
+  if(!uploadInfo?.file_url) throw new Error('No upload URL');
+
+  // Upload via proxy
+  const pr = await fetch('/api/sarvam-upload?uploadUrl='+encodeURIComponent(uploadInfo.file_url), {
+    method:'POST',
+    headers:{'Content-Type':'application/zip'},
+    body:zipBlob
+  });
+  if(!pr.ok){const e=await pr.json().catch(()=>({}));throw new Error('Upload: '+(e.error||pr.status)+' '+(e.detail||'').slice(0,80));}
+  log('  Upload OK','li');
+
+  // Start
+  const sr = await fetch(SARVAM_DOC+'/'+job_id+'/start',{method:'POST',headers:{'api-subscription-key':SARVAM_KEY,'Content-Type':'application/json'},body:'{}'});
+  if(!sr.ok) throw new Error('Start: '+sr.status);
+  log('  Polling...','li');
+
+  // Poll
+  for(let i=0;i<60;i++){
+    await sleep(3000);
+    const st = await fetch(SARVAM_DOC+'/'+job_id+'/status',{headers:{'api-subscription-key':SARVAM_KEY}});
+    if(!st.ok) continue;
+    const s  = await st.json();
+    const state = (s.job_state||'').toLowerCase();
+    if(i%4===0) log('  poll '+i+': '+state,'li');
+    if(state==='completed'||state==='partiallycompleted'){
+      // Download
+      const dl = await fetch(SARVAM_DOC+'/'+job_id+'/download-files',{method:'POST',headers:{'api-subscription-key':SARVAM_KEY,'Content-Type':'application/json'},body:'{}'});
+      if(!dl.ok) throw new Error('Download: '+dl.status);
+      const dd = await dl.json();
+      let text='';
+      for(const key of Object.keys(dd.download_urls||{}).filter(k=>k.endsWith('.md')).sort()){
+        const fr=await fetch(dd.download_urls[key].file_url);
+        if(fr.ok) text+=(await fr.text())+'\n\n';
+      }
+      return text;
+    }
+    if(state==='failed') throw new Error('Job failed: '+(s.error_message||''));
+  }
+  throw new Error('Timeout: job '+job_id);
+}
+
+// ── SARVAM MAYURA TRANSLATION ──
+async function sarvamTranslate(bnText){
+  // Split into chunks of ~900 chars (Sarvam limit is 1000 chars per call)
+  const CHUNK = 900;
+  const chunks = [];
+  
+  // Split on paragraph boundaries where possible
+  const paras = bnText.split(/\n\n+/);
+  let current = '';
+  for(const para of paras){
+    if((current + para).length > CHUNK && current){
+      chunks.push(current.trim());
+      current = para + '\n\n';
+    } else {
+      current += para + '\n\n';
+    }
+  }
+  if(current.trim()) chunks.push(current.trim());
+
+  log('Translating '+chunks.length+' chunks via Sarvam Mayura...','lw');
+  let enParts = [];
+
+  for(let i=0; i<chunks.length; i++){
+    setP(48 + Math.round(i/chunks.length*45), 'Translating chunk '+(i+1)+'/'+chunks.length+'...');
+    const chunk = chunks[i];
+    if(!chunk.trim()){enParts.push('');continue;}
+
+    try{
+      const r = await fetch(SARVAM_TL, {
+        method:'POST',
+        headers:{'api-subscription-key':SARVAM_KEY,'Content-Type':'application/json'},
+        body: JSON.stringify({
+          input: chunk,
+          source_language_code: 'bn-IN',
+          target_language_code: 'en-IN',
+          speaker_gender: 'Male',
+          mode: 'formal',
+          model: 'mayura:v1',
+          enable_preprocessing: true
+        })
+      });
+      if(!r.ok){
+        const err = await r.text();
+        log('Translate chunk '+(i+1)+' failed: '+r.status+' '+err.slice(0,60),'lw');
+        enParts.push('[Translation failed for this section]');
+      } else {
+        const d = await r.json();
+        enParts.push(d.translated_text || '');
+        if(i%5===0) log('  chunk '+(i+1)+'/'+chunks.length+' ✓','lok');
+      }
+    }catch(e){
+      log('Translate error: '+e.message,'lw');
+      enParts.push('[Error: '+e.message+']');
+    }
+    await sleep(200); // rate limit headroom
+  }
+
+  return enParts.join('\n\n');
+}
+
+// ── SHOW RESULTS ──
+function showResults(bn, en, pages){
+  document.getElementById('statPages').textContent  = pages;
+  document.getElementById('statBnChars').textContent = bn.length.toLocaleString();
+  document.getElementById('statEnChars').textContent = en.length.toLocaleString();
+
+  // Split into poem blocks for side-by-side display
+  const bnBlocks = bn.split(/\n{3,}/).filter(b=>b.trim());
+  const enBlocks = en.split(/\n{3,}/).filter(b=>b.trim());
+  const numBlocks = Math.max(bnBlocks.length, enBlocks.length);
+
+  const list = document.getElementById('poemList');
+  list.innerHTML = '<h2 style="margin-bottom:14px">Side-by-Side Preview</h2>';
+
+  for(let i=0; i<Math.min(numBlocks, 30); i++){
+    const block = document.createElement('div');
+    block.className = 'poem-block';
+    block.innerHTML =
+      '<div class="poem-num">Block '+(i+1)+'</div>'+
+      '<div class="grid">'+
+        '<div class="pane"><div class="pane-title">BENGALI — বাংলা</div><div class="pane-text bn">'+(bnBlocks[i]||'').replace(/</g,'&lt;')+'</div></div>'+
+        '<div class="pane"><div class="pane-title">ENGLISH TRANSLATION</div><div class="pane-text en">'+(enBlocks[i]||'').replace(/</g,'&lt;')+'</div></div>'+
+      '</div>';
+    list.appendChild(block);
+  }
+
+  document.getElementById('results').style.display='block';
+  document.getElementById('results').scrollIntoView({behavior:'smooth'});
+}
+
+// ── DOWNLOAD ──
+function downloadText(lang){
+  const text = lang==='bn' ? bnText : enText;
+  const fn   = lang==='bn' ? 'gitanjali_bengali.txt' : 'gitanjali_english.txt';
+  const a    = document.createElement('a');
+  a.href     = 'data:text/plain;charset=utf-8,'+encodeURIComponent(text);
+  a.download = fn;
+  a.click();
+  log('Downloaded '+fn,'lok');
+}
+
+// ── SAVE TO FIREBASE ──
+async function saveToFirebase(){
+  if(!bnText||!enText){alert('Run the pipeline first');return;}
+  document.getElementById('btnSave').disabled=true;
+  log('Saving to Firebase...','lw');
+
+  try{
+    // Save Bengali as gitanjali
+    await saveBook('gitanjali', bnText, 'bn', 'Sarvam Vision OCR');
+    // Save English as gitanjali_en
+    await saveBook('gitanjali_en', enText, 'en', 'Sarvam Mayura translation');
+    log('✅ Both versions saved to Firebase!','lok');
+    log('  gitanjali (Bengali) — '+bnText.length+' chars','lok');
+    log('  gitanjali_en (English) — '+enText.length+' chars','lok');
+    document.getElementById('btnSave').textContent='✅ Saved!';
+  }catch(e){
+    log('Save failed: '+e.message,'ler');
+  }
+  document.getElementById('btnSave').disabled=false;
+}
+
+async function saveBook(bookId, text, lang, src){
+  const chunks=[];
+  for(let p=0;p<text.length;p+=CHUNK_SIZE) chunks.push(text.slice(p,p+CHUNK_SIZE));
+  await fbP('books/'+bookId,{chunks:chunks.length,bytes:text.length,source:src,seeded:true,lang,seededAt:Date.now()});
+  for(let i=0;i<chunks.length;i++) await fbP('books/'+bookId+'/chunks/'+i,{text:chunks[i],index:i});
+  log('  Saved '+bookId+' ('+chunks.length+' chunks)','lok');
+}
+</script>
+</body>
+</html>
