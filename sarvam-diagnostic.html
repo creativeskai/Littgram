@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Sarvam API Diagnostic</title>
+<style>
+body{background:#0d0b09;color:#ede5d8;font-family:monospace;padding:20px;max-width:800px;margin:0 auto;line-height:1.7}
+h1{color:#c9964a;font-size:18px;margin-bottom:14px}
+button{background:#c8624a;color:#fff;border:none;border-radius:8px;padding:12px 22px;font-size:14px;font-weight:700;cursor:pointer;margin:6px 6px 6px 0}
+button:disabled{opacity:.4}
+.box{background:#181410;border:1px solid #352b1e;border-radius:8px;padding:14px;margin:10px 0;white-space:pre-wrap;word-break:break-word;font-size:12px;max-height:400px;overflow-y:auto}
+.ok{border-left:3px solid #4caf50}.er{border-left:3px solid #e53935}.wa{border-left:3px solid #ff9800}
+h3{color:#c9964a;font-size:13px;margin-top:14px;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
+</style>
+</head>
+<body>
+<h1>🔬 Sarvam API Diagnostic — Test Each Endpoint</h1>
+<p style="font-size:13px;color:#8a7a6a;margin-bottom:14px">Click each button. Each test calls ONE Sarvam endpoint with hardcoded data. Shows raw response.</p>
+
+<button onclick="test1()">Test 1: Translate API</button>
+<button onclick="test2()">Test 2: Create OCR Job</button>
+<button onclick="test3()">Test 3: Run Full OCR (1 page sample)</button>
+<button onclick="test4()">Test 4: Complete OCR + poll for result</button>
+<button onclick="clearAll()" style="background:#352b1e">Clear</button>
+
+<div id="results"></div>
+
+<script>
+const KEY = 'sk_g4hrq8kx_J4OSdp0GNejDMfEM8D61AcNJ';
+
+function show(title, status, body, type){
+  const div = document.createElement('div');
+  div.className = 'box ' + (type||'');
+  div.innerHTML = '<strong style="color:#c9964a">'+title+'</strong>\n\nHTTP Status: '+status+'\n\nResponse:\n'+body;
+  document.getElementById('results').appendChild(div);
+  div.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function clearAll(){
+  document.getElementById('results').innerHTML='';
+}
+
+// TEST 1: Translate API
+async function test1(){
+  const h = document.createElement('h3');
+  h.textContent = '── TEST 1: Translate API ──';
+  document.getElementById('results').appendChild(h);
+
+  const bn = "আমার মাথা নত করে দাও হে তোমার চরণ-ধূলার তলে।";
+
+  try {
+    const r = await fetch('https://api.sarvam.ai/translate', {
+      method: 'POST',
+      headers: {
+        'api-subscription-key': KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        input: bn,
+        source_language_code: 'bn-IN',
+        target_language_code: 'en-IN',
+        speaker_gender: 'Male',
+        mode: 'formal',
+        model: 'mayura:v1',
+        enable_preprocessing: true
+      })
+    });
+    const text = await r.text();
+    show(
+      'Translate: ' + bn,
+      r.status,
+      text,
+      r.ok ? 'ok' : 'er'
+    );
+  } catch(e) {
+    show('Translate', 'NETWORK ERROR', e.message + '\n\n' + e.stack, 'er');
+  }
+}
+
+// TEST 2: Create OCR job (no upload, just create)
+async function test2(){
+  const h = document.createElement('h3');
+  h.textContent = '── TEST 2: Create OCR Job ──';
+  document.getElementById('results').appendChild(h);
+
+  try {
+    const r = await fetch('https://api.sarvam.ai/doc-digitization/job/v1', {
+      method: 'POST',
+      headers: {
+        'api-subscription-key': KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        job_parameters: { language: 'bn-IN', output_format: 'md' }
+      })
+    });
+    const text = await r.text();
+    show('Create OCR Job', r.status, text, r.ok ? 'ok' : 'er');
+  } catch(e) {
+    show('Create Job', 'NETWORK ERROR', e.message, 'er');
+  }
+}
+
+// TEST 3: Full OCR with a synthetic 1-page image
+async function test3(){
+  const h = document.createElement('h3');
+  h.textContent = '── TEST 3: Full OCR Pipeline (1 page) ──';
+  document.getElementById('results').appendChild(h);
+
+  try {
+    // Create a synthetic page with Bengali text on white background
+    const cv = document.createElement('canvas');
+    cv.width = 1200; cv.height = 1600;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.fillStyle = '#000';
+    ctx.font = '40px serif';
+    ctx.fillText('আমার সোনার বাংলা', 100, 200);
+    ctx.fillText('আমি তোমায় ভালোবাসি', 100, 280);
+    ctx.fillText('তোমার আকাশ তোমার বাতাস', 100, 360);
+    
+    const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.85));
+    show('Generated test image', 'OK', 'JPEG size: ' + Math.round(blob.size/1024) + 'KB', 'ok');
+
+    // Load JSZip
+    if(!window.JSZip){
+      await new Promise((res,rej)=>{
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+
+    // Pack into ZIP
+    const zip = new JSZip();
+    zip.file('page_0001.jpg', await blob.arrayBuffer());
+    const zipBlob = await zip.generateAsync({type:'blob'});
+    show('Created ZIP', 'OK', 'ZIP size: ' + Math.round(zipBlob.size/1024) + 'KB', 'ok');
+
+    // Step 1: Create job
+    const cr = await fetch('https://api.sarvam.ai/doc-digitization/job/v1', {
+      method:'POST',
+      headers:{'api-subscription-key':KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({job_parameters:{language:'bn-IN',output_format:'md'}})
+    });
+    const crText = await cr.text();
+    show('Step 1: Create Job', cr.status, crText, cr.ok ? 'ok' : 'er');
+    if(!cr.ok) return;
+    const {job_id} = JSON.parse(crText);
+
+    // Step 2: Get upload URL
+    const ur = await fetch('https://api.sarvam.ai/doc-digitization/job/v1/upload-files', {
+      method:'POST',
+      headers:{'api-subscription-key':KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({job_id, files:['pages.zip']})
+    });
+    const urText = await ur.text();
+    show('Step 2: Get Upload URL', ur.status, urText, ur.ok ? 'ok' : 'er');
+    if(!ur.ok) return;
+    const uploadInfo = JSON.parse(urText).upload_urls['pages.zip'];
+
+    // Step 3: Try DIRECT upload to Azure (no proxy)
+    let directUploadResult;
+    try {
+      const direct = await fetch(uploadInfo.file_url, {
+        method:'PUT',
+        headers:{'x-ms-blob-type':'BlockBlob','Content-Type':'application/zip'},
+        body: zipBlob
+      });
+      directUploadResult = 'DIRECT upload HTTP ' + direct.status + '\n\n' + (await direct.text());
+      show('Step 3a: Direct Azure Upload', direct.status, directUploadResult, direct.ok ? 'ok' : 'er');
+    } catch(e) {
+      show('Step 3a: Direct Azure Upload', 'NETWORK', e.message, 'er');
+    }
+
+    // Step 3b: Try proxy upload
+    try {
+      const proxy = await fetch('/api/sarvam-upload?uploadUrl='+encodeURIComponent(uploadInfo.file_url), {
+        method:'POST',
+        headers:{'Content-Type':'application/zip'},
+        body: zipBlob
+      });
+      const proxyText = await proxy.text();
+      show('Step 3b: Proxy Upload', proxy.status, proxyText, proxy.ok ? 'ok' : 'er');
+    } catch(e) {
+      show('Step 3b: Proxy Upload', 'NETWORK', e.message, 'er');
+    }
+
+  } catch(e) {
+    show('Test 3 Error', 'EXCEPTION', e.message + '\n\n' + e.stack, 'er');
+  }
+}
+
+
+// TEST 4: Full OCR pipeline including START + POLL + DOWNLOAD
+async function test4(){
+  const h = document.createElement('h3');
+  h.textContent = '── TEST 4: Complete OCR + Poll for Result ──';
+  document.getElementById('results').appendChild(h);
+
+  try {
+    // Generate Bengali test image
+    const cv = document.createElement('canvas');
+    cv.width = 1200; cv.height = 1600;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.fillStyle = '#000';
+    ctx.font = '40px serif';
+    ctx.fillText('আমার সোনার বাংলা', 100, 200);
+    ctx.fillText('আমি তোমায় ভালোবাসি', 100, 280);
+    ctx.fillText('তোমার আকাশ তোমার বাতাস', 100, 360);
+    const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.85));
+
+    if(!window.JSZip){
+      await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+    }
+    const zip = new JSZip();
+    zip.file('page_0001.jpg', await blob.arrayBuffer());
+    const zipBlob = await zip.generateAsync({type:'blob'});
+
+    // 1. Create
+    const cr = await fetch('https://api.sarvam.ai/doc-digitization/job/v1', {method:'POST',headers:{'api-subscription-key':KEY,'Content-Type':'application/json'},body:JSON.stringify({job_parameters:{language:'bn-IN',output_format:'md'}})});
+    const {job_id} = await cr.json();
+    show('1. Created job', cr.status, job_id, 'ok');
+
+    // 2. Get upload URL
+    const ur = await fetch('https://api.sarvam.ai/doc-digitization/job/v1/upload-files', {method:'POST',headers:{'api-subscription-key':KEY,'Content-Type':'application/json'},body:JSON.stringify({job_id,files:['pages.zip']})});
+    const uploadInfo = (await ur.json()).upload_urls['pages.zip'];
+    show('2. Got upload URL', ur.status, 'URL acquired', 'ok');
+
+    // 3. Upload via proxy
+    const pr = await fetch('/api/sarvam-upload?uploadUrl='+encodeURIComponent(uploadInfo.file_url), {method:'POST',headers:{'Content-Type':'application/zip'},body:zipBlob});
+    const prText = await pr.text();
+    show('3. Proxy upload', pr.status, prText, pr.ok?'ok':'er');
+    if(!pr.ok) return;
+
+    // 4. Start job
+    const sr = await fetch('https://api.sarvam.ai/doc-digitization/job/v1/'+job_id+'/start', {method:'POST',headers:{'api-subscription-key':KEY,'Content-Type':'application/json'},body:'{}'});
+    const srText = await sr.text();
+    show('4. Started job', sr.status, srText, sr.ok?'ok':'er');
+    if(!sr.ok) return;
+
+    // 5. Poll for completion
+    let result = null;
+    for(let i=0; i<40; i++){
+      await new Promise(r=>setTimeout(r,3000));
+      const st = await fetch('https://api.sarvam.ai/doc-digitization/job/v1/'+job_id+'/status', {headers:{'api-subscription-key':KEY}});
+      const stJson = await st.json();
+      if(i % 3 === 0) show('5. Poll attempt '+i, st.status, JSON.stringify(stJson, null, 2), 'wa');
+      const state = (stJson.job_state||'').toLowerCase();
+      if(state === 'completed' || state === 'partiallycompleted'){
+        result = stJson;
+        break;
+      }
+      if(state === 'failed'){
+        show('Job FAILED', 'FAIL', JSON.stringify(stJson, null, 2), 'er');
+        return;
+      }
+    }
+
+    if(!result){
+      show('TIMEOUT', 'TIMEOUT', 'Job did not complete in 2 minutes', 'er');
+      return;
+    }
+
+    show('5. Job COMPLETED', 200, JSON.stringify(result, null, 2), 'ok');
+
+    // 6. Download results
+    const dl = await fetch('https://api.sarvam.ai/doc-digitization/job/v1/'+job_id+'/download-files', {method:'POST',headers:{'api-subscription-key':KEY,'Content-Type':'application/json'},body:'{}'});
+    const dlJson = await dl.json();
+    show('6. Got download URLs', dl.status, JSON.stringify(dlJson, null, 2), 'ok');
+
+    // 7. Sarvam returns a single ZIP — download it, unpack it, read .md files inside
+    let extractedText = '';
+    for(const [name, info] of Object.entries(dlJson.download_urls||{})){
+      show('7a. Downloading '+name, 200, info.file_url.slice(0,100)+'...', 'wa');
+      const fr = await fetch(info.file_url);
+      if(!fr.ok){
+        show('7a. Download FAILED', fr.status, await fr.text(), 'er');
+        continue;
+      }
+      const buf = await fr.arrayBuffer();
+      show('7b. Downloaded '+name, 200, 'Size: '+Math.round(buf.byteLength/1024)+'KB', 'ok');
+
+      // Unpack the ZIP
+      const innerZip = await JSZip.loadAsync(buf);
+      const fileNames = Object.keys(innerZip.files);
+      show('7c. ZIP contains', 200, fileNames.join('\n'), 'wa');
+
+      // Read all files (could be .md, .txt, .json — find out what's actually inside)
+      for(const fname of fileNames){
+        if(innerZip.files[fname].dir) continue;
+        const content = await innerZip.files[fname].async('string');
+        extractedText += '\n\n=== '+fname+' ===\n'+content;
+      }
+    }
+    show('7d. ⭐ EXTRACTED BENGALI TEXT ⭐', 200, extractedText || '(STILL EMPTY!)', extractedText ? 'ok' : 'er');
+
+  } catch(e) {
+    show('Test 4 Exception', 'ERROR', e.message + '\n\n' + e.stack, 'er');
+  }
+}
+</script>
+</body>
+</html>
