@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Littgram — Book Processor</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d0b09;--s1:#181410;--s2:#201c16;--bor:#352b1e;--tx:#ede5d8;--mu:#8a7a6a;--ac:#c8624a;--go:#c9964a;--gr:#4caf50;--rd:#e53935;--bl:#1e88e5}
+body{background:var(--bg);color:var(--tx);font-family:'DM Sans',system-ui,sans-serif;padding:20px;max-width:920px;margin:0 auto}
+h1{font-family:Georgia,serif;color:var(--go);font-size:22px;margin-bottom:3px}
+.sub{font-size:12px;color:var(--mu);margin-bottom:18px}
+.card{background:var(--s1);border:1px solid var(--bor);border-radius:12px;padding:18px;margin-bottom:14px}
+h2{font-family:Georgia,serif;color:var(--go);font-size:14px;margin-bottom:10px}
+.btn{border:none;border-radius:9px;padding:11px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-p{background:var(--ac);color:#fff}
+.btn-s{background:var(--s2);color:var(--go);border:1px solid var(--bor)}
+.btn-g{background:var(--gr);color:#fff}
+select,input{width:100%;background:var(--s2);border:1px solid var(--bor);border-radius:8px;padding:9px 12px;color:var(--tx);font-size:13px;font-family:inherit;margin-bottom:10px}
+.drop{border:2px dashed var(--bor);border-radius:10px;padding:28px;text-align:center;cursor:pointer;background:var(--s2);transition:.2s;margin-bottom:12px}
+.drop.has{border-color:var(--gr)}
+.pb{height:6px;background:var(--s2);border-radius:3px;overflow:hidden;margin:10px 0}
+.pf{height:100%;background:linear-gradient(90deg,var(--ac),var(--go));border-radius:3px;transition:width .4s}
+.log{background:var(--bg);border-radius:8px;padding:10px;font-family:monospace;font-size:11px;max-height:240px;overflow-y:auto;line-height:1.9}
+.lok{color:var(--gr)}.ler{color:var(--rd)}.lw{color:var(--go)}.li{color:#90caf9}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+.pane{background:var(--s2);border-radius:10px;padding:14px;max-height:560px;overflow-y:auto}
+.pane-title{font-size:11px;color:var(--mu);letter-spacing:1.5px;margin-bottom:8px;font-weight:700}
+.pane-text{font-size:13px;line-height:1.85;white-space:pre-wrap;word-break:break-word}
+.bn{font-family:'Noto Serif Bengali','Noto Serif Devanagari','Noto Serif',Georgia,serif}
+.en{font-family:Georgia,'Noto Serif',serif}
+.stats{display:flex;gap:14px;font-size:11px;color:var(--mu);margin-bottom:10px;flex-wrap:wrap}
+.stat-val{color:var(--go);font-weight:700;font-family:Georgia,serif}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.step{display:flex;gap:10px;align-items:center;padding:7px 0;font-size:12px}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--s2);color:var(--mu);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step.active .step-num{background:var(--ac);color:#fff}
+.step.done .step-num{background:var(--gr);color:#fff}
+.step-label{flex:1}
+.step-status{font-size:10px;color:var(--mu)}
+.step.active .step-status{color:var(--ac)}
+.step.done .step-status{color:var(--gr)}
+</style>
+</head>
+<body>
+
+<h1>📖 Littgram Book Processor</h1>
+<div class="sub">Server-side Sarvam OCR + Mayura translation · Clean architecture · No browser ↔ Azure shenanigans</div>
+
+<!-- Configuration -->
+<div class="card">
+  <h2>1. Configure</h2>
+  <div class="row">
+    <div>
+      <label style="font-size:11px;color:var(--mu);display:block;margin-bottom:3px">Source language</label>
+      <select id="srcLang">
+        <option value="bn-IN">Bengali (বাংলা)</option>
+        <option value="hi-IN">Hindi (हिंदी)</option>
+        <option value="mr-IN">Marathi (मराठी)</option>
+        <option value="en-IN">English (skip translation)</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:11px;color:var(--mu);display:block;margin-bottom:3px">Book ID (Firebase)</label>
+      <input type="text" id="bookId" placeholder="e.g. gitanjali" value="gitanjali">
+    </div>
+  </div>
+  <div class="row">
+    <div>
+      <label style="font-size:11px;color:var(--mu);display:block;margin-bottom:3px">First page</label>
+      <input type="number" id="pageFrom" value="9" min="1">
+    </div>
+    <div>
+      <label style="font-size:11px;color:var(--mu);display:block;margin-bottom:3px">Last page (max 8 pages per run)</label>
+      <input type="number" id="pageTo" value="16" min="1">
+    </div>
+  </div>
+  <div style="font-size:11px;color:var(--mu)">
+    💡 Keep batches to 5–8 pages. Vercel limits the ZIP we send to ~4.5MB.
+  </div>
+</div>
+
+<!-- Recovery -->
+<div class="card" id="recoveryCard" style="display:none;border-color:var(--go)">
+  <h2>↩ Recover Previous Job</h2>
+  <div style="font-size:12px;color:var(--mu);margin-bottom:10px" id="recoveryInfo"></div>
+  <button class="btn btn-s" onclick="recoverJob()" style="width:100%">Resume that job — fetch text now</button>
+</div>
+
+<!-- Drop -->
+<div class="card">
+  <h2>2. Drop PDF</h2>
+  <div class="drop" id="dz" onclick="document.getElementById('fi').click()">
+    <div style="font-size:30px;margin-bottom:6px">📄</div>
+    <div id="dzMsg">Click or drag PDF here</div>
+  </div>
+  <input type="file" id="fi" accept=".pdf" style="display:none" onchange="onFile(this.files[0])">
+</div>
+
+<!-- Run -->
+<div class="card">
+  <h2>3. Process</h2>
+  <div class="step" id="step1"><div class="step-num">1</div><div class="step-label">Render pages to ZIP</div><div class="step-status" id="s1">-</div></div>
+  <div class="step" id="step2"><div class="step-num">2</div><div class="step-label">Send to backend → Sarvam OCR</div><div class="step-status" id="s2">-</div></div>
+  <div class="step" id="step3"><div class="step-num">3</div><div class="step-label">OCR processing (poll status)</div><div class="step-status" id="s3">-</div></div>
+  <div class="step" id="step4"><div class="step-num">4</div><div class="step-label">Translate to English (Mayura)</div><div class="step-status" id="s4">-</div></div>
+  <div class="step" id="step5"><div class="step-num">5</div><div class="step-label">Save both to Firebase</div><div class="step-status" id="s5">-</div></div>
+
+  <div class="pb"><div class="pf" id="pb" style="width:0%"></div></div>
+  <button class="btn btn-p" id="btnGo" onclick="run()" disabled style="width:100%;margin-top:10px">🚀 Process Pages</button>
+</div>
+
+<div class="log" id="log"></div>
+
+<!-- Results -->
+<div id="results" style="display:none">
+  <div class="card" style="margin-top:14px">
+    <h2>4. Review & Save</h2>
+    <div class="stats">
+      <div><span class="stat-val" id="stPages">0</span> pages</div>
+      <div><span class="stat-val" id="stSrc">0</span> source chars</div>
+      <div><span class="stat-val" id="stEn">0</span> English chars</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-s" onclick="dl('src')">⬇ Source text</button>
+      <button class="btn btn-s" onclick="dl('en')">⬇ English text</button>
+      <button class="btn btn-g" id="btnSave" onclick="save()" style="margin-left:auto">💾 Save to Firebase</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="pane">
+      <div class="pane-title" id="srcTitle">SOURCE</div>
+      <div class="pane-text bn" id="srcText"></div>
+    </div>
+    <div class="pane">
+      <div class="pane-title">ENGLISH TRANSLATION</div>
+      <div class="pane-text en" id="enText"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Firebase config (same as the main app) ──
+const FBK = 'AIzaSyA3aB2fNYzSSiWGNL5SM9EmRPGAM71nyQI';
+const FBB = 'https://firestore.googleapis.com/v1/projects/littgram-54427/databases/(default)/documents';
+const CHUNK_SIZE = 460 * 1024;
+
+let pdfFile = null;
+let fbTok = null;
+let srcText = '';
+let enText = '';
+let pageCount = 0;
+
+// ── Helpers ──
+function log(m, c) {
+  const l = document.getElementById('log');
+  const d = document.createElement('div');
+  d.className = c || 'li';
+  d.textContent = new Date().toLocaleTimeString() + '  ' + m;
+  l.appendChild(d);
+  l.scrollTop = l.scrollHeight;
+}
+function setStep(n, status, state) {
+  document.getElementById('s' + n).textContent = status;
+  const el = document.getElementById('step' + n);
+  el.classList.remove('active', 'done');
+  if (state) el.classList.add(state);
+}
+function setBar(pct) { document.getElementById('pb').style.width = pct + '%'; }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+async function loadSc(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = () => rej(new Error('Failed: ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+// ── Firebase ──
+async function fbAuth() {
+  const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + FBK, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ returnSecureToken: true })
+  });
+  const d = await r.json();
+  if (!d.idToken) throw new Error('Firebase auth failed');
+  fbTok = d.idToken;
+}
+function toFs(o) {
+  const f = {};
+  Object.entries(o).forEach(([k, v]) => {
+    if (typeof v === 'string') f[k] = { stringValue: v };
+    else if (typeof v === 'number') f[k] = { integerValue: String(Math.round(v)) };
+    else if (typeof v === 'boolean') f[k] = { booleanValue: v };
+  });
+  return f;
+}
+async function fbWrite(path, fields) {
+  const r = await fetch(FBB + '/' + path, {
+    method: 'PATCH',
+    headers: { Authorization: 'Bearer ' + fbTok, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: toFs(fields) })
+  });
+  if (!r.ok) throw new Error('Firebase write: ' + r.status);
+}
+
+// ── File handling ──
+async function onFile(file) {
+  pdfFile = file;
+  document.getElementById('dz').classList.add('has');
+  document.getElementById('dzMsg').textContent = file.name + ' (' + Math.round(file.size / 1024) + 'KB)';
+  document.getElementById('btnGo').disabled = false;
+  log('File: ' + file.name, 'lok');
+}
+document.getElementById('dz').addEventListener('dragover', e => e.preventDefault());
+document.getElementById('dz').addEventListener('drop', e => { e.preventDefault(); onFile(e.dataTransfer.files[0]); });
+
+// ── MAIN PIPELINE ──
+async function run() {
+  if (!pdfFile) { alert('Drop a PDF first'); return; }
+  document.getElementById('btnGo').disabled = true;
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('log').innerHTML = '';
+
+  const srcLang = document.getElementById('srcLang').value;
+  const isEng = srcLang === 'en-IN';
+  const pageFrom = parseInt(document.getElementById('pageFrom').value) || 1;
+  const pageTo = parseInt(document.getElementById('pageTo').value);
+  srcText = ''; enText = '';
+
+  try {
+    // Load deps
+    if (!window.pdfjsLib) {
+      await loadSc('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    }
+    if (!window.JSZip) {
+      await loadSc('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    }
+
+    // ── STEP 1: Render PDF pages to ZIP ──
+    setStep(1, 'rendering...', 'active'); setBar(5);
+    const buf = await pdfFile.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    const totalPages = Math.min(pageTo || pdf.numPages, pdf.numPages);
+    pageCount = totalPages - pageFrom + 1;
+    log('PDF: ' + pdf.numPages + ' total pages, processing ' + pageFrom + '–' + totalPages, 'lok');
+
+    const zip = new JSZip();
+    for (let p = pageFrom; p <= totalPages; p++) {
+      setBar(5 + Math.round((p - pageFrom) / pageCount * 20));
+      setStep(1, 'page ' + p + '/' + totalPages, 'active');
+      const page = await pdf.getPage(p);
+      const vp = page.getViewport({ scale: 1.5 });
+      const cv = document.createElement('canvas');
+      cv.width = vp.width; cv.height = vp.height;
+      await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+      const blob = await new Promise(res => cv.toBlob(res, 'image/jpeg', 0.75));
+      zip.file('page_' + String(p).padStart(4, '0') + '.jpg', await blob.arrayBuffer());
+      cv.width = cv.height = 1;
+    }
+    const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+    setStep(1, Math.round(zipBlob.size / 1024) + 'KB ZIP', 'done');
+    log('ZIP ready: ' + Math.round(zipBlob.size / 1024) + 'KB', 'lok');
+    setBar(25);
+
+    if (zipBlob.size > 9 * 1024 * 1024) {
+      throw new Error('ZIP is ' + Math.round(zipBlob.size / 1024 / 1024) + 'MB, too large. Reduce batch size to ~5 pages.');
+    }
+
+    // ── STEP 2: Send to backend ──
+    setStep(2, 'uploading...', 'active'); setBar(28);
+    const startRes = await fetch('/api/start-ocr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/zip', 'x-language': srcLang },
+      body: zipBlob
+    });
+    if (!startRes.ok) {
+      const e = await startRes.json().catch(() => ({}));
+      throw new Error('Backend start: ' + (e.error || startRes.status) + ' ' + (e.detail || ''));
+    }
+    const { job_id } = await startRes.json();
+    setStep(2, 'started ✓', 'done');
+    log('Job ID: ' + job_id + ' (saved to localStorage for recovery)', 'lok');
+    try { localStorage.setItem('lastSarvamJob', JSON.stringify({job_id, srcLang, bookId: document.getElementById('bookId').value, pageCount, time: Date.now()})); } catch(e) {}
+    setBar(35);
+
+    // ── STEP 3: Poll status ──
+    setStep(3, 'OCR running...', 'active');
+    let ocrText = '';
+    log('Polling OCR status (up to 12 minutes)...', 'li');
+    for (let i = 0; i < 180; i++) {
+      await sleep(4000);
+      const stRes = await fetch('/api/check-ocr?job_id=' + encodeURIComponent(job_id));
+      if (!stRes.ok) { log('poll failed: ' + stRes.status, 'lw'); continue; }
+      const data = await stRes.json();
+
+      if (data.progress) {
+        const p = data.progress;
+        setStep(3, p.pages_processed + '/' + p.total_pages + ' pages', 'active');
+        if (i % 2 === 0) log('  ' + p.pages_processed + '/' + p.total_pages + ' (' + data.state + ')', 'li');
+      } else {
+        setStep(3, data.state || 'running', 'active');
+      }
+      setBar(35 + Math.min(30, i * 2));
+
+      if (data.state === 'completed') {
+        ocrText = data.text || '';
+        setStep(3, data.charCount + ' chars extracted', 'done');
+        log('OCR done: ' + data.charCount + ' chars from ' + data.filesProcessed + ' files', 'lok');
+        break;
+      }
+      if (data.state === 'failed') {
+        throw new Error('OCR failed: ' + (data.error || 'unknown'));
+      }
+    }
+    if (!ocrText) throw new Error('OCR timeout — no text returned');
+    srcText = ocrText;
+    setBar(65);
+
+    // ── STEP 4: Translate (skip if English) ──
+    if (isEng) {
+      setStep(4, 'skipped (English)', 'done');
+      enText = srcText;
+    } else {
+      setStep(4, 'translating...', 'active');
+      log('Translating to English via Mayura...', 'lw');
+      const tlRes = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: srcText, source_lang: srcLang, target_lang: 'en-IN' })
+      });
+      if (!tlRes.ok) {
+        const e = await tlRes.json().catch(() => ({}));
+        throw new Error('Translate: ' + (e.error || tlRes.status));
+      }
+      const tlData = await tlRes.json();
+      enText = tlData.translated || '';
+      setStep(4, tlData.charCount + ' chars (' + tlData.chunkCount + ' chunks)', 'done');
+      log('Translation done: ' + tlData.charCount + ' chars, ' + tlData.errorCount + ' errors', 'lok');
+    }
+    setBar(90);
+
+    // ── Show results ──
+    showResults();
+    setBar(100);
+    log('✅ All steps complete. Review and save.', 'lok');
+
+  } catch (e) {
+    log('❌ ' + e.message, 'ler');
+    console.error(e);
+  }
+  document.getElementById('btnGo').disabled = false;
+}
+
+function showResults() {
+  document.getElementById('stPages').textContent = pageCount;
+  document.getElementById('stSrc').textContent = srcText.length.toLocaleString();
+  document.getElementById('stEn').textContent = enText.length.toLocaleString();
+
+  const srcLang = document.getElementById('srcLang').value;
+  const langName = { 'bn-IN': 'BENGALI — বাংলা', 'hi-IN': 'HINDI — हिंदी', 'mr-IN': 'MARATHI — मराठी', 'en-IN': 'ENGLISH' };
+  document.getElementById('srcTitle').textContent = langName[srcLang] || 'SOURCE';
+
+  document.getElementById('srcText').textContent = srcText;
+  document.getElementById('enText').textContent = enText;
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
+
+function dl(which) {
+  const text = which === 'src' ? srcText : enText;
+  const bookId = document.getElementById('bookId').value || 'book';
+  const fn = bookId + '_' + (which === 'src' ? 'source' : 'english') + '.txt';
+  const a = document.createElement('a');
+  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
+  a.download = fn;
+  a.click();
+}
+
+async function save() {
+  if (!srcText) { alert('Run the pipeline first'); return; }
+  const bookId = document.getElementById('bookId').value.trim();
+  if (!bookId) { alert('Enter a book ID'); return; }
+
+  document.getElementById('btnSave').disabled = true;
+  setStep(5, 'saving...', 'active');
+
+  try {
+    if (!fbTok) {
+      log('Connecting to Firebase...', 'li');
+      await fbAuth();
+    }
+
+    // Save source language
+    const srcLang = document.getElementById('srcLang').value;
+    const langShort = srcLang.split('-')[0]; // bn-IN → bn
+    await saveBook(bookId, srcText, langShort, 'Sarvam Vision OCR');
+
+    // Save English translation (if not already English)
+    if (srcLang !== 'en-IN') {
+      await saveBook(bookId + '_en', enText, 'en', 'Sarvam Mayura translation');
+    }
+
+    setStep(5, 'saved ✓', 'done');
+    log('✅ Saved to Firebase!', 'lok');
+    document.getElementById('btnSave').textContent = '✅ Saved!';
+  } catch (e) {
+    log('Save failed: ' + e.message, 'ler');
+    setStep(5, 'failed', 'active');
+    document.getElementById('btnSave').disabled = false;
+  }
+}
+
+async function saveBook(bookId, text, lang, src) {
+  const chunks = [];
+  for (let p = 0; p < text.length; p += CHUNK_SIZE) chunks.push(text.slice(p, p + CHUNK_SIZE));
+
+  await fbWrite('books/' + bookId, {
+    chunks: chunks.length, bytes: text.length, source: src,
+    seeded: true, lang, seededAt: Date.now()
+  });
+
+  for (let i = 0; i < chunks.length; i++) {
+    await fbWrite('books/' + bookId + '/chunks/' + i, { text: chunks[i], index: i });
+  }
+
+  log('Saved ' + bookId + ' (' + chunks.length + ' chunks, ' + text.length + ' chars)', 'lok');
+}
+
+
+// ── RECOVERY: check for unfinished jobs on page load ──
+window.addEventListener('load', function() {
+  try {
+    const saved = localStorage.getItem('lastSarvamJob');
+    if (!saved) return;
+    const job = JSON.parse(saved);
+    const ageMin = Math.round((Date.now() - job.time) / 60000);
+    if (ageMin > 30) {
+      localStorage.removeItem('lastSarvamJob');
+      return; // too old
+    }
+    document.getElementById('recoveryInfo').innerHTML =
+      'Job <code>' + job.job_id.slice(0,20) + '...</code> from ' + ageMin + ' min ago<br>' +
+      'Book: <strong>' + job.bookId + '</strong> · Lang: ' + job.srcLang + ' · ' + (job.pageCount||'?') + ' pages';
+    document.getElementById('recoveryCard').style.display = 'block';
+  } catch(e) {}
+});
+
+async function recoverJob() {
+  const saved = JSON.parse(localStorage.getItem('lastSarvamJob') || '{}');
+  if (!saved.job_id) { alert('No job to recover'); return; }
+
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('recoveryCard').style.display = 'none';
+
+  log('Recovering job: ' + saved.job_id, 'lw');
+  pageCount = saved.pageCount || 0;
+  srcText = ''; enText = '';
+
+  // Set the dropdowns to match
+  document.getElementById('srcLang').value = saved.srcLang;
+  document.getElementById('bookId').value = saved.bookId;
+
+  setStep(2, 'recovered', 'done');
+  setStep(3, 'checking...', 'active');
+
+  try {
+    const stRes = await fetch('/api/check-ocr?job_id=' + encodeURIComponent(saved.job_id));
+    if (!stRes.ok) throw new Error('Check failed: ' + stRes.status);
+    const data = await stRes.json();
+
+    if (data.state === 'completed') {
+      srcText = data.text || '';
+      setStep(3, data.charCount + ' chars', 'done');
+      log('✅ Recovered: ' + data.charCount + ' chars from ' + data.filesProcessed + ' files', 'lok');
+
+      // Translate now
+      const srcLang = saved.srcLang;
+      if (srcLang === 'en-IN') {
+        enText = srcText;
+        setStep(4, 'skipped', 'done');
+      } else {
+        setStep(4, 'translating...', 'active');
+        log('Translating via Mayura...', 'li');
+        const tlRes = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: srcText, source_lang: srcLang, target_lang: 'en-IN' })
+        });
+        if (!tlRes.ok) {
+          const e = await tlRes.json().catch(() => ({}));
+          throw new Error('Translate: ' + (e.error || tlRes.status));
+        }
+        const tlData = await tlRes.json();
+        enText = tlData.translated || '';
+        setStep(4, tlData.charCount + ' chars', 'done');
+      }
+
+      showResults();
+      setBar(100);
+      log('✅ Recovery complete. Save to Firebase below.', 'lok');
+      localStorage.removeItem('lastSarvamJob');
+    } else if (data.state === 'failed') {
+      throw new Error('Job failed: ' + (data.error || 'unknown'));
+    } else {
+      log('Job not complete yet (state: ' + data.state + '). Wait and try again.', 'lw');
+    }
+  } catch(e) {
+    log('Recovery error: ' + e.message, 'ler');
+  }
+}
+</script>
+</body>
+</html>
