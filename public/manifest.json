@@ -1,0 +1,25 @@
+{
+  "name": "Littgram",
+  "short_name": "Littgram",
+  "description": "Social reading app for Indian literature",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#100C08",
+  "theme_color": "#100C08",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://covers.openlibrary.org/b/id/12320953-L.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "https://covers.openlibrary.org/b/id/12320953-L.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ],
+  "categories": ["books", "education", "social"],
+  "lang": "en",
+  "screenshots": []
+}
