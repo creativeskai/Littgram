@@ -23,36 +23,42 @@ export default function Explore() {
   const [lang, setLang] = useState('all');
   const [topic, setTopic] = useState(null);
   const [selected, setSelected] = useState(null);
-  const [cloudIds, setCloudIds] = useState(new Set());
+  const [cloudIds, setCloudIds] = useState(null); // null = loading
 
   useEffect(() => {
-    listCloudBooks().then(list => setCloudIds(new Set(list.map(b => b.id)))).catch(() => {});
+    listCloudBooks().then(list => setCloudIds(new Set(list.map(b => b.id)))).catch(() => setCloudIds(new Set()));
   }, []);
+
+  // Only books that are actually readable in the cloud library
+  const readable = useMemo(() => {
+    if (!cloudIds) return [];
+    return BOOKS_DB.filter(b => cloudIds.has(b.id) || cloudIds.has(b.id + '_en'));
+  }, [cloudIds]);
 
   const books = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return BOOKS_DB.filter(b => {
+    return readable.filter(b => {
       if (lang !== 'all' && b.lang !== lang) return false;
       if (topic && !(b.topics || []).includes(topic)) return false;
       if (!needle) return true;
       return [b.title, b.native, b.author, b.tag, b.summary, ...(b.quotes || [])]
         .filter(Boolean).join(' ').toLowerCase().includes(needle);
     });
-  }, [q, lang, topic]);
+  }, [readable, q, lang, topic]);
 
   // Quote search results (legacy feature: search matches inside quotes)
   const quoteHits = useMemo(() => {
     const needle = q.trim().toLowerCase();
     if (needle.length < 3) return [];
     const hits = [];
-    for (const b of BOOKS_DB) {
+    for (const b of readable) {
       for (const quote of b.quotes || []) {
         if (quote.toLowerCase().includes(needle)) hits.push({ book: b, quote });
         if (hits.length >= 4) return hits;
       }
     }
     return hits;
-  }, [q]);
+  }, [readable, q]);
 
   return (
     <div>
@@ -95,12 +101,14 @@ export default function Explore() {
               {b.native || b.title}
             </div>
             <div style={{ fontSize: 11, color: 'var(--muted)' }}>{b.author}</div>
-            {(cloudIds.has(b.id) || cloudIds.has(b.id + '_en')) && (
-              <div style={{ fontSize: 10, color: 'var(--ok)', marginTop: 2 }}>● readable</div>
-            )}
           </div>
         ))}
-        {books.length === 0 && (
+        {cloudIds === null && (
+          <p className="sub" style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px 0' }}>
+            Loading your books…
+          </p>
+        )}
+        {cloudIds !== null && books.length === 0 && (
           <p className="sub" style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px 0' }}>
             No books match — try a different language or topic.
           </p>
