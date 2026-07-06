@@ -17,6 +17,7 @@ import {
 } from '../lib/progress.js';
 import { useToast } from '../components/Toast.jsx';
 import { useTTS } from '../lib/useTTS.js';
+import { chaptersFor } from '../lib/chapters.js';
 
 export default function Reader() {
   const { bookId } = useParams();
@@ -33,6 +34,7 @@ export default function Reader() {
   const [sibling, setSibling] = useState(null);
   const [showControls, setShowControls] = useState(true);
   const [showBookmarks, setShowBookmarks] = useState(false);
+  const [showChapters, setShowChapters] = useState(false);
   const [, force] = useState(0); // re-render after bookmark toggle
   const touchX = useRef(null);
   const bodyRef = useRef(null);
@@ -177,6 +179,9 @@ export default function Reader() {
           <button className="rbtn" onClick={onBookmark}>
             {isBookmarked(bookId, page) ? '🔖' : '🏷️'}
           </button>
+          {chaptersFor(bookId).length > 0 && (
+            <button className="rbtn" onClick={() => setShowChapters(s => !s)} title="Chapters">§</button>
+          )}
         </div>
       )}
 
@@ -221,21 +226,70 @@ export default function Reader() {
       )}
 
       {showBookmarks && (
-        <div className="sheet-backdrop" onClick={() => setShowBookmarks(false)}>
-          <div className="sheet" onClick={e => e.stopPropagation()}>
-            <div className="sheet-grab" />
-            <p className="label">Bookmarks</p>
-            {bookmarks.length === 0 && <p className="sub">No bookmarks yet — tap 🏷️ on any page.</p>}
+        <div className=”sheet-backdrop” onClick={() => setShowBookmarks(false)}>
+          <div className=”sheet” onClick={e => e.stopPropagation()}>
+            <div className=”sheet-grab” />
+            <p className=”label”>Bookmarks</p>
+            {bookmarks.length === 0 && <p className=”sub”>No bookmarks yet — tap 🏷️ on any page.</p>}
             {bookmarks.map(b => (
-              <div key={b.page} className="card row-card" style={{ cursor: 'pointer' }}
+              <div key={b.page} className=”card row-card” style={{ cursor: 'pointer' }}
                 onClick={() => { setPage(b.page); setShowBookmarks(false); }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)', width: 44 }}>p.{b.page + 1}</div>
-                <div className="sub" style={{ flex: 1, fontStyle: 'italic' }}>“{b.snippet}…”</div>
+                <div className=”sub” style={{ flex: 1, fontStyle: 'italic' }}>”{b.snippet}…”</div>
               </div>
             ))}
           </div>
         </div>
       )}
+
+      {showChapters && (
+        <ChapterSheet bookId={bookId} onClose={() => setShowChapters(false)} lang={meta.lang} />
+      )}
+    </div>
+  );
+}
+
+function ChapterSheet({ bookId, onClose, lang }) {
+  const chapters = chaptersFor(bookId);
+  const [openIdx, setOpenIdx] = useState(-1);
+  const [showEn, setShowEn] = useState(false);
+  const isNative = lang && !lang.startsWith('en');
+
+  return (
+    <div className=”sheet-backdrop” onClick={onClose}>
+      <div className=”sheet” onClick={e => e.stopPropagation()}>
+        <div className=”sheet-grab” />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <p className=”label” style={{ margin: 0 }}>Chapter summaries · {chapters.length}</p>
+          {isNative && (
+            <button className=”pill sm” onClick={() => setShowEn(v => !v)}>
+              {showEn ? 'মূল / native' : 'English'}
+            </button>
+          )}
+        </div>
+        {chapters.map((ch, i) => (
+          <div key={i} className=”card” style={{ marginBottom: 8, padding: '12px 14px', cursor: 'pointer' }}
+            onClick={() => setOpenIdx(openIdx === i ? -1 : i)}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <span className=”serif” style={{ color: 'var(--gold)', fontWeight: 900, fontSize: 15 }}>{i + 1}</span>
+              <span style={{ fontSize: 13.5, fontWeight: 700, flex: 1 }}>{ch.title}</span>
+              <span style={{ color: 'var(--muted)', fontSize: 12 }}>{openIdx === i ? '−' : '+'}</span>
+            </div>
+            {openIdx === i && (
+              <>
+                {ch.quote && (
+                  <div className=”serif” style={{ fontSize: 13, fontStyle: 'italic', color: 'var(--gold)', margin: '8px 0 6px', lineHeight: 1.5 }}>
+                    “{ch.quote}”
+                  </div>
+                )}
+                <p className=”sub” style={{ lineHeight: 1.65, marginTop: 6 }}>
+                  {showEn && ch.summaryEn ? ch.summaryEn : ch.summary}
+                </p>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

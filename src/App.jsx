@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { ToastProvider } from './components/Toast.jsx';
 import TopNav from './components/TopNav.jsx';
@@ -12,6 +12,8 @@ import Notifications from './screens/Notifications.jsx';
 import Profile from './screens/Profile.jsx';
 import About from './screens/About.jsx';
 import Placeholder from './screens/Placeholder.jsx';
+import Login from './screens/Login.jsx';
+import { onAuthChange } from './lib/auth.js';
 const Reader = lazy(() => import('./screens/Reader.jsx'));
 const Uploader = lazy(() => import('./screens/Uploader.jsx'));
 const Reels = lazy(() => import('./screens/Reels.jsx'));
@@ -23,6 +25,21 @@ const Wait = ({ children }) => (
 export default function App() {
   const loc = useLocation();
   const fullscreen = loc.pathname.startsWith('/read/') || loc.pathname === '/reels';
+
+  // undefined = checking auth, null = signed out, object = signed in
+  const [user, setUser] = useState(undefined);
+  useEffect(() => onAuthChange(setUser), []);
+
+  if (user === undefined) {
+    return (
+      <div className="placeholder" style={{ minHeight: '100dvh' }}>
+        <div className="emoji">📖</div>
+      </div>
+    );
+  }
+
+  if (!user) return <Login />;
+
   return (
     <ToastProvider>
       <div className="app">

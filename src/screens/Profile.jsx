@@ -8,6 +8,7 @@ import { getProfile, setHandle, myPosts } from '../lib/social.js';
 import { listRecent } from '../lib/progress.js';
 import PostCard from '../components/PostCard.jsx';
 import { useToast } from '../components/Toast.jsx';
+import { signOut, auth } from '../lib/auth.js';
 
 export default function Profile() {
   const toast = useToast();
@@ -63,6 +64,15 @@ export default function Profile() {
         <Link className="pill" to="/reels" style={{ textDecoration: 'none' }}>🎬 Reels</Link>
         <Link className="pill" to="/about" style={{ textDecoration: 'none' }}>🛠 Migration status</Link>
         <a className="pill" href="/legacy.html" style={{ textDecoration: 'none' }}>↗ Classic app</a>
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <div className="sub" style={{ marginBottom: 6, fontSize: 11 }}>
+          Signed in as {auth.currentUser?.email}
+        </div>
+        <button className="btn ghost" style={{ fontSize: 13, padding: '9px 16px' }} onClick={signOut}>
+          Sign out
+        </button>
       </div>
 
       <p className="label" style={{ marginTop: 20 }}>My posts</p>

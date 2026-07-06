@@ -187,7 +187,7 @@ export async function translateText(text, sourceLang, onProgress) {
     let end = pos + PIECE;
     if (end < text.length) {
       const nl = text.lastIndexOf('\n\n', end);
-      if (nl > pos + 10000) end = nl + 2;
+      if (nl > pos + 100) end = nl + 2;
     } else end = text.length;
     pieces.push(text.slice(pos, end));
     pos = end;
@@ -202,7 +202,7 @@ export async function translateText(text, sourceLang, onProgress) {
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'translate failed: ' + r.status);
-    if (d.errorCount > 0) console.warn(`translate: \${d.errorCount}/\${d.chunkCount} chunks failed (last status \${d.lastError})`);
+    if (d.errorCount > 0) console.warn(`translate: ${d.errorCount}/${d.chunkCount} chunks failed (last status ${d.lastError})`);
     out += d.translated + '\n\n';
     onProgress?.(i + 1, pieces.length, d.errorCount || 0);
   }

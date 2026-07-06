@@ -1,46 +1,22 @@
 // src/lib/firebase.js
-// Firebase via REST (no SDK) — ported from legacy index.html.
-// Anonymous auth + Firestore document read/write helpers + book save
-// in the exact format the Kindle reader expects.
+// Firestore via REST API. Auth token comes from auth.js (Google Sign-In)
+// instead of the old anonymous REST sign-up. Everything else is unchanged.
 
 const FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyA3aB2fNYzSSiWGNL5SM9EmRPGAM71nyQI',
   projectId: 'littgram-54427',
 };
 
-let _idToken = null;
-let _refreshToken = null;
-let _tokenExp = 0;
-let _userId = null;
-
 export async function initFirebase() {
-  if (_idToken && Date.now() < _tokenExp - 60000) return _userId;
-  const r = await fetch(
-    `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_CONFIG.apiKey}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ returnSecureToken: true }) }
-  );
-  if (!r.ok) throw new Error('Firebase auth failed: ' + r.status);
-  const d = await r.json();
-  _userId = d.localId;
-  _idToken = d.idToken;
-  _refreshToken = d.refreshToken;
-  _tokenExp = Date.now() + parseInt(d.expiresIn) * 1000;
-  return _userId;
+  const { auth } = await import('./auth.js');
+  if (!auth.currentUser) throw new Error('Not signed in');
+  return auth.currentUser.uid;
 }
 
 export async function getToken() {
-  if (_idToken && Date.now() < _tokenExp - 60000) return _idToken;
-  if (!_refreshToken) { await initFirebase(); return _idToken; }
-  const r = await fetch(
-    `https://securetoken.googleapis.com/v1/token?key=${FIREBASE_CONFIG.apiKey}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'grant_type=refresh_token&refresh_token=' + _refreshToken }
-  );
-  const d = await r.json();
-  _idToken = d.id_token;
-  _refreshToken = d.refresh_token || _refreshToken;
-  _tokenExp = Date.now() + parseInt(d.expires_in) * 1000;
-  return _idToken;
+  const { getAuthToken } = await import('./auth.js');
+  const token = await getAuthToken();
+  if (!token) throw new Error('Not signed in');
+  return token;
 }
 
 export const fbUrl = (path) =>
