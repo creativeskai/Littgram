@@ -58,7 +58,13 @@ export default async function handler(req, res) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts }],
-            generationConfig: { temperature: 0, maxOutputTokens: 16384 },
+            generationConfig: {
+              temperature: 0,
+              maxOutputTokens: 16384,
+              // No thinking — literal transcription doesn't need it and it
+              // pushes 3-page calls past the 60s function limit.
+              thinkingConfig: { thinkingBudget: 0 },
+            },
           }),
         }
       );
