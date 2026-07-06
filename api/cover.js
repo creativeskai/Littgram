@@ -5,7 +5,7 @@
 
 export const config = { maxDuration: 10 };
 
-const ALLOWED_HOSTS = new Set(['covers.openlibrary.org']);
+const ALLOWED_HOSTS = new Set(['covers.openlibrary.org', 'openlibrary.org']);
 
 export default async function handler(req, res) {
   const { u } = req.query;
@@ -18,10 +18,11 @@ export default async function handler(req, res) {
   try {
     const r = await fetch(url, { headers: { 'User-Agent': 'Littgram/2.0' } });
     if (!r.ok) return res.status(404).end();
+    const ct = r.headers.get('content-type') || 'image/jpeg';
     const buf = Buffer.from(await r.arrayBuffer());
     // OpenLibrary returns a 1x1 placeholder GIF for missing covers
-    if (buf.length < 1000) return res.status(404).end();
-    res.setHeader('Content-Type', r.headers.get('content-type') || 'image/jpeg');
+    if (ct.startsWith('image/') && buf.length < 1000) return res.status(404).end();
+    res.setHeader('Content-Type', ct);
     res.setHeader('Cache-Control', 'public, s-maxage=2592000, max-age=86400, immutable');
     return res.status(200).send(buf);
   } catch {
