@@ -14,7 +14,16 @@ export default function Login() {
     try {
       await signInWithGoogle();
     } catch (e) {
-      setError(e.code === 'auth/popup-closed-by-user' ? null : 'Sign-in failed. Try again.');
+      const friendly = {
+        'auth/popup-closed-by-user': null,
+        'auth/cancelled-popup-request': null,
+        'auth/operation-not-allowed': 'Google Sign-In is not enabled in Firebase. Enable it: Firebase Console → Authentication → Sign-in method → Google.',
+        'auth/unauthorized-domain': `This domain (${location.hostname}) is not authorized. Add it: Firebase Console → Authentication → Settings → Authorized domains.`,
+        'auth/popup-blocked': 'Popup was blocked by the browser — allow popups for this site and try again.',
+        'auth/network-request-failed': 'Network error — check your connection and try again.',
+      };
+      const msg = e.code in friendly ? friendly[e.code] : `Sign-in failed (${e.code || e.message})`;
+      setError(msg);
       setLoading(false);
     }
   }
