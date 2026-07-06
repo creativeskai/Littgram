@@ -69,9 +69,12 @@ export default function Uploader() {
   function onFileChosen(f) {
     setFile(f);
     if (f && !bookId) {
-      const slug = f.name.replace(/\.pdf$/i, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      const base = f.name.replace(/\.(pdf|txt)$/i, '');
+      const slug = base.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
       setBookId(slug);
-      setTitle(f.name.replace(/\.pdf$/i, ''));
+      setTitle(base);
+      // Filename convention: en_* files are English plain text
+      if (/^en[_-]/i.test(f.name) || /\.txt$/i.test(f.name)) setLang('en-IN');
     }
   }
 
@@ -85,6 +88,48 @@ export default function Uploader() {
     setLogLines([]);
 
     try {
+      // Plain-text files skip the whole PDF/OCR pipeline
+      if (/\.txt$/i.test(file.name)) {
+        setStep(0, 'active', 'reading…');
+        const raw = (await file.text()).replace(/\r\n/g, '\n').trim();
+        if (raw.length < 100) throw new Error('Text file is empty or too short');
+        setStep(0, 'done', 'plain text');
+        setStep(1, 'done', `${raw.length.toLocaleString()} chars`);
+        log(`Text file loaded: ${raw.length.toLocaleString()} chars`, 'lok');
+
+        let enTxt = null;
+        if (lang === 'en-IN') {
+          setStep(2, 'done', 'skipped (already English)');
+        } else {
+          setStep(2, 'active');
+          enTxt = await translateText(raw, lang, (i, n) => {
+            setStep(2, 'active', `chunk ${i}/${n}`);
+            setProgress((i / n) * 100);
+          });
+          setStep(2, 'done', `${enTxt.length.toLocaleString()} chars`);
+        }
+
+        setStep(3, 'active', 'signing in…');
+        await initFirebase();
+        const short = lang.split('-')[0];
+        const nc = await saveBook({
+          bookId, text: raw, title, author, lang: short, source: 'uploader-v5-txt',
+          onProgress: (i, n) => { setStep(3, 'active', `${bookId}: chunk ${i}/${n}`); setProgress((i / n) * (enTxt ? 50 : 100)); },
+        });
+        log(`Saved ${bookId} (${nc} chunks)`, 'lok');
+        if (enTxt) {
+          await saveBook({
+            bookId: bookId + '_en', text: enTxt, title: title + ' (English)', author, lang: 'en', source: 'mayura-translation',
+            onProgress: (i, n) => { setStep(3, 'active', `${bookId}_en: chunk ${i}/${n}`); setProgress(50 + (i / n) * 50); },
+          });
+        }
+        setStep(3, 'done', 'saved ✓');
+        setProgress(100);
+        setResult({ bookId, chars: raw.length, en: !!enTxt });
+        toast('☁️ Book saved to cloud library');
+        return;
+      }
+
       // STEP 1 — load & detect
       setStep(0, 'active', 'loading…');
       const pdf = await loadPdf(file);
@@ -111,7 +156,7 @@ export default function Uploader() {
         srcText = await extractTextDirect(pdf, (p, n) => {
           setStep(1, 'active', `page ${p}/${n}`);
           setProgress((p / n) * 100);
-        });
+        }, from, to);
       } else {
         const totalPages = to - from + 1;
         const batches = Math.ceil(totalPages / BATCH_PAGES);
@@ -263,8 +308,8 @@ export default function Uploader() {
       )}
 
       <div className="card" style={{ marginBottom: 14 }}>
-        <p className="label">PDF file</p>
-        <input className="input" type="file" accept="application/pdf"
+        <p className="label">PDF or TXT file</p>
+        <input className="input" type="file" accept="application/pdf,.txt,text/plain"
           disabled={running} onChange={e => onFileChosen(e.target.files[0])} />
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12 }}>

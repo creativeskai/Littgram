@@ -88,13 +88,15 @@ export async function hasTextLayer(pdf, lang) {
 }
 
 // Direct extraction for text-layer PDFs (no OCR needed)
-export async function extractTextDirect(pdf, onProgress) {
+export async function extractTextDirect(pdf, onProgress, from = 1, to = 0) {
+  const first = Math.max(1, from);
+  const last = to > 0 ? Math.min(to, pdf.numPages) : pdf.numPages;
   let out = '';
-  for (let p = 1; p <= pdf.numPages; p++) {
+  for (let p = first; p <= last; p++) {
     const page = await pdf.getPage(p);
     const tc = await page.getTextContent();
     out += tc.items.map(i => i.str).join(' ') + '\n\n';
-    onProgress?.(p, pdf.numPages);
+    onProgress?.(p - first + 1, last - first + 1);
   }
   return out.trim();
 }

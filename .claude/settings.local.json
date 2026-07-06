@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($file = \"C:\\\\Users\\\\avishek.n\\\\Desktop\\\\Littgeram books\\\\littgram-react\\\\littgram-react\\\\src\\\\screens\\\\Reader.jsx\"; $lines = [System.IO.File]::ReadAllLines\\($file, [System.Text.Encoding]::UTF8\\); $lines[228])",
+      "PowerShell($file = \"C:\\\\Users\\\\avishek.n\\\\Desktop\\\\Littgeram books\\\\littgram-react\\\\littgram-react\\\\src\\\\screens\\\\Reader.jsx\"; $content = [System.IO.File]::ReadAllText\\($file, [System.Text.Encoding]::UTF8\\); $m = [regex]::Match\\($content, '[''\"\"–—]'\\); $lineNum = \\($content.Substring\\(0, $m.Index\\) -split \"`n\"\\).Count; Write-Host \"Line $lineNum : char U+$\\([int][char]$m.Value | ForEach-Object { $_.ToString\\('X4'\\) }\\) = '$\\($m.Value\\)'\")",
+      "PowerShell(Stop-Process *)"
+    ]
+  }
+}
