@@ -60,7 +60,9 @@ export default async function handler(req, res) {
         .filter(n => !zip.files[n].dir && /\.(md|txt)$/i.test(n))
         .sort();
       for (const name of names) {
-        const text = await zip.files[name].async('string');
+        // Strip embedded base64 page images that Sarvam sometimes inlines
+        const text = (await zip.files[name].async('string'))
+          .replace(/!\[[^\]]*\]\(data:[^)]*\)/g, '');
         if (text.trim()) {
           extractedText += text + '\n\n';
           filesProcessed++;
