@@ -54,7 +54,11 @@ export default async function handler(req, res) {
       const zipRes = await fetch(info.file_url);
       if (!zipRes.ok) continue;
       const zip = await JSZip.loadAsync(await zipRes.arrayBuffer());
-      const names = Object.keys(zip.files).filter(n => !zip.files[n].dir).sort();
+      // Only page markdown files — result ZIPs can also contain JSON
+      // metadata / artifact files that must not leak into the book text.
+      const names = Object.keys(zip.files)
+        .filter(n => !zip.files[n].dir && /\.(md|txt)$/i.test(n))
+        .sort();
       for (const name of names) {
         const text = await zip.files[name].async('string');
         if (text.trim()) {
