@@ -4,8 +4,44 @@
 // and calls Sarvam translate API, returns English.
 
 const SARVAM_KEY = process.env.SARVAM_KEY;
+const GEMINI_KEY = process.env.GEMINI_KEY;
 const SARVAM_TL = 'https://api.sarvam.ai/translate';
+const GEMINI_MODEL = 'gemini-2.5-flash';
 const CHUNK_SIZE = 900; // Sarvam limit is 1000
+
+const LANG_NAMES = {
+  'bn-IN': 'Bengali', 'hi-IN': 'Hindi', 'mr-IN': 'Marathi',
+  'ta-IN': 'Tamil', 'te-IN': 'Telugu',
+};
+
+// Gemini fallback: translates the WHOLE piece in one call (better context
+// than 900-char fragments). Used when Sarvam has no credits (429).
+async function geminiTranslate(text, sourceLang) {
+  const langName = LANG_NAMES[sourceLang] || 'the source language';
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text:
+            `Translate the following ${langName} literary text into natural, faithful English. ` +
+            `Preserve paragraph breaks. Output ONLY the translation, no commentary.\n\n${text}` }] }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 16384 },
+        }),
+      }
+    );
+    if (r.ok) {
+      const d = await r.json();
+      const out = (d.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('').trim();
+      if (out) return out;
+    }
+    if (r.status === 429 || r.status >= 500) { await new Promise(w => setTimeout(w, 2000 * attempt)); continue; }
+    break;
+  }
+  throw new Error('Gemini translate failed');
+}
 
 export const config = { maxDuration: 60 };
 
@@ -69,8 +105,22 @@ export default async function handler(req, res) {
     const translated = [];
     let errorCount = 0;
     let lastError = 0;
+    let sarvamExhausted = false;
     const startedAt = Date.now();
     const TIME_BUDGET = 50000; // bail at 50s so we return JSON, never Vercel's HTML timeout
+
+    // If Sarvam is out of credits and Gemini is configured, translate the
+    // whole request in one Gemini call instead of chunk-by-chunk.
+    async function tryGeminiWhole() {
+      if (!GEMINI_KEY) return null;
+      try {
+        const out = await geminiTranslate(text, source_lang);
+        return res.status(200).json({
+          translated: out, chunkCount: 1, errorCount: 0, lastError: 0,
+          charCount: out.length, engine: 'gemini',
+        });
+      } catch { return null; }
+    }
 
     for (const chunk of chunks) {
       if (Date.now() - startedAt > TIME_BUDGET) {
@@ -112,7 +162,11 @@ export default async function handler(req, res) {
             const data = await r.json();
             translated.push(data.translated_text || '');
             ok = true;
-          } else if (r.status === 429 || r.status >= 500) {
+          } else if (r.status === 429) {
+            const detail = await r.text().catch(() => '');
+            if (/insufficient_quota|No credits/i.test(detail)) { sarvamExhausted = true; break; }
+            await new Promise(w => setTimeout(w, 600 * attempt)); // rate limit — back off
+          } else if (r.status >= 500) {
             await new Promise(w => setTimeout(w, 600 * attempt)); // transient — back off
           } else {
             break; // 4xx other than 429: retrying identical input won't help
@@ -122,6 +176,13 @@ export default async function handler(req, res) {
         }
       }
       if (!ok) { errorCount++; lastError = lastStatus; }
+
+      // Sarvam out of credits — switch the whole request to Gemini
+      if (sarvamExhausted) {
+        const sent = await tryGeminiWhole();
+        if (sent) return;
+        return res.status(429).json({ error: 'Sarvam credits exhausted and no GEMINI_KEY fallback configured' });
+      }
 
       // Small delay between chunks
       await new Promise(r => setTimeout(r, 120));
