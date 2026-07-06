@@ -391,7 +391,7 @@ export default function Uploader() {
           <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>✓ {result.bookId} is live</div>
           <div className="sub">
             {result.chars.toLocaleString()} characters saved{result.en && <> · English edition saved as <b>{result.bookId}_en</b></>}.
-            Open the <a href="/legacy.html">classic app</a> → the book now appears with a Read button.
+            The book is now in your <a href="/library">Library</a> with a Read button.
           </div>
         </div>
       )}

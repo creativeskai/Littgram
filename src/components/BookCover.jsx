@@ -5,6 +5,13 @@
 
 import { useState } from 'react';
 
+// Route external covers through our own /api/cover proxy — some networks
+// block covers.openlibrary.org directly.
+const coverSrc = (url) =>
+  url && url.startsWith('https://covers.openlibrary.org/')
+    ? '/api/cover?u=' + encodeURIComponent(url)
+    : url;
+
 export default function BookCover({ book, height = 150, width, radius = 12 }) {
   const [imgState, setImgState] = useState('loading'); // loading | ok | err
   const c1 = book?.c1 || '#2A2018';
@@ -57,7 +64,7 @@ export default function BookCover({ book, height = 150, width, radius = 12 }) {
       {/* Cover photo — fades in only when loaded, no crossOrigin */}
       {book?.cover && imgState !== 'err' && (
         <img
-          src={book.cover}
+          src={coverSrc(book.cover)}
           alt={title}
           loading="lazy"
           onLoad={e => {

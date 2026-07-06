@@ -62,8 +62,7 @@ export default function Profile() {
       <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
         <Link className="pill" to="/quotes" style={{ textDecoration: 'none' }}>✒️ Quotes wall</Link>
         <Link className="pill" to="/reels" style={{ textDecoration: 'none' }}>🎬 Reels</Link>
-        <Link className="pill" to="/about" style={{ textDecoration: 'none' }}>🛠 Migration status</Link>
-        <a className="pill" href="/legacy.html" style={{ textDecoration: 'none' }}>↗ Classic app</a>
+        <Link className="pill" to="/upload" style={{ textDecoration: 'none' }}>📖 Upload book</Link>
       </div>
 
       <div style={{ marginTop: 14 }}>

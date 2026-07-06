@@ -182,19 +182,21 @@ export default function Reader() {
 
       {showControls && (
         <div className="reader-bottom">
-          {tts.status !== 'idle' && (
-            <div className="tts-strip">
-              <span>{tts.status === 'error' ? '⚠️ ' + (tts.error || 'audio error')
-                : tts.status === 'loading' ? 'Preparing audio...'
-                : tts.status === 'paused' ? 'Paused'
-                : 'Reading'}{tts.chunkInfo.n > 0 && tts.status === 'playing' ? ` · part ${tts.chunkInfo.i}/${tts.chunkInfo.n}` : ''}</span>
-              <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-                <button className={'tts-voice' + (tts.gender === 'f' ? ' on' : '')} onClick={() => tts.setVoice('f')}>Priya</button>
-                <button className={'tts-voice' + (tts.gender === 'm' ? ' on' : '')} onClick={() => tts.setVoice('m')}>Rohan</button>
-                <button className="tts-voice" onClick={() => tts.stop()}>Stop</button>
-              </span>
-            </div>
-          )}
+          <div className="tts-strip">
+            <button className="tts-voice on" onClick={onListen} style={{ fontWeight: 700 }}>
+              {tts.status === 'playing' ? '⏸ Pause' : tts.status === 'loading' ? '⏳ Loading…' : tts.status === 'paused' ? '▶ Resume' : '🔊 Listen'}
+            </button>
+            <span style={{ fontSize: 11 }}>
+              {tts.status === 'error' ? '⚠️ ' + (tts.error || 'audio error')
+                : tts.status === 'playing' && tts.chunkInfo.n > 0 ? `Reading · part ${tts.chunkInfo.i}/${tts.chunkInfo.n}`
+                : tts.status === 'idle' ? 'Read aloud' : ''}
+            </span>
+            <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+              <button className={'tts-voice' + (tts.gender === 'f' ? ' on' : '')} onClick={() => tts.setVoice('f')}>Priya</button>
+              <button className={'tts-voice' + (tts.gender === 'm' ? ' on' : '')} onClick={() => tts.setVoice('m')}>Rohan</button>
+              {tts.status !== 'idle' && <button className="tts-voice" onClick={() => tts.stop()}>Stop</button>}
+            </span>
+          </div>
           <div className="progress-track" style={{ marginTop: 0 }}>
             <div className="progress-fill" style={{ width: pct + '%' }} />
           </div>
