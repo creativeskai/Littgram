@@ -1,13 +1,4 @@
 // src/screens/Reader.jsx
-// The Kindle-style reader, ported from the legacy engine:
-// • loads chunked text from Firebase, splits into 700-word pages
-// • tap left/right thirds or swipe to turn; progress bar; page slider
-// • font size 14–26px (persisted); serif body
-// • per-page bookmarks with a panel
-// • position auto-saved (powers Library's Continue Reading shelf)
-// • NEW: instant toggle between original and English edition when both
-//   exist (the uploader saves bookId + bookId_en) — keeps relative position.
-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { loadBookText, buildPages, siblingEditionId } from '../lib/books.js';
@@ -25,8 +16,8 @@ export default function Reader() {
   const toast = useToast();
   const tts = useTTS();
 
-  const [state, setState] = useState('loading'); // loading | ready | error
-  const [loadMsg, setLoadMsg] = useState('Opening book…');
+  const [state, setState] = useState('loading');
+  const [loadMsg, setLoadMsg] = useState('Opening book...');
   const [pages, setPages] = useState([]);
   const [meta, setMeta] = useState({});
   const [page, setPage] = useState(0);
@@ -35,19 +26,18 @@ export default function Reader() {
   const [showControls, setShowControls] = useState(true);
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [showChapters, setShowChapters] = useState(false);
-  const [, force] = useState(0); // re-render after bookmark toggle
+  const [, force] = useState(0);
   const touchX = useRef(null);
   const bodyRef = useRef(null);
 
-  // ── Load book ──
   useEffect(() => {
     let alive = true;
     setState('loading');
-    setLoadMsg('Opening book…');
+    setLoadMsg('Opening book...');
     setShowBookmarks(false);
 
     loadBookText(bookId, (done, total) => {
-      if (alive) setLoadMsg(`Downloading ${done}/${total} chunks…`);
+      if (alive) setLoadMsg(`Downloading ${done}/${total} chunks...`);
     })
       .then(({ text, meta }) => {
         if (!alive) return;
@@ -64,7 +54,6 @@ export default function Reader() {
     return () => { alive = false; };
   }, [bookId]);
 
-  // ── Persist position ──
   useEffect(() => {
     if (state === 'ready' && pages.length) {
       savePosition(bookId, page, pages.length, meta.native || meta.title || bookId);
@@ -77,7 +66,6 @@ export default function Reader() {
     bodyRef.current?.scrollTo(0, 0);
   }, [pages.length, tts]);
 
-  // ── Keyboard nav (desktop testing) ──
   useEffect(() => {
     const onKey = e => {
       if (e.key === 'ArrowRight') go(1);
@@ -117,19 +105,17 @@ export default function Reader() {
 
   function onBookmark() {
     const added = toggleBookmark(bookId, page, pages[page]);
-    toast(added ? '🔖 Page bookmarked' : 'Bookmark removed');
+    toast(added ? 'Page bookmarked' : 'Bookmark removed');
     force(x => x + 1);
   }
 
   function switchEdition() {
     if (!sibling) return;
-    // Keep relative position across editions of different lengths
     const ratio = pages.length > 1 ? page / (pages.length - 1) : 0;
     sessionStorage.setItem('littgram_jump_ratio', String(ratio));
     nav('/read/' + sibling, { replace: true });
   }
 
-  // Apply cross-edition jump ratio once pages are ready
   useEffect(() => {
     if (state !== 'ready') return;
     const r = sessionStorage.getItem('littgram_jump_ratio');
@@ -161,7 +147,7 @@ export default function Reader() {
     <div className="reader">
       {showControls && (
         <div className="reader-top">
-          <button className="rbtn" onClick={() => nav('/library')} aria-label="Close reader">‹</button>
+          <button className="rbtn" onClick={() => nav('/library')} aria-label="Close reader">&#x2039;</button>
           <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
             <div className="serif" style={{ fontSize: 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {meta.native || meta.title || bookId}
@@ -170,11 +156,11 @@ export default function Reader() {
           </div>
           {sibling && (
             <button className="rbtn" onClick={switchEdition} title="Switch edition">
-              {bookId.endsWith('_en') ? 'বাং' : 'EN'}
+              {bookId.endsWith('_en') ? 'BNG' : 'EN'}
             </button>
           )}
           <button className="rbtn" onClick={onListen} title="Read aloud">
-            {tts.status === 'playing' ? '⏸' : tts.status === 'loading' ? '⏳' : '🔊'}
+            {tts.status === 'playing' ? '||' : tts.status === 'loading' ? '...' : '🔊'}
           </button>
           <button className="rbtn" onClick={onBookmark}>
             {isBookmarked(bookId, page) ? '🔖' : '🏷️'}
@@ -199,9 +185,9 @@ export default function Reader() {
           {tts.status !== 'idle' && (
             <div className="tts-strip">
               <span>{tts.status === 'error' ? '⚠️ ' + (tts.error || 'audio error')
-                : tts.status === 'loading' ? '⏳ Preparing audio…'
-                : tts.status === 'paused' ? '⏸ Paused'
-                : '🎙️ Reading'}{tts.chunkInfo.n > 0 && tts.status === 'playing' ? ` · part ${tts.chunkInfo.i}/${tts.chunkInfo.n}` : ''}</span>
+                : tts.status === 'loading' ? 'Preparing audio...'
+                : tts.status === 'paused' ? 'Paused'
+                : 'Reading'}{tts.chunkInfo.n > 0 && tts.status === 'playing' ? ` · part ${tts.chunkInfo.i}/${tts.chunkInfo.n}` : ''}</span>
               <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
                 <button className={'tts-voice' + (tts.gender === 'f' ? ' on' : '')} onClick={() => tts.setVoice('f')}>Priya</button>
                 <button className={'tts-voice' + (tts.gender === 'm' ? ' on' : '')} onClick={() => tts.setVoice('m')}>Rohan</button>
@@ -213,11 +199,11 @@ export default function Reader() {
             <div className="progress-fill" style={{ width: pct + '%' }} />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
-            <button className="rbtn" onClick={() => changeFont(-1)}>A−</button>
+            <button className="rbtn" onClick={() => changeFont(-1)}>A-</button>
             <button className="rbtn" onClick={() => changeFont(1)}>A+</button>
             <input type="range" min="0" max={Math.max(0, pages.length - 1)} value={page}
               onChange={e => setPage(parseInt(e.target.value))} style={{ flex: 1 }} />
-            <button className="rbtn" onClick={() => setShowBookmarks(s => !s)}>☰</button>
+            <button className="rbtn" onClick={() => setShowBookmarks(s => !s)}>&#9776;</button>
             <span style={{ fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
               {page + 1}/{pages.length}
             </span>
@@ -226,16 +212,16 @@ export default function Reader() {
       )}
 
       {showBookmarks && (
-        <div className=”sheet-backdrop” onClick={() => setShowBookmarks(false)}>
-          <div className=”sheet” onClick={e => e.stopPropagation()}>
-            <div className=”sheet-grab” />
-            <p className=”label”>Bookmarks</p>
-            {bookmarks.length === 0 && <p className=”sub”>No bookmarks yet — tap 🏷️ on any page.</p>}
+        <div className="sheet-backdrop" onClick={() => setShowBookmarks(false)}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
+            <div className="sheet-grab" />
+            <p className="label">Bookmarks</p>
+            {bookmarks.length === 0 && <p className="sub">No bookmarks yet — tap the tag button on any page.</p>}
             {bookmarks.map(b => (
-              <div key={b.page} className=”card row-card” style={{ cursor: 'pointer' }}
+              <div key={b.page} className="card row-card" style={{ cursor: 'pointer' }}
                 onClick={() => { setPage(b.page); setShowBookmarks(false); }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)', width: 44 }}>p.{b.page + 1}</div>
-                <div className=”sub” style={{ flex: 1, fontStyle: 'italic' }}>”{b.snippet}…”</div>
+                <div className="sub" style={{ flex: 1, fontStyle: 'italic' }}>{b.snippet}...</div>
               </div>
             ))}
           </div>
@@ -256,33 +242,33 @@ function ChapterSheet({ bookId, onClose, lang }) {
   const isNative = lang && !lang.startsWith('en');
 
   return (
-    <div className=”sheet-backdrop” onClick={onClose}>
-      <div className=”sheet” onClick={e => e.stopPropagation()}>
-        <div className=”sheet-grab” />
+    <div className="sheet-backdrop" onClick={onClose}>
+      <div className="sheet" onClick={e => e.stopPropagation()}>
+        <div className="sheet-grab" />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <p className=”label” style={{ margin: 0 }}>Chapter summaries · {chapters.length}</p>
+          <p className="label" style={{ margin: 0 }}>Chapter summaries ({chapters.length})</p>
           {isNative && (
-            <button className=”pill sm” onClick={() => setShowEn(v => !v)}>
-              {showEn ? 'মূল / native' : 'English'}
+            <button className="pill sm" onClick={() => setShowEn(v => !v)}>
+              {showEn ? 'Native' : 'English'}
             </button>
           )}
         </div>
         {chapters.map((ch, i) => (
-          <div key={i} className=”card” style={{ marginBottom: 8, padding: '12px 14px', cursor: 'pointer' }}
+          <div key={i} className="card" style={{ marginBottom: 8, padding: '12px 14px', cursor: 'pointer' }}
             onClick={() => setOpenIdx(openIdx === i ? -1 : i)}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span className=”serif” style={{ color: 'var(--gold)', fontWeight: 900, fontSize: 15 }}>{i + 1}</span>
+              <span className="serif" style={{ color: 'var(--gold)', fontWeight: 900, fontSize: 15 }}>{i + 1}</span>
               <span style={{ fontSize: 13.5, fontWeight: 700, flex: 1 }}>{ch.title}</span>
-              <span style={{ color: 'var(--muted)', fontSize: 12 }}>{openIdx === i ? '−' : '+'}</span>
+              <span style={{ color: 'var(--muted)', fontSize: 12 }}>{openIdx === i ? '-' : '+'}</span>
             </div>
             {openIdx === i && (
               <>
                 {ch.quote && (
-                  <div className=”serif” style={{ fontSize: 13, fontStyle: 'italic', color: 'var(--gold)', margin: '8px 0 6px', lineHeight: 1.5 }}>
-                    “{ch.quote}”
+                  <div className="serif" style={{ fontSize: 13, fontStyle: 'italic', color: 'var(--gold)', margin: '8px 0 6px', lineHeight: 1.5 }}>
+                    {ch.quote}
                   </div>
                 )}
-                <p className=”sub” style={{ lineHeight: 1.65, marginTop: 6 }}>
+                <p className="sub" style={{ lineHeight: 1.65, marginTop: 6 }}>
                   {showEn && ch.summaryEn ? ch.summaryEn : ch.summary}
                 </p>
               </>
