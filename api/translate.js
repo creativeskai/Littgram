@@ -28,7 +28,12 @@ async function geminiTranslate(text, sourceLang) {
           contents: [{ role: 'user', parts: [{ text:
             `Translate the following ${langName} literary text into natural, faithful English. ` +
             `Preserve paragraph breaks. Output ONLY the translation, no commentary.\n\n${text}` }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 16384 },
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 16384,
+            // No thinking — it consumes the output budget and returns empty text
+            thinkingConfig: { thinkingBudget: 0 },
+          },
         }),
       }
     );
