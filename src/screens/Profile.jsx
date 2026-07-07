@@ -30,7 +30,12 @@ export default function Profile() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 6 }}>
-        <div className="avatar lg">{profile.handle[0].toUpperCase()}</div>
+        <div className="avatar lg" style={{ overflow: 'hidden' }}>
+          {auth.currentUser?.photoURL
+            ? <img src={auth.currentUser.photoURL} alt="" referrerPolicy="no-referrer"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : profile.handle[0].toUpperCase()}
+        </div>
         <div style={{ flex: 1 }}>
           {editing ? (
             <div style={{ display: 'flex', gap: 8 }}>

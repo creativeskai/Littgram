@@ -4,13 +4,29 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { STORIES_DB } from '../data/stories.js';
+import { auth } from '../lib/auth.js';
 
 const ACCOUNTS = Object.keys(STORIES_DB);
 const STORY_MS = 5000;
 
 export function StoriesBar({ onOpen }) {
+  const user = auth.currentUser;
+  const photo = user?.photoURL;
+  const initial = (user?.displayName || user?.email || 'Y')[0].toUpperCase();
   return (
     <div className="stories-bar">
+      <div className="story-ring-wrap" onClick={() => onOpen('__me')}>
+        <div className="story-ring me">
+          <div className="story-ring-inner">
+            {photo
+              ? <img src={photo} alt="You" referrerPolicy="no-referrer"
+                  style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+              : initial}
+          </div>
+          <div className="story-add">＋</div>
+        </div>
+        <div className="story-name">Your story</div>
+      </div>
       {ACCOUNTS.map(acc => (
         <div key={acc} className="story-ring-wrap" onClick={() => onOpen(acc)}>
           <div className="story-ring">

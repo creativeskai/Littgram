@@ -53,7 +53,7 @@ export default function Feed() {
 
   return (
     <div>
-      <StoriesBar onOpen={setStoryAcc} />
+      <StoriesBar onOpen={acc => (acc === '__me' ? setComposing(true) : setStoryAcc(acc))} />
 
       <div className="pill-row" style={{ marginTop: 12 }}>
         {LANG_PILLS.map(p => (
