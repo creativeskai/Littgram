@@ -1,18 +1,32 @@
 // src/components/BookDetail.jsx
-// Bottom-sheet modal: cover, summary, quotes, topics, and a Read button
-// when the book (or its _en edition) exists in the cloud library.
+// Bottom-sheet modal: cover, summary, quotes, topics, a Read button when
+// the book exists in the cloud library, and a 5-minute audio summary
+// (chapter summaries read aloud via Sarvam TTS, Gemini fallback).
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BookCover from './BookCover.jsx';
 import { chaptersFor } from '../lib/chapters.js';
+import { useTTS } from '../lib/useTTS.js';
 
 export default function BookDetail({ book, cloudIds, onClose }) {
   const nav = useNavigate();
+  const tts = useTTS();
   const [showEn, setShowEn] = useState(false);
   const [openCh, setOpenCh] = useState(0);
+  useEffect(() => () => tts.stop(), []); // stop audio when sheet closes // eslint-disable-line
   if (!book) return null;
   const chapters = chaptersFor(book.id);
+
+  function onListenSummary() {
+    if (tts.status === 'playing') { tts.pause(); return; }
+    if (tts.status === 'paused') { tts.resume(); return; }
+    const useEnglish = showEn || book.lang === 'en';
+    const text = chapters
+      .map(ch => `${ch.title}. ${useEnglish && ch.summaryEn ? ch.summaryEn : ch.summary}`)
+      .join('\n\n');
+    if (text.trim()) tts.start(text, useEnglish ? 'en' : book.lang);
+  }
 
   const readableId = cloudIds?.has(book.id) ? book.id
     : cloudIds?.has(book.id + '_en') ? book.id + '_en'
@@ -49,6 +63,19 @@ export default function BookDetail({ book, cloudIds, onClose }) {
                 <button className="pill sm" onClick={() => setShowEn(v => !v)}>
                   {showEn ? 'মূল / native' : 'English'}
                 </button>
+              )}
+            </div>
+
+            <div className="tts-strip" style={{ marginTop: 8 }}>
+              <button className="tts-voice on" onClick={onListenSummary} style={{ fontWeight: 700 }}>
+                {tts.status === 'playing' ? '⏸ Pause' : tts.status === 'loading' ? '⏳ Loading…' : tts.status === 'paused' ? '▶ Resume' : '🎧 Listen · 5-min summary'}
+              </button>
+              <span style={{ fontSize: 11 }}>
+                {tts.status === 'error' ? '⚠️ ' + (tts.error || 'audio error')
+                  : tts.status === 'playing' && tts.chunkInfo.n > 0 ? `part ${tts.chunkInfo.i}/${tts.chunkInfo.n}` : ''}
+              </span>
+              {tts.status !== 'idle' && (
+                <button className="tts-voice" style={{ marginLeft: 'auto' }} onClick={() => tts.stop()}>Stop</button>
               )}
             </div>
             {chapters.map((ch, i) => (

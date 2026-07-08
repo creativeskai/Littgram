@@ -167,6 +167,8 @@ export default async function handler(req, res) {
             const data = await r.json();
             translated.push(data.translated_text || '');
             ok = true;
+          } else if (r.status === 402 || r.status === 403) {
+            sarvamExhausted = true; break; // out of credits / payment required
           } else if (r.status === 429) {
             const detail = await r.text().catch(() => '');
             if (/insufficient_quota|No credits/i.test(detail)) { sarvamExhausted = true; break; }
