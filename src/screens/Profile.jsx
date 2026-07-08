@@ -6,15 +6,38 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getProfile, setHandle, myPosts } from '../lib/social.js';
 import { listRecent } from '../lib/progress.js';
+import { POSTS_DB } from '../data/posts.js';
 import PostCard from '../components/PostCard.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { signOut, auth } from '../lib/auth.js';
+
+const LANG_PILLS = [
+  { code: 'all', label: 'All' },
+  { code: 'en', label: 'English' },
+  { code: 'bn', label: 'বাংলা' },
+  { code: 'hi', label: 'हिन्दी' },
+  { code: 'mr', label: 'मराठी' },
+];
+const TOPICS = [...new Set(POSTS_DB.map(p => p.topic).filter(Boolean))].sort();
 
 export default function Profile() {
   const toast = useToast();
   const [profile, setProfile] = useState(getProfile());
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(profile.handle);
+  const [lang, setLangState] = useState(localStorage.getItem('littgram_feed_lang') || 'all');
+  const [topic, setTopicState] = useState(localStorage.getItem('littgram_feed_topic') || null);
+
+  function setLang(code) {
+    setLangState(code);
+    localStorage.setItem('littgram_feed_lang', code);
+  }
+  function setTopic(t) {
+    const next = topic === t ? null : t;
+    setTopicState(next);
+    if (next) localStorage.setItem('littgram_feed_topic', next);
+    else localStorage.removeItem('littgram_feed_topic');
+  }
 
   const recents = listRecent(50);
   const finished = recents.filter(r => r.totalPages && r.page >= r.totalPages - 1).length;
@@ -64,16 +87,45 @@ export default function Profile() {
         <div className="stats-card"><div className="stats-num" style={{ color: 'var(--gold)' }}>{posts.length}</div><div className="stats-lbl">Posts</div></div>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-        <Link className="pill" to="/quotes" style={{ textDecoration: 'none' }}>✒️ Quotes wall</Link>
-        <Link className="pill" to="/reels" style={{ textDecoration: 'none' }}>🎬 Reels</Link>
+      <div className="card" style={{ marginTop: 16, padding: '4px 16px' }}>
+        {[
+          { to: '/quotes', label: 'Quotes wall' },
+          { to: '/reels', label: 'Reels' },
+        ].map((l, i, arr) => (
+          <Link key={l.to} to={l.to} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '13px 0', textDecoration: 'none', color: 'var(--text)',
+            fontSize: 13, fontWeight: 600,
+            borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
+          }}>
+            {l.label}
+            <span style={{ color: 'var(--muted)' }}>›</span>
+          </Link>
+        ))}
+      </div>
+
+      <div className="card" style={{ marginTop: 12 }}>
+        <p className="label">Feed language</p>
+        <div className="pill-row">
+          {LANG_PILLS.map(p => (
+            <button key={p.code} className={'pill' + (lang === p.code ? ' on' : '')}
+              onClick={() => setLang(p.code)}>{p.label}</button>
+          ))}
+        </div>
+        <p className="label" style={{ marginTop: 12 }}>Genre</p>
+        <div className="pill-row" style={{ marginBottom: 0 }}>
+          {TOPICS.map(t => (
+            <button key={t} className={'pill sm' + (topic === t ? ' on' : '')}
+              onClick={() => setTopic(t)}>{t}</button>
+          ))}
+        </div>
       </div>
 
       <div style={{ marginTop: 14 }}>
         <div className="sub" style={{ marginBottom: 6, fontSize: 11 }}>
           Signed in as {auth.currentUser?.email}
         </div>
-        <button className="btn ghost" style={{ fontSize: 13, padding: '9px 16px' }} onClick={signOut}>
+        <button className="btn ghost" style={{ fontSize: 12, padding: '9px 16px' }} onClick={signOut}>
           Sign out
         </button>
       </div>

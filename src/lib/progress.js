@@ -53,7 +53,7 @@ export function isBookmarked(bookId, page) {
 // ── Font ──
 export function getFontSize() {
   const v = parseInt(localStorage.getItem(FONT_KEY));
-  return v >= 14 && v <= 26 ? v : 17;
+  return v >= 14 && v <= 26 ? v : 16;
 }
 export function setFontSize(v) {
   localStorage.setItem(FONT_KEY, String(Math.max(14, Math.min(26, v))));

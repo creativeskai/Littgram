@@ -34,25 +34,7 @@ export default function Login() {
       alignItems: 'center', justifyContent: 'center',
       padding: '32px 28px', background: 'var(--bg)',
     }}>
-      {/* Logo */}
-      <svg viewBox="0 0 90 70" style={{ height: 72, width: 'auto', marginBottom: 12 }} aria-hidden="true">
-        <defs>
-          <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#F0527A" /><stop offset="45%" stopColor="#F0722A" /><stop offset="100%" stopColor="#7040B8" />
-          </linearGradient>
-          <linearGradient id="lg2" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#F07535" /><stop offset="100%" stopColor="#8045C0" />
-          </linearGradient>
-        </defs>
-        <g transform="translate(45,3)">
-          <path d="M0,54 L0,5 C-6,3 -20,2 -32,8 C-42,13 -42,50 -40,57 Z" fill="url(#lg1)" />
-          <path d="M0,54 L0,5 C6,3 20,2 32,8 C42,13 42,50 40,57 Z" fill="url(#lg2)" />
-          <line x1="0" y1="5" x2="0" y2="56" stroke="#A02860" strokeWidth="2.5" strokeLinecap="round" opacity="0.65" />
-          <path d="M-40,57 Q-20,66 0,62 Q20,66 40,57" fill="none" stroke="#8040C0" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
-        </g>
-      </svg>
-
-      <div className="brand-word" style={{ fontSize: 34, marginBottom: 6 }}>littgram</div>
+      <div className="brand-word" style={{ fontSize: 36, marginBottom: 10 }}>Littgram</div>
       <p className="sub" style={{ textAlign: 'center', maxWidth: 260, marginBottom: 48, lineHeight: 1.6 }}>
         A literary social world — read, share, and discover books in every Indian language.
       </p>

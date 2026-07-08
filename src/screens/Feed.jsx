@@ -11,25 +11,16 @@ import PostCard from '../components/PostCard.jsx';
 import { StoriesBar, StoryViewer } from '../components/Stories.jsx';
 import { useToast } from '../components/Toast.jsx';
 
-const LANG_PILLS = [
-  { code: 'all', label: 'All' },
-  { code: 'en', label: 'EN' },
-  { code: 'bn', label: 'বাংলা' },
-  { code: 'hi', label: 'हिन्दी' },
-  { code: 'mr', label: 'मराठी' },
-];
-const TOPICS = [...new Set(POSTS_DB.map(p => p.topic).filter(Boolean))].sort();
-
 export default function Feed() {
   const toast = useToast();
-  const [lang, setLang] = useState(localStorage.getItem('littgram_feed_lang') || 'all');
-  const [topic, setTopic] = useState(null);
+  // Reading preferences live in Profile; the feed just applies them.
+  const lang = localStorage.getItem('littgram_feed_lang') || 'all';
+  const topic = localStorage.getItem('littgram_feed_topic') || null;
   const [storyAcc, setStoryAcc] = useState(null);
   const [community, setCommunity] = useState([]);
   const [composing, setComposing] = useState(false);
 
   useEffect(() => { fetchCommunityPosts().then(setCommunity); }, []);
-  useEffect(() => { localStorage.setItem('littgram_feed_lang', lang); }, [lang]);
 
   const posts = useMemo(() => {
     const catalog = POSTS_DB.filter(p =>
@@ -55,23 +46,11 @@ export default function Feed() {
     <div>
       <StoriesBar onOpen={acc => (acc === '__me' ? setComposing(true) : setStoryAcc(acc))} />
 
-      <div className="pill-row" style={{ marginTop: 12 }}>
-        {LANG_PILLS.map(p => (
-          <button key={p.code} className={'pill' + (lang === p.code ? ' on' : '')}
-            onClick={() => setLang(p.code)}>{p.label}</button>
-        ))}
-      </div>
-      <div className="pill-row" style={{ marginBottom: 14 }}>
-        {TOPICS.map(t => (
-          <button key={t} className={'pill sm' + (topic === t ? ' on' : '')}
-            onClick={() => setTopic(topic === t ? null : t)}>{t}</button>
-        ))}
-      </div>
-
+      <div style={{ marginTop: 14 }} />
       {posts.map(p => <PostCard key={p.id} post={p} />)}
       {posts.length === 0 && (
         <p className="sub" style={{ textAlign: 'center', padding: '40px 0' }}>
-          Nothing here — widen the language or topic filter.
+          Nothing here — adjust your language and genre preferences in Profile.
         </p>
       )}
 
