@@ -7,6 +7,7 @@ import { BOOKS_DB } from '../data/books.js';
 import { listCloudBooks } from '../lib/books.js';
 import BookCover from '../components/BookCover.jsx';
 import BookDetail from '../components/BookDetail.jsx';
+import { t } from '../lib/i18n.js';
 
 const LANG_PILLS = [
   { code: 'all', label: 'All' },
@@ -62,7 +63,7 @@ export default function Explore() {
 
   return (
     <div>
-      <h1 className="h-screen serif">Explore</h1>
+      <h1 className="h-screen serif">{t('explore')}</h1>
       <input className="input" placeholder="Search books, authors, quotes…"
         value={q} onChange={e => setQ(e.target.value)} style={{ margin: '10px 0 12px' }} />
 
@@ -93,23 +94,28 @@ export default function Explore() {
         </div>
       )}
 
-      <div className="explore-grid">
+      <div>
         {books.map(b => (
-          <div key={b.id} onClick={() => setSelected(b)} style={{ cursor: 'pointer' }}>
-            <BookCover book={b} height={170} width="100%" />
-            <div style={{ fontSize: 12, fontWeight: 600, marginTop: 6, lineHeight: 1.3 }}>
-              {b.native || b.title}
+          <div key={b.id} className="card row-card" onClick={() => setSelected(b)} style={{ cursor: 'pointer' }}>
+            <div style={{ width: 44, flexShrink: 0 }}>
+              <BookCover book={b} height={60} width={44} radius={8} />
             </div>
-            <div style={{ fontSize: 11, color: 'var(--muted)' }}>{b.author}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {b.native || b.title}
+              </div>
+              <div className="sub" style={{ marginTop: 2 }}>{b.author}</div>
+            </div>
+            <span className="chip">{(b.lang || '').toUpperCase()}</span>
           </div>
         ))}
         {cloudIds === null && (
-          <p className="sub" style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px 0' }}>
+          <p className="sub" style={{ textAlign: 'center', padding: '40px 0' }}>
             Loading your books…
           </p>
         )}
         {cloudIds !== null && books.length === 0 && (
-          <p className="sub" style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px 0' }}>
+          <p className="sub" style={{ textAlign: 'center', padding: '40px 0' }}>
             No books match — try a different language or topic.
           </p>
         )}

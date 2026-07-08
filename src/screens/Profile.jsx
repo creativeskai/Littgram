@@ -10,6 +10,7 @@ import { POSTS_DB } from '../data/posts.js';
 import PostCard from '../components/PostCard.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { signOut, auth } from '../lib/auth.js';
+import { t, UI_LANGS, getUiLang, setUiLang } from '../lib/i18n.js';
 
 const LANG_PILLS = [
   { code: 'all', label: 'All' },
@@ -27,6 +28,7 @@ export default function Profile() {
   const [draft, setDraft] = useState(profile.handle);
   const [lang, setLangState] = useState(localStorage.getItem('littgram_feed_lang') || 'all');
   const [topic, setTopicState] = useState(localStorage.getItem('littgram_feed_topic') || null);
+  const [uiLang, setUiLangState] = useState(getUiLang());
 
   function setLang(code) {
     setLangState(code);
@@ -88,35 +90,36 @@ export default function Profile() {
       </div>
 
       <div className="card" style={{ marginTop: 16, padding: '4px 16px' }}>
-        {[
-          { to: '/quotes', label: 'Quotes wall' },
-          { to: '/reels', label: 'Reels' },
-        ].map((l, i, arr) => (
-          <Link key={l.to} to={l.to} style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '13px 0', textDecoration: 'none', color: 'var(--text)',
-            fontSize: 13, fontWeight: 600,
-            borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
-          }}>
-            {l.label}
-            <span style={{ color: 'var(--muted)' }}>›</span>
-          </Link>
-        ))}
+        <Link to="/quotes" style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '13px 0', textDecoration: 'none', color: 'var(--text)',
+          fontSize: 13, fontWeight: 600,
+        }}>
+          {t('quotesWall')}
+          <span style={{ color: 'var(--muted)' }}>›</span>
+        </Link>
       </div>
 
       <div className="card" style={{ marginTop: 12 }}>
-        <p className="label">Feed language</p>
+        <p className="label">{t('uiLanguage')}</p>
+        <div className="pill-row">
+          {UI_LANGS.map(l => (
+            <button key={l.code} className={'pill' + (uiLang === l.code ? ' on' : '')}
+              onClick={() => { setUiLang(l.code); setUiLangState(l.code); }}>{l.label}</button>
+          ))}
+        </div>
+        <p className="label" style={{ marginTop: 12 }}>{t('feedLanguage')}</p>
         <div className="pill-row">
           {LANG_PILLS.map(p => (
             <button key={p.code} className={'pill' + (lang === p.code ? ' on' : '')}
               onClick={() => setLang(p.code)}>{p.label}</button>
           ))}
         </div>
-        <p className="label" style={{ marginTop: 12 }}>Genre</p>
+        <p className="label" style={{ marginTop: 12 }}>{t('genre')}</p>
         <div className="pill-row" style={{ marginBottom: 0 }}>
-          {TOPICS.map(t => (
-            <button key={t} className={'pill sm' + (topic === t ? ' on' : '')}
-              onClick={() => setTopic(t)}>{t}</button>
+          {TOPICS.map(tp => (
+            <button key={tp} className={'pill sm' + (topic === tp ? ' on' : '')}
+              onClick={() => setTopic(tp)}>{tp}</button>
           ))}
         </div>
       </div>
@@ -126,11 +129,11 @@ export default function Profile() {
           Signed in as {auth.currentUser?.email}
         </div>
         <button className="btn ghost" style={{ fontSize: 12, padding: '9px 16px' }} onClick={signOut}>
-          Sign out
+          {t('signOut')}
         </button>
       </div>
 
-      <p className="label" style={{ marginTop: 20 }}>My posts</p>
+      <p className="label" style={{ marginTop: 20 }}>{t('myPosts')}</p>
       {posts.length === 0 && (
         <p className="sub">Nothing published yet — share a quote from the home feed with the ＋ button.</p>
       )}

@@ -13,10 +13,10 @@ import Profile from './screens/Profile.jsx';
 import About from './screens/About.jsx';
 import Placeholder from './screens/Placeholder.jsx';
 import Login from './screens/Login.jsx';
+import Onboarding, { tutorialDone } from './components/Onboarding.jsx';
 import { onAuthChange } from './lib/auth.js';
 const Reader = lazy(() => import('./screens/Reader.jsx'));
 const Uploader = lazy(() => import('./screens/Uploader.jsx'));
-const Reels = lazy(() => import('./screens/Reels.jsx'));
 
 const Wait = ({ children }) => (
   <Suspense fallback={<div className="placeholder"><div className="emoji">📖</div></div>}>{children}</Suspense>
@@ -24,10 +24,11 @@ const Wait = ({ children }) => (
 
 export default function App() {
   const loc = useLocation();
-  const fullscreen = loc.pathname.startsWith('/read/') || loc.pathname === '/reels';
+  const fullscreen = loc.pathname.startsWith('/read/');
 
   // undefined = checking auth, null = signed out, object = signed in
   const [user, setUser] = useState(undefined);
+  const [showTutorial, setShowTutorial] = useState(!tutorialDone());
   useEffect(() => onAuthChange(setUser), []);
 
   if (user === undefined) {
@@ -39,6 +40,8 @@ export default function App() {
   }
 
   if (!user) return <Login />;
+
+  if (showTutorial) return <Onboarding onDone={() => setShowTutorial(false)} />;
 
   return (
     <ToastProvider>
@@ -54,7 +57,6 @@ export default function App() {
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/about" element={<About />} />
-            <Route path="/reels" element={<Wait><Reels /></Wait>} />
             <Route path="/read/:bookId" element={<Wait><Reader /></Wait>} />
             <Route path="/upload" element={<Wait><Uploader /></Wait>} />
             <Route path="*" element={<Placeholder emoji="🗺️" title="Not found" note="This page doesn't exist" />} />

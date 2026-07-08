@@ -8,6 +8,7 @@ import { listCloudBooks } from '../lib/books.js';
 import { listRecent } from '../lib/progress.js';
 import { BOOKS_DB } from '../data/books.js';
 import BookCover from '../components/BookCover.jsx';
+import { t } from '../lib/i18n.js';
 
 const LANG_NAMES = { en: 'English', bn: 'বাংলা', hi: 'हिन्दी', mr: 'मराठी', ta: 'தமிழ்', te: 'తెలుగు' };
 
@@ -29,7 +30,7 @@ export default function Library() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-        <h1 className="h-screen serif">My Library</h1>
+        <h1 className="h-screen serif">{t('myLibrary')}</h1>
         <Link to="/upload" style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>
           + Add book
         </Link>
@@ -54,7 +55,7 @@ export default function Library() {
 
       {recents.length > 0 && (
         <>
-          <p className="label" style={{ marginTop: 18 }}>Continue reading</p>
+          <p className="label" style={{ marginTop: 18 }}>{t('continueReading')}</p>
           {recents.map(r => {
             const pct = r.totalPages ? Math.round(((r.page + 1) / r.totalPages) * 100) : 0;
             return (
@@ -82,7 +83,7 @@ export default function Library() {
         </>
       )}
 
-      <p className="label" style={{ marginTop: 18 }}>Cloud library</p>
+      <p className="label" style={{ marginTop: 18 }}>{t('cloudLibrary')}</p>
       {cloud === null && <p className="sub">Loading your books…</p>}
       {error && <p className="sub" style={{ color: 'var(--err)' }}>Couldn't reach the cloud library: {error}</p>}
       {cloud?.length === 0 && !error && (

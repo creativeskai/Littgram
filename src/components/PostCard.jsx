@@ -6,17 +6,21 @@ import { useState } from 'react';
 import { isLiked, toggleLike, listComments, addComment } from '../lib/social.js';
 import { useToast } from './Toast.jsx';
 
-function QuoteSlide({ bg, accent, emoji, quote, author }) {
+// Neutral ink-styled quote card — the colored book gradients clashed with
+// the monochrome theme, so quotes render like a printed pull-quote instead.
+function QuoteSlide({ emoji, quote, author }) {
   return (
     <div style={{
-      background: bg, borderRadius: 14, minHeight: 230, padding: '30px 22px',
+      background: 'var(--surface2)', border: '1px solid var(--border)',
+      borderLeft: '3px solid var(--accent)',
+      borderRadius: 10, minHeight: 120, padding: '18px 16px',
       display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', overflow: 'hidden',
     }}>
-      <div style={{ position: 'absolute', top: 12, right: 14, fontSize: 26, opacity: 0.85 }}>{emoji}</div>
-      <div className="serif" style={{ fontSize: 17, lineHeight: 1.55, color: '#fff', fontStyle: 'italic' }}>
+      <div style={{ position: 'absolute', top: 10, right: 12, fontSize: 18, opacity: 0.5 }}>{emoji}</div>
+      <div className="serif" style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text)', fontStyle: 'italic' }}>
         “{quote}”
       </div>
-      {author && <div style={{ marginTop: 12, fontSize: 12, fontWeight: 700, color: accent || '#D4A853' }}>— {author}</div>}
+      {author && <div style={{ marginTop: 10, fontSize: 11, fontWeight: 600, color: 'var(--muted)' }}>— {author}</div>}
     </div>
   );
 }
@@ -48,12 +52,12 @@ export default function PostCard({ post }) {
   }
 
   return (
-    <div className="card" style={{ marginBottom: 14, padding: 14 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-        <div className="avatar">{(post.user || '?')[0].toUpperCase()}</div>
+    <div className="card" style={{ marginBottom: 10, padding: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <div className="avatar sm">{(post.user || '?')[0].toUpperCase()}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 700 }}>{post.user}</div>
-          <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+          <div style={{ fontSize: 12, fontWeight: 700 }}>{post.user}</div>
+          <div style={{ fontSize: 10, color: 'var(--muted)' }}>
             {post.bookTitle || post.bookId}{post.time ? ' · ' + post.time : ''}
           </div>
         </div>
@@ -75,23 +79,23 @@ export default function PostCard({ post }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 18, marginTop: 12, fontSize: 13, color: 'var(--muted)' }}>
-        <button className="action" onClick={onLike} style={{ color: liked ? 'var(--accent)' : 'inherit' }}>
+      <div style={{ display: 'flex', gap: 16, marginTop: 9, fontSize: 11, color: 'var(--muted)' }}>
+        <button className="action" onClick={onLike} style={{ color: liked ? 'var(--text)' : 'inherit', fontSize: 11 }}>
           {liked ? '❤️' : '🤍'} {post.likes || ''}
         </button>
-        <button className="action" onClick={() => setShowComments(true)}>
+        <button className="action" onClick={() => setShowComments(true)} style={{ fontSize: 11 }}>
           💬 {comments.length || post.comments || ''}
         </button>
-        <button className="action" onClick={onShare}>↗ Share</button>
+        <button className="action" onClick={onShare} style={{ fontSize: 11 }}>↗ Share</button>
       </div>
 
       {post.caption && (
-        <p style={{ fontSize: 13, lineHeight: 1.5, marginTop: 10 }}>
-          <b>{post.user}</b> {post.caption}
+        <p style={{ fontSize: 11.5, lineHeight: 1.5, marginTop: 8, color: 'var(--muted)' }}>
+          <b style={{ color: 'var(--text)' }}>{post.user}</b> {post.caption}
         </p>
       )}
       {post.tags?.length > 0 && (
-        <div style={{ fontSize: 12, color: 'var(--gold)', marginTop: 5 }}>{post.tags.join(' ')}</div>
+        <div style={{ fontSize: 10.5, color: 'var(--gold)', marginTop: 4 }}>{post.tags.join(' ')}</div>
       )}
 
       {showComments && (

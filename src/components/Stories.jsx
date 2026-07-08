@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { STORIES_DB } from '../data/stories.js';
 import { auth } from '../lib/auth.js';
+import { t } from '../lib/i18n.js';
 
 const ACCOUNTS = Object.keys(STORIES_DB);
 const STORY_MS = 5000;
@@ -25,7 +26,7 @@ export function StoriesBar({ onOpen }) {
           </div>
           <div className="story-add">＋</div>
         </div>
-        <div className="story-name">Your story</div>
+        <div className="story-name">{t('yourStory')}</div>
       </div>
       {ACCOUNTS.map(acc => (
         <div key={acc} className="story-ring-wrap" onClick={() => onOpen(acc)}>

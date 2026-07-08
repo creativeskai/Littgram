@@ -3,10 +3,17 @@
 
 import { useState } from 'react';
 import { signInWithGoogle } from '../lib/auth.js';
+import { UI_LANGS, getUiLang, setUiLang } from '../lib/i18n.js';
 
 export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [uiLang, setUiLangState] = useState(getUiLang());
+
+  function pickLang(code) {
+    setUiLang(code);
+    setUiLangState(code);
+  }
 
   async function handleGoogle() {
     setLoading(true);
@@ -35,9 +42,17 @@ export default function Login() {
       padding: '32px 28px', background: 'var(--bg)',
     }}>
       <div className="brand-word" style={{ fontSize: 36, marginBottom: 10 }}>Littgram</div>
-      <p className="sub" style={{ textAlign: 'center', maxWidth: 260, marginBottom: 48, lineHeight: 1.6 }}>
+      <p className="sub" style={{ textAlign: 'center', maxWidth: 260, marginBottom: 28, lineHeight: 1.6 }}>
         A literary social world — read, share, and discover books in every Indian language.
       </p>
+
+      <p className="label" style={{ marginBottom: 8 }}>App language</p>
+      <div className="pill-row" style={{ justifyContent: 'center', marginBottom: 36 }}>
+        {UI_LANGS.map(l => (
+          <button key={l.code} className={'pill' + (uiLang === l.code ? ' on' : '')}
+            onClick={() => pickLang(l.code)}>{l.label}</button>
+        ))}
+      </div>
 
       <button
         onClick={handleGoogle}

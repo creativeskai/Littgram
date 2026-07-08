@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { listChallenges, joinChallenge, joinedChallenges } from '../lib/social.js';
 import { listRecent } from '../lib/progress.js';
 import { useToast } from '../components/Toast.jsx';
+import { t } from '../lib/i18n.js';
 
 export default function Challenges() {
   const toast = useToast();
@@ -34,7 +35,7 @@ export default function Challenges() {
 
   return (
     <div>
-      <h1 className="h-screen serif">Challenges</h1>
+      <h1 className="h-screen serif">{t('challenges')}</h1>
       <p className="sub" style={{ marginBottom: 14 }}>
         {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })} · finish books, build the streak.
       </p>
