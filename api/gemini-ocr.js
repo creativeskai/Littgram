@@ -45,6 +45,7 @@ export default async function handler(req, res) {
         `Transcribe ALL text exactly as printed, in proper Unicode ${langName}. ` +
         `Rules: transcribe literally — do not translate, summarise, correct, or modernise anything. ` +
         `Preserve paragraph breaks with blank lines. Skip page numbers, running headers and footers. ` +
+        `If a page is blank or contains only images/decorations with no text, output nothing for it. ` +
         `Output ONLY the transcribed text, no commentary, no markdown fences.` },
       ...images.map(b64 => ({ inline_data: { mime_type: 'image/jpeg', data: b64 } })),
     ];
@@ -71,9 +72,14 @@ export default async function handler(req, res) {
       lastStatus = r.status;
       if (r.ok) {
         const d = await r.json();
-        const text = (d.candidates?.[0]?.content?.parts || [])
+        const cand = d.candidates?.[0];
+        const text = (cand?.content?.parts || [])
           .map(p => p.text || '').join('').trim();
-        if (!text) return res.status(502).json({ error: 'Gemini returned no text', finishReason: d.candidates?.[0]?.finishReason });
+        // Empty + STOP = legitimately blank page(s), not an error
+        if (!text && cand?.finishReason === 'STOP') {
+          return res.status(200).json({ text: '', blank: true, model: MODEL });
+        }
+        if (!text) return res.status(502).json({ error: 'Gemini returned no text', finishReason: cand?.finishReason });
         return res.status(200).json({ text, model: MODEL });
       }
       lastDetail = (await r.text()).slice(0, 300);
