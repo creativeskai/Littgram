@@ -27,6 +27,8 @@ export default function Reader() {
   const [showControls, setShowControls] = useState(true);
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [showChapters, setShowChapters] = useState(false);
+  const [showJump, setShowJump] = useState(false);
+  const [jumpVal, setJumpVal] = useState('');
   const [, force] = useState(0);
   const touchX = useRef(null);
   const bodyRef = useRef(null);
@@ -88,12 +90,17 @@ export default function Reader() {
     else if (x > w * 0.7) go(1);
     else setShowControls(s => !s);
   }
-  function onTouchStart(e) { touchX.current = e.touches[0].clientX; }
+  function onTouchStart(e) {
+    touchX.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }
   function onTouchEnd(e) {
     if (touchX.current == null) return;
-    const dx = e.changedTouches[0].clientX - touchX.current;
+    const dx = e.changedTouches[0].clientX - touchX.current.x;
+    const dy = e.changedTouches[0].clientY - touchX.current.y;
     touchX.current = null;
-    if (Math.abs(dx) > 60) go(dx < 0 ? 1 : -1);
+    // Page-turn only on a clearly horizontal swipe — vertical scrolling with
+    // slight drift was misfiring as a turn and yanking the scroll to the top.
+    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx < 0 ? 1 : -1);
   }
 
   function changeFont(delta) {
@@ -212,9 +219,12 @@ export default function Reader() {
             <input type="range" min="0" max={Math.max(0, pages.length - 1)} value={page}
               onChange={e => setPage(parseInt(e.target.value))} style={{ flex: 1 }} />
             <button className="rbtn" onClick={() => setShowBookmarks(s => !s)}>&#9776;</button>
-            <span style={{ fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+            <button onClick={() => { setJumpVal(String(page + 1)); setShowJump(true); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap', textDecoration: 'underline dotted' }}
+              title="Jump to page">
               {page + 1}/{pages.length}
-            </span>
+            </button>
           </div>
         </div>
       )}
@@ -238,6 +248,30 @@ export default function Reader() {
 
       {showChapters && (
         <ChapterSheet bookId={bookId} onClose={() => setShowChapters(false)} lang={meta.lang} />
+      )}
+
+      {showJump && (
+        <div className="sheet-backdrop" onClick={() => setShowJump(false)}>
+          <div className="sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: 'none' }}>
+            <div className="sheet-grab" />
+            <p className="label">Jump to page (1–{pages.length})</p>
+            <form style={{ display: 'flex', gap: 10 }} onSubmit={e => {
+              e.preventDefault();
+              const n = parseInt(jumpVal);
+              if (n >= 1 && n <= pages.length) {
+                tts.stop();
+                setPage(n - 1);
+                bodyRef.current?.scrollTo(0, 0);
+                setShowJump(false);
+              }
+            }}>
+              <input className="input" inputMode="numeric" autoFocus value={jumpVal}
+                onChange={e => setJumpVal(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder={`1–${pages.length}`} style={{ flex: 1 }} />
+              <button className="btn" type="submit">Go</button>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
