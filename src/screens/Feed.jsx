@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { POSTS_DB } from '../data/posts.js';
 import { BOOKS_DB } from '../data/books.js';
 import { fetchCommunityPosts, publishPost } from '../lib/social.js';
+import { ensureBotPosts } from '../lib/bots.js';
 import PostCard from '../components/PostCard.jsx';
 import { StoriesBar } from '../components/Stories.jsx';
 import { useToast } from '../components/Toast.jsx';
@@ -19,7 +20,10 @@ export default function Feed() {
   const [community, setCommunity] = useState([]);
   const [composing, setComposing] = useState(false);
 
-  useEffect(() => { fetchCommunityPosts().then(setCommunity); }, []);
+  useEffect(() => {
+    // create today's automated-profile posts if missing, then load the feed
+    ensureBotPosts().finally(() => fetchCommunityPosts().then(setCommunity));
+  }, []);
 
   const posts = useMemo(() => {
     const catalog = POSTS_DB.filter(p =>

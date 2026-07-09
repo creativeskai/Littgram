@@ -12,6 +12,7 @@ import Notifications from './screens/Notifications.jsx';
 import Profile from './screens/Profile.jsx';
 import About from './screens/About.jsx';
 import Placeholder from './screens/Placeholder.jsx';
+import Legal from './screens/Legal.jsx';
 import Login from './screens/Login.jsx';
 import Onboarding, { tutorialDone } from './components/Onboarding.jsx';
 import { onAuthChange } from './lib/auth.js';
@@ -57,6 +58,7 @@ export default function App() {
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/about" element={<About />} />
+            <Route path="/legal/:page" element={<Legal />} />
             <Route path="/read/:bookId" element={<Wait><Reader /></Wait>} />
             <Route path="/upload" element={<Wait><Uploader /></Wait>} />
             <Route path="*" element={<Placeholder emoji="🗺️" title="Not found" note="This page doesn't exist" />} />

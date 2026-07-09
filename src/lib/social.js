@@ -90,6 +90,57 @@ export async function fetchCommunityPosts(limit = 30) {
   } catch { return []; }
 }
 
+// ── Follows (shared via Firebase `follows`) ──
+// follows/{me}/following/{handle} and follows/{them}/followers/{me}
+const FOLLOW_KEY = 'littgram_following_v1';
+
+export const followingLocal = () => read(FOLLOW_KEY, []);
+
+export async function followUser(handle) {
+  const me = getProfile().handle;
+  if (handle === me) return;
+  await initFirebase();
+  await fbWrite(`follows/${me}/following/${handle}`, { handle, at: Date.now() });
+  await fbWrite(`follows/${handle}/followers/${me}`, { handle: me, at: Date.now() });
+  const list = read(FOLLOW_KEY, []);
+  if (!list.includes(handle)) { list.push(handle); write(FOLLOW_KEY, list); }
+}
+
+export async function unfollowUser(handle) {
+  const me = getProfile().handle;
+  await initFirebase();
+  const token = await getToken();
+  const H = { Authorization: 'Bearer ' + token };
+  await fetch(fbUrl(`follows/${me}/following/${handle}`), { method: 'DELETE', headers: H });
+  await fetch(fbUrl(`follows/${handle}/followers/${me}`), { method: 'DELETE', headers: H });
+  write(FOLLOW_KEY, read(FOLLOW_KEY, []).filter(h => h !== handle));
+}
+
+async function listFollowCol(handle, col) {
+  try {
+    await initFirebase();
+    const token = await getToken();
+    const r = await fetch(fbUrl(`follows/${handle}/${col}`) + '?pageSize=100', {
+      headers: { Authorization: 'Bearer ' + token },
+    });
+    if (!r.ok) return [];
+    const d = await r.json();
+    return (d.documents || [])
+      .map(doc => Object.fromEntries(Object.entries(doc.fields || {}).map(([k, v]) => [k, fromFsVal(v)])))
+      .filter(p => p.handle)
+      .sort((a, b) => (b.at || 0) - (a.at || 0));
+  } catch { return []; }
+}
+export const listFollowing = (handle) => listFollowCol(handle || getProfile().handle, 'following');
+export const listFollowers = (handle) => listFollowCol(handle || getProfile().handle, 'followers');
+
+// Sync the local following cache from Firebase (call on profile open)
+export async function syncFollowing() {
+  const list = await listFollowing();
+  write(FOLLOW_KEY, list.map(f => f.handle));
+  return list;
+}
+
 // ── Reading activity (shared via Firebase `readers`) ──
 // Each user publishes what they're currently reading; the home bar shows
 // active readers and tapping one reveals their book + progress.

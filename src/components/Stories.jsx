@@ -7,18 +7,32 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { auth } from '../lib/auth.js';
 import { t } from '../lib/i18n.js';
-import { fetchReaders, getProfile } from '../lib/social.js';
+import { fetchReaders, getProfile, followingLocal, fetchCommunityPosts } from '../lib/social.js';
+import { botByHandle } from '../lib/bots.js';
 
 export function StoriesBar({ onOpen }) {
   const [readers, setReaders] = useState([]);
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState(null); // { type: 'reader'|'bot', data }
   const user = auth.currentUser;
   const photo = user?.photoURL;
   const initial = (user?.displayName || user?.email || 'Y')[0].toUpperCase();
   const myHandle = getProfile().handle;
 
   useEffect(() => { fetchReaders().then(setReaders); }, []);
-  const others = readers.filter(r => r.handle !== myHandle);
+
+  // Circles: you first, then everyone you follow, then other active readers
+  const followed = followingLocal();
+  const readerByHandle = Object.fromEntries(readers.map(r => [r.handle, r]));
+  const circles = [];
+  for (const h of followed) {
+    const bot = botByHandle(h);
+    if (bot) circles.push({ key: h, label: bot.name.slice(0, 11), face: bot.emoji, onClick: () => setSelected({ type: 'bot', data: bot }) });
+    else circles.push({ key: h, label: h.slice(0, 11), face: h[0].toUpperCase(), onClick: () => setSelected({ type: 'reader', data: readerByHandle[h] || { handle: h } }) });
+  }
+  for (const r of readers) {
+    if (r.handle === myHandle || followed.includes(r.handle)) continue;
+    circles.push({ key: r.handle, label: r.handle.slice(0, 11), face: r.handle[0].toUpperCase(), onClick: () => setSelected({ type: 'reader', data: r }) });
+  }
 
   return (
     <>
@@ -35,18 +49,56 @@ export function StoriesBar({ onOpen }) {
           </div>
           <div className="story-name">{t('yourStory')}</div>
         </div>
-        {others.map(r => (
-          <div key={r.handle} className="story-ring-wrap" onClick={() => setSelected(r)}>
+        {circles.map(c => (
+          <div key={c.key} className="story-ring-wrap" onClick={c.onClick}>
             <div className="story-ring">
-              <div className="story-ring-inner">{r.handle[0].toUpperCase()}</div>
+              <div className="story-ring-inner">{c.face}</div>
             </div>
-            <div className="story-name">{r.handle.slice(0, 11)}</div>
+            <div className="story-name">{c.label}</div>
           </div>
         ))}
       </div>
 
-      {selected && <ReaderSheet reader={selected} onClose={() => setSelected(null)} />}
+      {selected?.type === 'reader' && <ReaderSheet reader={selected.data} onClose={() => setSelected(null)} />}
+      {selected?.type === 'bot' && <BotSheet bot={selected.data} onClose={() => setSelected(null)} />}
     </>
+  );
+}
+
+// Automated profile sheet: bio + its latest daily post
+function BotSheet({ bot, onClose }) {
+  const [latest, setLatest] = useState(undefined);
+  useEffect(() => {
+    fetchCommunityPosts(60).then(posts => setLatest(posts.find(p => p.user === bot.handle) || null));
+  }, [bot.handle]);
+  return (
+    <div className="sheet-backdrop" onClick={onClose}>
+      <div className="sheet" onClick={e => e.stopPropagation()}>
+        <div className="sheet-grab" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+          <div className="avatar lg">{bot.emoji}</div>
+          <div>
+            <div className="serif" style={{ fontSize: 17, fontWeight: 900 }}>
+              {bot.name} <span className="chip" style={{ fontSize: 8, verticalAlign: 'middle' }}>AUTO</span>
+            </div>
+            <div className="sub">Posts daily</div>
+          </div>
+        </div>
+        <p className="sub" style={{ lineHeight: 1.6, marginBottom: 14 }}>{bot.bio}</p>
+
+        <p className="label">Today's post</p>
+        {latest === undefined && <p className="sub">Loading…</p>}
+        {latest === null && <p className="sub">Nothing yet today — check back soon.</p>}
+        {latest && (
+          <div className="quote-block serif">
+            “{latest.quote}”
+            <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 8, fontStyle: 'normal', fontFamily: 'Inter,sans-serif' }}>
+              — {latest.author}, {latest.bookTitle}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 

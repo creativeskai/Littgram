@@ -54,9 +54,11 @@ export default function PostCard({ post }) {
   return (
     <div className="card" style={{ marginBottom: 10, padding: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <div className="avatar sm">{(post.user || '?')[0].toUpperCase()}</div>
+        <div className="avatar sm">{post.bot ? post.emoji : (post.user || '?')[0].toUpperCase()}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12, fontWeight: 700 }}>{post.user}</div>
+          <div style={{ fontSize: 12, fontWeight: 700 }}>
+            {post.user}{post.bot && <span className="chip" style={{ marginLeft: 6, fontSize: 8 }}>AUTO</span>}
+          </div>
           <div style={{ fontSize: 10, color: 'var(--muted)' }}>
             {post.bookTitle || post.bookId}{post.time ? ' · ' + post.time : ''}
           </div>
