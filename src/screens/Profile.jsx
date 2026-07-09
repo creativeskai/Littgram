@@ -10,20 +10,16 @@ import {
 } from '../lib/social.js';
 import { BOT_PROFILES } from '../lib/bots.js';
 import { listRecent } from '../lib/progress.js';
-import { POSTS_DB } from '../data/posts.js';
+import { listCloudBooks } from '../lib/books.js';
+import { BOOKS_DB } from '../data/books.js';
 import PostCard from '../components/PostCard.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { signOut, auth } from '../lib/auth.js';
 import { t, UI_LANGS, getUiLang, setUiLang } from '../lib/i18n.js';
 
-const LANG_PILLS = [
-  { code: 'all', label: 'All' },
-  { code: 'en', label: 'English' },
-  { code: 'bn', label: 'বাংলা' },
-  { code: 'hi', label: 'हिन्दी' },
-  { code: 'mr', label: 'मराठी' },
-];
-const TOPICS = [...new Set(POSTS_DB.map(p => p.topic).filter(Boolean))].sort();
+// Language/genre options are derived from what's actually in the library —
+// they grow automatically as new books are uploaded.
+const LANG_LABELS = { en: 'English', bn: 'বাংলা', hi: 'हिन्दी', mr: 'मराठी', ta: 'தமிழ்', te: 'తెలుగు' };
 
 export default function Profile() {
   const toast = useToast();
@@ -38,11 +34,22 @@ export default function Profile() {
   const [listSheet, setListSheet] = useState(null); // 'followers' | 'following' | null
   const [q, setQ] = useState('');
   const [readers, setReaders] = useState([]);
+  const [langPills, setLangPills] = useState([{ code: 'all', label: 'All' }]);
+  const [topics, setTopics] = useState([]);
 
   useEffect(() => {
     syncFollowing().then(setFollowing);
     listFollowers().then(setFollowers);
     fetchReaders().then(setReaders);
+    // derive filter options from the actual cloud library
+    listCloudBooks().then(cloud => {
+      const inLib = BOOKS_DB.filter(b =>
+        cloud.some(c => c.id === b.id || c.id === b.id + '_en'));
+      const langs = [...new Set(inLib.map(b => b.lang))].sort();
+      setLangPills([{ code: 'all', label: 'All' },
+        ...langs.map(code => ({ code, label: LANG_LABELS[code] || code.toUpperCase() }))]);
+      setTopics([...new Set(inLib.flatMap(b => b.topics || []))].sort());
+    }).catch(() => {});
   }, []);
 
   const followingSet = new Set(following.map(f => f.handle));
@@ -158,17 +165,6 @@ export default function Profile() {
         {discoverable.length === 0 && <p className="sub">No profiles match.</p>}
       </div>
 
-      <div className="card" style={{ marginTop: 12, padding: '4px 16px' }}>
-        <Link to="/quotes" style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '13px 0', textDecoration: 'none', color: 'var(--text)',
-          fontSize: 13, fontWeight: 600,
-        }}>
-          {t('quotesWall')}
-          <span style={{ color: 'var(--muted)' }}>›</span>
-        </Link>
-      </div>
-
       <div className="card" style={{ marginTop: 12 }}>
         <p className="label">{t('uiLanguage')}</p>
         <div className="pill-row">
@@ -179,17 +175,18 @@ export default function Profile() {
         </div>
         <p className="label" style={{ marginTop: 12 }}>{t('feedLanguage')}</p>
         <div className="pill-row">
-          {LANG_PILLS.map(p => (
+          {langPills.map(p => (
             <button key={p.code} className={'pill' + (lang === p.code ? ' on' : '')}
               onClick={() => setLang(p.code)}>{p.label}</button>
           ))}
         </div>
         <p className="label" style={{ marginTop: 12 }}>{t('genre')}</p>
         <div className="pill-row" style={{ marginBottom: 0 }}>
-          {TOPICS.map(tp => (
+          {topics.map(tp => (
             <button key={tp} className={'pill sm' + (topic === tp ? ' on' : '')}
               onClick={() => setTopic(tp)}>{tp}</button>
           ))}
+          {topics.length === 0 && <span className="sub" style={{ fontSize: 10.5 }}>Loading genres…</span>}
         </div>
       </div>
 
@@ -206,7 +203,9 @@ export default function Profile() {
       {posts.length === 0 && (
         <p className="sub">Nothing published yet — share a quote from the home feed with the ＋ button.</p>
       )}
-      {posts.map(p => <PostCard key={p.id} post={p} />)}
+      {posts.map(p => (
+        <PostCard key={p.id} post={p} onDelete={() => window.location.reload()} />
+      ))}
 
       {/* ── Footer ── */}
       <div style={{ marginTop: 34, paddingTop: 18, borderTop: '1px solid var(--border)', textAlign: 'center' }}>

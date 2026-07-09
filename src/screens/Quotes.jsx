@@ -57,11 +57,12 @@ export default function Quotes() {
         ))}
       </div>
       {quotes.map((x, i) => (
-        <div key={i} className="quote-tile" style={{ background: `linear-gradient(160deg,${x.book.c1 || '#2A2018'},${x.book.c2 || '#1E1610'})` }}
+        <div key={i} className="quote-tile"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: '3px solid var(--accent)' }}
           onClick={() => share(x)}>
-          <div className="serif" style={{ fontSize: 15, lineHeight: 1.6, color: '#fff', fontStyle: 'italic' }}>“{x.q}”</div>
+          <div className="serif" style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text)', fontStyle: 'italic' }}>“{x.q}”</div>
           <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: x.book.accent || 'var(--gold)' }}>
+            <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--muted)' }}>
               — {x.book.author}
             </span>
             <span className="chip">{x.emotion}</span>

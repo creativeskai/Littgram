@@ -1,25 +1,24 @@
 {
   "name": "Littgram",
   "short_name": "Littgram",
-  "description": "Social reading app for Indian literature",
+  "description": "A literary social world — read, share, and discover books in every Indian language.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#100C08",
-  "theme_color": "#100C08",
+  "background_color": "#0C0C0D",
+  "theme_color": "#0C0C0D",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "https://covers.openlibrary.org/b/id/12320953-L.jpg",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/jpeg"
+      "type": "image/png"
     },
     {
-      "src": "https://covers.openlibrary.org/b/id/12320953-L.jpg",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/jpeg"
+      "type": "image/png"
     }
   ],
   "categories": ["books", "education", "social"],
-  "lang": "en",
-  "screenshots": []
+  "lang": "en"
 }

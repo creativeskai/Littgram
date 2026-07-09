@@ -29,7 +29,10 @@ export default function App() {
   // undefined = checking auth, null = signed out, object = signed in
   const [user, setUser] = useState(undefined);
   const [showTutorial, setShowTutorial] = useState(!tutorialDone());
-  useEffect(() => onAuthChange(setUser), []);
+  useEffect(() => onAuthChange(u => {
+    window.__littgramUser = u; // lets social.js derive the default handle
+    setUser(u);
+  }), []);
 
   if (user === undefined) {
     return (

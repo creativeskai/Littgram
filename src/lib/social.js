@@ -32,10 +32,25 @@ export function addComment(postId, text) {
 }
 
 // ── Profile identity (per device) ──
+// Default handle comes from the Google account name (set on window by App
+// after sign-in, avoiding a circular import); editable in Profile.
+function googleHandle() {
+  try {
+    const name = window.__littgramUser?.displayName || '';
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.+|\.+$/g, '').slice(0, 22);
+    return slug || null;
+  } catch { return null; }
+}
+
 export function getProfile() {
   let p = read(PROFILE_KEY, null);
+  const g = googleHandle();
   if (!p) {
-    p = { handle: 'reader_' + Math.random().toString(36).slice(2, 6), joined: Date.now() };
+    p = { handle: g || 'reader_' + Math.random().toString(36).slice(2, 6), joined: Date.now() };
+    write(PROFILE_KEY, p);
+  } else if (g && /^reader_[a-z0-9]{4}$/.test(p.handle)) {
+    // one-time upgrade: replace the old random handle with the Google name
+    p.handle = g;
     write(PROFILE_KEY, p);
   }
   return p;
@@ -73,6 +88,15 @@ export async function publishPost({ quote, caption, book }) {
 }
 
 export const myPosts = () => read(MYPOSTS_KEY, []);
+
+export async function deletePost(id) {
+  await initFirebase();
+  const token = await getToken();
+  await fetch(fbUrl('community_posts/' + id), {
+    method: 'DELETE', headers: { Authorization: 'Bearer ' + token },
+  });
+  write(MYPOSTS_KEY, read(MYPOSTS_KEY, []).filter(p => p.id !== id));
+}
 
 // Server-side ordered query — a plain collection list returns documents by
 // ID, which stops being "the latest posts" once the collection grows.

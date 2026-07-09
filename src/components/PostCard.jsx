@@ -3,7 +3,7 @@
 // tag, like/comment/share row, caption + hashtags, comments bottom sheet.
 
 import { useState } from 'react';
-import { isLiked, toggleLike, listComments, addComment } from '../lib/social.js';
+import { isLiked, toggleLike, listComments, addComment, getProfile, deletePost } from '../lib/social.js';
 import { useToast } from './Toast.jsx';
 
 // Neutral ink-styled quote card — the colored book gradients clashed with
@@ -25,13 +25,35 @@ function QuoteSlide({ emoji, quote, author }) {
   );
 }
 
-export default function PostCard({ post }) {
+export default function PostCard({ post, onDelete }) {
   const toast = useToast();
   const [liked, setLiked] = useState(isLiked(post.id));
   const [slide, setSlide] = useState(0);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState(() => listComments(post.id));
   const [draft, setDraft] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const isMine = !post.bot && post.user === getProfile().handle && String(post.id).startsWith('cp_');
+
+  async function onConfirmDelete() {
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      await deletePost(post.id);
+      toast('Post deleted');
+      onDelete?.(post.id);
+    } catch {
+      toast("Couldn't delete — try again");
+      setDeleting(false);
+    }
+  }
+
+  function onReport() {
+    const subject = encodeURIComponent(`Report: post ${post.id} by @${post.user}`);
+    const body = encodeURIComponent(`I want to report this post.\n\nPost ID: ${post.id}\nAuthor: @${post.user}\nQuote: "${(post.quote || '').slice(0, 120)}"\n\nReason: `);
+    window.location.href = `mailto:contact-us@littgram.com?subject=${subject}&body=${body}`;
+  }
 
   const slides = post.carousel && post.quotes
     ? post.quotes.map(q => ({ quote: q.q, author: q.a, accent: q.c, bg: post.bg, emoji: post.emoji }))
@@ -89,6 +111,25 @@ export default function PostCard({ post }) {
           💬 {comments.length || post.comments || ''}
         </button>
         <button className="action" onClick={onShare} style={{ fontSize: 11 }}>↗ Share</button>
+        <span style={{ marginLeft: 'auto' }}>
+          {isMine ? (
+            confirmDelete ? (
+              <>
+                <button className="action" style={{ fontSize: 10.5, color: 'var(--err)', display: 'inline' }}
+                  onClick={onConfirmDelete} disabled={deleting}>
+                  {deleting ? 'Deleting…' : 'Confirm delete'}
+                </button>
+                <button className="action" style={{ fontSize: 10.5, display: 'inline', marginLeft: 10 }}
+                  onClick={() => setConfirmDelete(false)}>Cancel</button>
+              </>
+            ) : (
+              <button className="action" style={{ fontSize: 10.5, display: 'inline' }}
+                onClick={() => setConfirmDelete(true)}>Delete</button>
+            )
+          ) : !post.bot && post.at ? (
+            <button className="action" style={{ fontSize: 10.5, display: 'inline' }} onClick={onReport}>Report</button>
+          ) : null}
+        </span>
       </div>
 
       {post.caption && (

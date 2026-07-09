@@ -9,15 +9,7 @@ import BookCover from '../components/BookCover.jsx';
 import BookDetail from '../components/BookDetail.jsx';
 import { t } from '../lib/i18n.js';
 
-const LANG_PILLS = [
-  { code: 'all', label: 'All' },
-  { code: 'en', label: 'English' },
-  { code: 'bn', label: 'বাংলা' },
-  { code: 'hi', label: 'हिन्दी' },
-  { code: 'mr', label: 'मराठी' },
-];
-
-const ALL_TOPICS = [...new Set(BOOKS_DB.flatMap(b => b.topics || []))].sort();
+const LANG_LABELS = { en: 'English', bn: 'বাংলা', hi: 'हिन्दी', mr: 'मराठी', ta: 'தமிழ்', te: 'తెలుగు' };
 
 export default function Explore() {
   const [q, setQ] = useState('');
@@ -35,6 +27,15 @@ export default function Explore() {
     if (!cloudIds) return [];
     return BOOKS_DB.filter(b => cloudIds.has(b.id) || cloudIds.has(b.id + '_en'));
   }, [cloudIds]);
+
+  // Filter options derive from the library — they grow with new uploads
+  const langPills = useMemo(() => [
+    { code: 'all', label: 'All' },
+    ...[...new Set(readable.map(b => b.lang))].sort()
+      .map(code => ({ code, label: LANG_LABELS[code] || code.toUpperCase() })),
+  ], [readable]);
+  const allTopics = useMemo(
+    () => [...new Set(readable.flatMap(b => b.topics || []))].sort(), [readable]);
 
   const books = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -68,15 +69,15 @@ export default function Explore() {
         value={q} onChange={e => setQ(e.target.value)} style={{ margin: '10px 0 12px' }} />
 
       <div className="pill-row">
-        {LANG_PILLS.map(p => (
+        {langPills.map(p => (
           <button key={p.code} className={'pill' + (lang === p.code ? ' on' : '')}
             onClick={() => setLang(p.code)}>{p.label}</button>
         ))}
       </div>
       <div className="pill-row" style={{ marginBottom: 14 }}>
-        {ALL_TOPICS.map(t => (
-          <button key={t} className={'pill sm' + (topic === t ? ' on' : '')}
-            onClick={() => setTopic(topic === t ? null : t)}>{t}</button>
+        {allTopics.map(tp => (
+          <button key={tp} className={'pill sm' + (topic === tp ? ' on' : '')}
+            onClick={() => setTopic(topic === tp ? null : tp)}>{tp}</button>
         ))}
       </div>
 

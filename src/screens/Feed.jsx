@@ -50,7 +50,10 @@ export default function Feed() {
       <StoriesBar onOpen={() => setComposing(true)} />
 
       <div style={{ marginTop: 14 }} />
-      {posts.map(p => <PostCard key={p.id} post={p} />)}
+      {posts.map(p => (
+        <PostCard key={p.id} post={p}
+          onDelete={id => setCommunity(c => c.filter(x => x.id !== id))} />
+      ))}
       {posts.length === 0 && (
         <p className="sub" style={{ textAlign: 'center', padding: '40px 0' }}>
           Nothing here — adjust your language and genre preferences in Profile.
