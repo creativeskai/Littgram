@@ -9,6 +9,7 @@ import {
 import { useToast } from '../components/Toast.jsx';
 import { useTTS } from '../lib/useTTS.js';
 import { chaptersFor } from '../lib/chapters.js';
+import { publishReading } from '../lib/social.js';
 
 export default function Reader() {
   const { bookId } = useParams();
@@ -57,6 +58,11 @@ export default function Reader() {
   useEffect(() => {
     if (state === 'ready' && pages.length) {
       savePosition(bookId, page, pages.length, meta.native || meta.title || bookId);
+      // Share reading activity (debounced — settles after page turns stop)
+      const timer = setTimeout(() => {
+        publishReading({ bookId, title: meta.native || meta.title || bookId, page, totalPages: pages.length });
+      }, 4000);
+      return () => clearTimeout(timer);
     }
   }, [page, state, pages.length, bookId, meta]);
 

@@ -71,6 +71,22 @@ export default async function handler(req, res) {
       return res.status(413).json({ error: 'Text too large for one request (>12KB). Send smaller pieces.' });
     }
 
+    // Sarvam credits are reserved for TTS only — translation goes to Gemini
+    // whenever a GEMINI_KEY is configured. Sarvam Mayura below is only the
+    // fallback when Gemini is not set up.
+    if (GEMINI_KEY) {
+      try {
+        const out = await geminiTranslate(text, source_lang);
+        return res.status(200).json({
+          translated: out, chunkCount: 1, errorCount: 0, lastError: 0,
+          charCount: out.length, engine: 'gemini',
+        });
+      } catch (e) {
+        if (!SARVAM_KEY) return res.status(502).json({ error: 'Gemini translate failed: ' + e.message });
+        // fall through to Sarvam only if Gemini is genuinely down
+      }
+    }
+
     // Split into chunks on paragraph boundaries — and HARD-SPLIT any
     // paragraph longer than CHUNK_SIZE (corrupt or unbroken text used to
     // produce >1000-char chunks, which Mayura rejects with 400).

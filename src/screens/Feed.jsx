@@ -8,7 +8,7 @@ import { POSTS_DB } from '../data/posts.js';
 import { BOOKS_DB } from '../data/books.js';
 import { fetchCommunityPosts, publishPost } from '../lib/social.js';
 import PostCard from '../components/PostCard.jsx';
-import { StoriesBar, StoryViewer } from '../components/Stories.jsx';
+import { StoriesBar } from '../components/Stories.jsx';
 import { useToast } from '../components/Toast.jsx';
 
 export default function Feed() {
@@ -16,7 +16,6 @@ export default function Feed() {
   // Reading preferences live in Profile; the feed just applies them.
   const lang = localStorage.getItem('littgram_feed_lang') || 'all';
   const topic = localStorage.getItem('littgram_feed_topic') || null;
-  const [storyAcc, setStoryAcc] = useState(null);
   const [community, setCommunity] = useState([]);
   const [composing, setComposing] = useState(false);
 
@@ -44,7 +43,7 @@ export default function Feed() {
 
   return (
     <div>
-      <StoriesBar onOpen={acc => (acc === '__me' ? setComposing(true) : setStoryAcc(acc))} />
+      <StoriesBar onOpen={() => setComposing(true)} />
 
       <div style={{ marginTop: 14 }} />
       {posts.map(p => <PostCard key={p.id} post={p} />)}
@@ -56,7 +55,6 @@ export default function Feed() {
 
       <button className="fab" onClick={() => setComposing(true)} aria-label="Create post">＋</button>
 
-      {storyAcc && <StoryViewer account={storyAcc} onClose={() => setStoryAcc(null)} />}
       {composing && <Composer onPublish={onPublish} onClose={() => setComposing(false)} />}
     </div>
   );

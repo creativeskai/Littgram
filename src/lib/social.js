@@ -90,6 +90,41 @@ export async function fetchCommunityPosts(limit = 30) {
   } catch { return []; }
 }
 
+// ── Reading activity (shared via Firebase `readers`) ──
+// Each user publishes what they're currently reading; the home bar shows
+// active readers and tapping one reveals their book + progress.
+export async function publishReading({ bookId, title, page, totalPages }) {
+  const handle = getProfile().handle;
+  try {
+    await initFirebase();
+    await fbWrite('readers/' + handle, {
+      handle, bookId,
+      title: title || bookId,
+      page: page + 1,
+      totalPages: totalPages || 0,
+      pct: totalPages ? Math.round(((page + 1) / totalPages) * 100) : 0,
+      updatedAt: Date.now(),
+    });
+  } catch {} // reading publishing is best-effort
+}
+
+export async function fetchReaders(limit = 20) {
+  try {
+    await initFirebase();
+    const token = await getToken();
+    const r = await fetch(fbUrl('readers') + '?pageSize=' + limit, {
+      headers: { Authorization: 'Bearer ' + token },
+    });
+    if (!r.ok) return [];
+    const d = await r.json();
+    const week = Date.now() - 7 * 86400000;
+    return (d.documents || [])
+      .map(doc => Object.fromEntries(Object.entries(doc.fields || {}).map(([k, v]) => [k, fromFsVal(v)])))
+      .filter(p => p.handle && p.updatedAt > week)
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  } catch { return []; }
+}
+
 // ── Challenges ──
 export async function listChallenges() {
   await initFirebase();

@@ -1,122 +1,103 @@
-// src/components/Stories.jsx
-// StoriesBar (horizontal ring strip) + StoryViewer (fullscreen, segmented
-// progress bars, 5s auto-advance, tap right/left to skip, swipe down to close).
+// src/components/Stories.jsx — now the READERS bar.
+// Rings show real community members (from Firebase `readers`); tapping one
+// opens a sheet with what they're currently reading. Your own ring opens
+// the post composer. The old fake-account story viewer is gone.
 
-import { useEffect, useRef, useState } from 'react';
-import { STORIES_DB } from '../data/stories.js';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { auth } from '../lib/auth.js';
 import { t } from '../lib/i18n.js';
-
-const ACCOUNTS = Object.keys(STORIES_DB);
-const STORY_MS = 5000;
+import { fetchReaders, getProfile } from '../lib/social.js';
 
 export function StoriesBar({ onOpen }) {
+  const [readers, setReaders] = useState([]);
+  const [selected, setSelected] = useState(null);
   const user = auth.currentUser;
   const photo = user?.photoURL;
   const initial = (user?.displayName || user?.email || 'Y')[0].toUpperCase();
+  const myHandle = getProfile().handle;
+
+  useEffect(() => { fetchReaders().then(setReaders); }, []);
+  const others = readers.filter(r => r.handle !== myHandle);
+
   return (
-    <div className="stories-bar">
-      <div className="story-ring-wrap" onClick={() => onOpen('__me')}>
-        <div className="story-ring me">
-          <div className="story-ring-inner">
-            {photo
-              ? <img src={photo} alt="You" referrerPolicy="no-referrer"
-                  style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-              : initial}
+    <>
+      <div className="stories-bar">
+        <div className="story-ring-wrap" onClick={() => onOpen('__me')}>
+          <div className="story-ring me">
+            <div className="story-ring-inner">
+              {photo
+                ? <img src={photo} alt="You" referrerPolicy="no-referrer"
+                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                : initial}
+            </div>
+            <div className="story-add">＋</div>
           </div>
-          <div className="story-add">＋</div>
+          <div className="story-name">{t('yourStory')}</div>
         </div>
-        <div className="story-name">{t('yourStory')}</div>
+        {others.map(r => (
+          <div key={r.handle} className="story-ring-wrap" onClick={() => setSelected(r)}>
+            <div className="story-ring">
+              <div className="story-ring-inner">{r.handle[0].toUpperCase()}</div>
+            </div>
+            <div className="story-name">{r.handle.slice(0, 11)}</div>
+          </div>
+        ))}
       </div>
-      {ACCOUNTS.map(acc => (
-        <div key={acc} className="story-ring-wrap" onClick={() => onOpen(acc)}>
-          <div className="story-ring">
-            <div className="story-ring-inner">{acc[0].toUpperCase()}</div>
+
+      {selected && <ReaderSheet reader={selected} onClose={() => setSelected(null)} />}
+    </>
+  );
+}
+
+// What is this person reading?
+function ReaderSheet({ reader, onClose }) {
+  return (
+    <div className="sheet-backdrop" onClick={onClose}>
+      <div className="sheet" onClick={e => e.stopPropagation()}>
+        <div className="sheet-grab" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <div className="avatar lg">{reader.handle[0].toUpperCase()}</div>
+          <div>
+            <div className="serif" style={{ fontSize: 17, fontWeight: 900 }}>@{reader.handle}</div>
+            <div className="sub">{timeAgo(reader.updatedAt)}</div>
           </div>
-          <div className="story-name">{acc.replace(/_/g, '.').slice(0, 11)}</div>
         </div>
-      ))}
+
+        <p className="label">Currently reading</p>
+        <div className="card row-card" style={{ marginTop: 6 }}>
+          <div style={{ fontSize: 22 }}>📖</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>{reader.title}</div>
+            {reader.totalPages > 0 && (
+              <>
+                <div className="sub" style={{ margin: '3px 0 7px' }}>
+                  Page {reader.page} of {reader.totalPages} · {reader.pct}%
+                </div>
+                <div className="progress-track" style={{ marginTop: 0 }}>
+                  <div className="progress-fill" style={{ width: reader.pct + '%' }} />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {reader.bookId && (
+          <Link className="btn" to={'/read/' + reader.bookId}
+            style={{ width: '100%', marginTop: 14, textDecoration: 'none' }}>
+            Read this book too
+          </Link>
+        )}
+      </div>
     </div>
   );
 }
 
-export function StoryViewer({ account, onClose }) {
-  const [accIdx, setAccIdx] = useState(ACCOUNTS.indexOf(account));
-  const [storyIdx, setStoryIdx] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const raf = useRef(null);
-  const startTime = useRef(0);
-  const touchY = useRef(null);
-
-  const acc = ACCOUNTS[accIdx];
-  const stories = STORIES_DB[acc] || [];
-  const story = stories[storyIdx];
-
-  // Advance helpers
-  function next() {
-    if (storyIdx < stories.length - 1) setStoryIdx(i => i + 1);
-    else if (accIdx < ACCOUNTS.length - 1) { setAccIdx(i => i + 1); setStoryIdx(0); }
-    else onClose();
-  }
-  function prev() {
-    if (storyIdx > 0) setStoryIdx(i => i - 1);
-    else if (accIdx > 0) {
-      const prevAcc = ACCOUNTS[accIdx - 1];
-      setAccIdx(i => i - 1);
-      setStoryIdx((STORIES_DB[prevAcc] || []).length - 1);
-    }
-  }
-
-  // Timer
-  useEffect(() => {
-    startTime.current = performance.now();
-    setProgress(0);
-    const tick = (t) => {
-      const p = (t - startTime.current) / STORY_MS;
-      if (p >= 1) { next(); return; }
-      setProgress(p);
-      raf.current = requestAnimationFrame(tick);
-    };
-    raf.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf.current);
-  }, [accIdx, storyIdx]); // eslint-disable-line
-
-  if (!story) return null;
-
-  function onTap(e) {
-    const x = e.clientX - e.currentTarget.getBoundingClientRect().left;
-    if (x < e.currentTarget.clientWidth * 0.35) prev(); else next();
-  }
-
-  return (
-    <div className="story-viewer"
-      onClick={onTap}
-      onTouchStart={e => { touchY.current = e.touches[0].clientY; }}
-      onTouchEnd={e => {
-        if (touchY.current != null && e.changedTouches[0].clientY - touchY.current > 80) onClose();
-        touchY.current = null;
-      }}>
-      <div className="story-bars">
-        {stories.map((_, i) => (
-          <div key={i} className="story-bar">
-            <div className="story-bar-fill"
-              style={{ width: i < storyIdx ? '100%' : i === storyIdx ? progress * 100 + '%' : '0%' }} />
-          </div>
-        ))}
-      </div>
-      <div className="story-head">
-        <div className="avatar sm">{acc[0].toUpperCase()}</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{acc}</div>
-        <button className="story-close" onClick={e => { e.stopPropagation(); onClose(); }}>✕</button>
-      </div>
-      <div className="story-card" style={{ background: story.bg }}>
-        <div className="serif" style={{ fontSize: 20, lineHeight: 1.55, color: '#fff', fontStyle: 'italic', textAlign: 'center' }}>
-          {story.quote}
-        </div>
-        <div style={{ marginTop: 16, fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.75)', textAlign: 'center' }}>
-          {story.label}
-        </div>
-      </div>
-    </div>
-  );
+function timeAgo(ts) {
+  if (!ts) return '';
+  const m = Math.round((Date.now() - ts) / 60000);
+  if (m < 1) return 'reading now';
+  if (m < 60) return `active ${m}m ago`;
+  if (m < 1440) return `active ${Math.round(m / 60)}h ago`;
+  return `active ${Math.round(m / 1440)}d ago`;
 }
