@@ -5,6 +5,7 @@
 // Sarvam bulbul:v3 engine, minus the hardcoded key and sandbox XHR hack.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { getAuthToken } from './auth.js';
 
 const LANG_CODES = { en: 'en-IN', bn: 'bn-IN', hi: 'hi-IN', mr: 'mr-IN', ta: 'ta-IN', te: 'te-IN' };
 
@@ -50,9 +51,10 @@ export function useTTS() {
   const fetchChunk = useCallback(async (i, session) => {
     if (i >= chunksRef.current.length) return null;
     if (cacheRef.current[i]) return cacheRef.current[i];
+    const token = await getAuthToken();
     const r = await fetch('/api/tts', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
       body: JSON.stringify({ text: chunksRef.current[i], lang: langRef.current, gender: genderRef.current }),
     });
     if (session !== sessionRef.current) return null; // cancelled

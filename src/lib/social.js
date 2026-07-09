@@ -74,19 +74,36 @@ export async function publishPost({ quote, caption, book }) {
 
 export const myPosts = () => read(MYPOSTS_KEY, []);
 
+// Server-side ordered query — a plain collection list returns documents by
+// ID, which stops being "the latest posts" once the collection grows.
+async function fbRunQuery(collectionId, orderField, limit) {
+  await initFirebase();
+  const token = await getToken();
+  const r = await fetch(
+    fbUrl('').replace(/\/documents\/$/, '/documents') + ':runQuery',
+    {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId }],
+          orderBy: [{ field: { fieldPath: orderField }, direction: 'DESCENDING' }],
+          limit,
+        },
+      }),
+    }
+  );
+  if (!r.ok) return [];
+  const rows = await r.json();
+  return rows
+    .filter(row => row.document?.fields)
+    .map(row => Object.fromEntries(Object.entries(row.document.fields).map(([k, v]) => [k, fromFsVal(v)])));
+}
+
 export async function fetchCommunityPosts(limit = 30) {
   try {
-    await initFirebase();
-    const token = await getToken();
-    const r = await fetch(fbUrl('community_posts') + '?pageSize=' + limit, {
-      headers: { Authorization: 'Bearer ' + token },
-    });
-    if (!r.ok) return [];
-    const d = await r.json();
-    return (d.documents || [])
-      .map(doc => Object.fromEntries(Object.entries(doc.fields || {}).map(([k, v]) => [k, fromFsVal(v)])))
-      .filter(p => p.id)
-      .sort((a, b) => (b.at || 0) - (a.at || 0));
+    const posts = await fbRunQuery('community_posts', 'at', limit);
+    return posts.filter(p => p.id);
   } catch { return []; }
 }
 
@@ -161,18 +178,9 @@ export async function publishReading({ bookId, title, page, totalPages }) {
 
 export async function fetchReaders(limit = 20) {
   try {
-    await initFirebase();
-    const token = await getToken();
-    const r = await fetch(fbUrl('readers') + '?pageSize=' + limit, {
-      headers: { Authorization: 'Bearer ' + token },
-    });
-    if (!r.ok) return [];
-    const d = await r.json();
     const week = Date.now() - 7 * 86400000;
-    return (d.documents || [])
-      .map(doc => Object.fromEntries(Object.entries(doc.fields || {}).map(([k, v]) => [k, fromFsVal(v)])))
-      .filter(p => p.handle && p.updatedAt > week)
-      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    const rows = await fbRunQuery('readers', 'updatedAt', limit);
+    return rows.filter(p => p.handle && p.updatedAt > week);
   } catch { return []; }
 }
 

@@ -174,7 +174,7 @@ export default function Profile() {
         <div className="pill-row">
           {UI_LANGS.map(l => (
             <button key={l.code} className={'pill' + (uiLang === l.code ? ' on' : '')}
-              onClick={() => { setUiLang(l.code); setUiLangState(l.code); }}>{l.label}</button>
+              onClick={() => { setUiLang(l.code); setUiLangState(l.code); window.location.reload(); }}>{l.label}</button>
           ))}
         </div>
         <p className="label" style={{ marginTop: 12 }}>{t('feedLanguage')}</p>

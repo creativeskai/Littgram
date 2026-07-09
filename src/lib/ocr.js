@@ -6,6 +6,12 @@
 // • fetch /api/get-ocr-text ONCE when completed (the old timeout bug is gone)
 
 import JSZip from 'jszip';
+import { getAuthToken } from './auth.js';
+
+async function authHeader() {
+  const token = await getAuthToken();
+  return token ? { Authorization: 'Bearer ' + token } : {};
+}
 
 let _pdfjs = null;
 async function getPdfjs() {
@@ -121,7 +127,7 @@ export async function renderBatchToZip(pdf, startPage, endPage) {
 export async function startOcrJob(zipBlob, language) {
   const r = await fetch('/api/start-ocr', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/zip', 'x-language': language },
+    headers: { 'Content-Type': 'application/zip', 'x-language': language, ...(await authHeader()) },
     body: zipBlob,
   });
   const d = await r.json();
@@ -138,7 +144,7 @@ export async function waitForJob(jobId, onTick) {
     await new Promise(res => setTimeout(res, POLL_INTERVAL_MS));
     let d, httpOk = true;
     try {
-      const r = await fetch('/api/check-ocr-status?job_id=' + encodeURIComponent(jobId));
+      const r = await fetch('/api/check-ocr-status?job_id=' + encodeURIComponent(jobId), { headers: await authHeader() });
       httpOk = r.ok;
       d = await r.json();
     } catch {
@@ -167,7 +173,7 @@ export async function fetchOcrText(jobId) {
   let lastErr;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      const r = await fetch('/api/get-ocr-text?job_id=' + encodeURIComponent(jobId));
+      const r = await fetch('/api/get-ocr-text?job_id=' + encodeURIComponent(jobId), { headers: await authHeader() });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'get-ocr-text failed: ' + r.status);
       return d.text;
@@ -199,7 +205,7 @@ export async function translateText(text, sourceLang, onProgress) {
   for (let i = 0; i < pieces.length; i++) {
     const r = await fetch('/api/translate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
       body: JSON.stringify({ text: pieces[i], source_lang: sourceLang, target_lang: 'en-IN' }),
     });
     const d = await r.json();

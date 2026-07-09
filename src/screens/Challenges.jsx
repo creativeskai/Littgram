@@ -14,6 +14,7 @@ export default function Challenges() {
   const [challenges, setChallenges] = useState(null);
   const [joined, setJoined] = useState(joinedChallenges());
   const [error, setError] = useState(null);
+  const [joining, setJoining] = useState(null); // challenge id in flight
 
   useEffect(() => {
     listChallenges().then(setChallenges).catch(e => { setError(e.message); setChallenges([]); });
@@ -25,12 +26,15 @@ export default function Challenges() {
     r.totalPages && r.page >= r.totalPages - 1 && r.at >= monthStart).length;
 
   async function onJoin(ch) {
+    if (joining) return;
+    setJoining(ch.id);
     try {
       await joinChallenge(ch.id);
       setJoined(joinedChallenges());
       setChallenges(cs => cs.map(c => c.id === ch.id ? { ...c, members: c.members + 1 } : c));
       toast('Joined — happy reading 🏆');
-    } catch (e) { toast('Join failed: ' + e.message.slice(0, 60)); }
+    } catch (e) { toast("Couldn't join — check your connection and try again"); }
+    finally { setJoining(null); }
   }
 
   return (
@@ -70,8 +74,9 @@ export default function Challenges() {
                 </div>
               </>
             ) : (
-              <button className="btn" style={{ width: '100%', marginTop: 12 }} onClick={() => onJoin(ch)}>
-                Join challenge
+              <button className="btn" style={{ width: '100%', marginTop: 12 }}
+                disabled={joining === ch.id} onClick={() => onJoin(ch)}>
+                {joining === ch.id ? 'Joining…' : 'Join challenge'}
               </button>
             )}
           </div>

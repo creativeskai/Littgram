@@ -13,8 +13,9 @@ const SARVAM_DOC = 'https://api.sarvam.ai/doc-digitization/job/v1';
 export const config = { maxDuration: 30 };
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'application/json');
+  const { requireAuth } = await import('./_lib.js');
+  if (!(await requireAuth(req, res, { limit: 30 }))) return;
 
   const out = { key_present: !!SARVAM_KEY, key_prefix: SARVAM_KEY ? SARVAM_KEY.slice(0, 8) + '…' : null };
   if (!SARVAM_KEY) { out.error = 'SARVAM_KEY not set on Vercel'; return res.status(200).json(out); }

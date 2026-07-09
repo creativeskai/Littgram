@@ -10,7 +10,6 @@ import Challenges from './screens/Challenges.jsx';
 import Quotes from './screens/Quotes.jsx';
 import Notifications from './screens/Notifications.jsx';
 import Profile from './screens/Profile.jsx';
-import About from './screens/About.jsx';
 import Placeholder from './screens/Placeholder.jsx';
 import Legal from './screens/Legal.jsx';
 import Login from './screens/Login.jsx';
@@ -57,7 +56,6 @@ export default function App() {
             <Route path="/quotes" element={<Quotes />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/about" element={<About />} />
             <Route path="/legal/:page" element={<Legal />} />
             <Route path="/read/:bookId" element={<Wait><Reader /></Wait>} />
             <Route path="/upload" element={<Wait><Uploader /></Wait>} />

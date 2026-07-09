@@ -69,7 +69,15 @@ function Composer({ onPublish, onClose }) {
   const [quoteIdx, setQuoteIdx] = useState(-1);
   const [quote, setQuote] = useState('');
   const [caption, setCaption] = useState('');
+  const [sending, setSending] = useState(false);
   const book = BOOKS_DB.find(b => b.id === bookId) || null;
+
+  async function submit() {
+    if (sending) return;
+    setSending(true);
+    try { await onPublish({ quote: quote.trim(), caption: caption.trim(), book }); }
+    finally { setSending(false); }
+  }
 
   function pickQuote(i) {
     setQuoteIdx(i);
@@ -117,9 +125,9 @@ function Composer({ onPublish, onClose }) {
 
         <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
           <button className="btn" style={{ flex: 1 }}
-            disabled={!quote.trim() && !caption.trim()}
-            onClick={() => onPublish({ quote: quote.trim(), caption: caption.trim(), book })}>
-            Publish
+            disabled={sending || (!quote.trim() && !caption.trim())}
+            onClick={submit}>
+            {sending ? 'Publishing…' : 'Publish'}
           </button>
           <button className="btn ghost" onClick={onClose}>Cancel</button>
         </div>
