@@ -11,3 +11,4 @@ book-sources/*.pdf
 book-sources/*.epub
 book-sources/*.djvu
 book-sources/*.zip
+book-sources/texts/

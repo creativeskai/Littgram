@@ -43,25 +43,43 @@ function dailyQuote(bot, dayKey) {
   return pool[h % pool.length];
 }
 
+// AI illustration for the day's quote — free Pollinations endpoint, no key.
+// The seed is derived from the post id, so every client renders the same
+// image; only the URL is stored (Firestore docs stay small).
+function quoteImageUrl(pick, id) {
+  let seed = 0;
+  for (let i = 0; i < id.length; i++) seed = (seed * 31 + id.charCodeAt(i)) % 999999;
+  const prompt =
+    `Atmospheric painterly literary illustration, moody, evocative, no text or lettering, ` +
+    `inspired by the book "${pick.book.title}" by ${pick.book.author}. ` +
+    `Mood of this quote: ${pick.q.slice(0, 160)}`;
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=720&height=540&nologo=true&seed=${seed}`;
+}
+
 // Called on app open (fire-and-forget). Creates today's bot posts if absent.
 export async function ensureBotPosts() {
   const dayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  const guard = 'littgram_botposts_' + dayKey;
+  const guard = 'littgram_botposts_v2_' + dayKey; // v2: posts carry an AI image
   if (localStorage.getItem(guard)) return; // this client already checked today
   try {
     await initFirebase();
     for (const bot of BOT_PROFILES) {
       const id = `bp_${bot.handle}_${dayKey.replace(/-/g, '')}`;
-      const existing = await fbRead('community_posts/' + id);
-      if (existing) continue;
       const pick = dailyQuote(bot, dayKey);
       if (!pick) continue;
+      const existing = await fbRead('community_posts/' + id);
+      if (existing?.image) continue;
+      if (existing) { // pre-image post from earlier today — backfill the picture
+        await fbWrite('community_posts/' + id, { ...existing, image: quoteImageUrl(pick, id) });
+        continue;
+      }
       await fbWrite('community_posts/' + id, {
         id,
         user: bot.handle,
         bot: true,
         quote: pick.q,
         caption: '',
+        image: quoteImageUrl(pick, id),
         bookId: pick.book.id,
         bookTitle: pick.book.native || pick.book.title,
         author: pick.book.author,

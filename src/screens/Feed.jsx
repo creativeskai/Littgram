@@ -3,7 +3,7 @@
 // legacy catalog merged with live community posts from Firebase, floating
 // compose button, and a quote composer sheet.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { POSTS_DB } from '../data/posts.js';
 import { BOOKS_DB } from '../data/books.js';
 import { fetchCommunityPosts, publishPost } from '../lib/social.js';
@@ -12,6 +12,8 @@ import PostCard from '../components/PostCard.jsx';
 import { StoriesBar } from '../components/Stories.jsx';
 import { useToast } from '../components/Toast.jsx';
 
+const PAGE_SIZE = 25; // posts shown initially; more load as you reach the bottom
+
 export default function Feed() {
   const toast = useToast();
   // Reading preferences live in Profile; the feed just applies them.
@@ -19,6 +21,20 @@ export default function Feed() {
   const topic = localStorage.getItem('littgram_feed_topic') || null;
   const [community, setCommunity] = useState([]);
   const [composing, setComposing] = useState(false);
+  const [visible, setVisible] = useState(PAGE_SIZE);
+
+  // Sentinel at the list's end — scrolling near it reveals the next page.
+  const ioRef = useRef(null);
+  const sentinelRef = useCallback(node => {
+    ioRef.current?.disconnect();
+    if (!node) return;
+    const io = new IntersectionObserver(
+      es => es[0].isIntersecting && setVisible(v => v + PAGE_SIZE),
+      { rootMargin: '400px' });
+    io.observe(node);
+    ioRef.current = io;
+  }, []);
+  useEffect(() => () => ioRef.current?.disconnect(), []);
 
   useEffect(() => {
     // create today's automated-profile posts if missing, then load the feed
@@ -50,12 +66,17 @@ export default function Feed() {
       <StoriesBar onOpen={() => setComposing(true)} />
 
       <div style={{ marginTop: 14 }} />
-      {posts.map((p, i) => (
+      {posts.slice(0, visible).map((p, i) => (
         <div key={p.id} className="feed-in" style={{ '--stagger': Math.min(i, 6) }}>
           <PostCard post={p}
             onDelete={id => setCommunity(c => c.filter(x => x.id !== id))} />
         </div>
       ))}
+      {visible < posts.length && (
+        <p ref={sentinelRef} className="sub" style={{ textAlign: 'center', padding: '14px 0' }}>
+          Loading more…
+        </p>
+      )}
       {posts.length === 0 && (
         <p className="sub" style={{ textAlign: 'center', padding: '40px 0' }}>
           Nothing here — adjust your language and genre preferences in Profile.

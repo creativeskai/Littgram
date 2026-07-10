@@ -29,7 +29,22 @@
       "WebFetch(domain:archive.org)",
       "PowerShell(New-Item *)",
       "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\avishek.n\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-avishek-n-Desktop-Littgeram-books-littgram-react-littgram-react\\\\88da4471-5e9d-402a-adcb-1e96662c4943\\\\scratchpad\\\\fetch-comics.ps1\")",
-      "PowerShell(git add *)"
+      "PowerShell(git add *)",
+      "PowerShell(git *)",
+      "PowerShell(Get-ChildItem -Force -File | Where-Object Name -match '^\\\\.env|serviceAccount|firebase-admin' | Select-Object Name; node --version)",
+      "PowerShell(node scripts/fetch-texts.mjs)",
+      "PowerShell(node scripts/diag.mjs)",
+      "PowerShell(Get-Content \"src\\\\data\\\\books.js\" -TotalCount 60; Write-Host '---'; \\(Get-Content \"src\\\\data\\\\books.js\" | Measure-Object -Line\\).Lines)",
+      "Skill(run)",
+      "PowerShell(Get-Command *)",
+      "PowerShell($edge = @\\(\"$env:ProgramFiles\\\\Microsoft\\\\Edge\\\\Application\\\\msedge.exe\", \"${env:ProgramFiles\\(x86\\)}\\\\Microsoft\\\\Edge\\\\Application\\\\msedge.exe\", \"$env:ProgramFiles\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe\"\\) | Where-Object { Test-Path $_ } | Select-Object -First 1; $edge)",
+      "PowerShell($deadline = \\(Get-Date\\).AddSeconds\\(25\\); $ok = $false; while \\(\\(Get-Date\\) -lt $deadline\\) { try { $r = Invoke-WebRequest -Uri http://localhost:5173 -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop; if \\($r.StatusCode -eq 200\\) { $ok = $true; break } } catch { Start-Sleep -Milliseconds 800 } }; \"server up: $ok\")",
+      "PowerShell(Test-Path *)",
+      "PowerShell($mask = 'mask.fieldPaths=seeded&mask.fieldPaths=title&mask.fieldPaths=native&mask.fieldPaths=author&mask.fieldPaths=lang&mask.fieldPaths=bytes&mask.fieldPaths=seededAt&mask.fieldPaths=storedAt'; $r = Invoke-RestMethod -Uri \"https://firestore.googleapis.com/v1/projects/littgram-54427/databases/\\(default\\)/documents/books?pageSize=300&$mask\" -TimeoutSec 20; $r.documents | ForEach-Object { $f=$_.fields; [PSCustomObject]@{ id=\\($_.name -split '/'\\)[-1]; seeded=$f.seeded.booleanValue; title=$f.title.stringValue; author=$f.author.stringValue; lang=$f.lang.stringValue; bytes=$f.bytes.integerValue; seededAt=$f.seededAt.integerValue; storedAt=$f.storedAt.integerValue } } | Format-Table -AutoSize)",
+      "PowerShell(Select-String -Path src\\\\data\\\\books.js -Pattern \"id:'\\([a-z0-9_]+\\)'\" -AllMatches | ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value })",
+      "PowerShell(node \"C:\\\\Users\\\\avishek.n\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-avishek-n-Desktop-Littgeram-books-littgram-react-littgram-react\\\\fefbfb92-1fe5-46a7-889a-ed2f9a58eaff\\\\scratchpad\\\\audit-books.mjs\")",
+      "PowerShell(git status --porcelain; git diff --stat; Write-Host '--- sizes:'; \"{0:N1} MB  book-sources/texts\" -f \\(\\(Get-ChildItem 'book-sources\\\\texts' -Recurse | Measure-Object Length -Sum\\).Sum/1MB\\); \"{0:N1} KB  scripts\" -f \\(\\(Get-ChildItem 'scripts' -Recurse | Measure-Object Length -Sum\\).Sum/1KB\\); Write-Host '--- gitignore:'; Get-Content .gitignore)",
+      "PowerShell(git ls-files public/texts | Select-Object -First 3; Write-Host '---'; if \\(Test-Path public\\\\texts\\) { \"{0:N1} MB public/texts \\({1} files\\)\" -f \\(\\(Get-ChildItem public\\\\texts | Measure-Object Length -Sum\\).Sum/1MB\\), \\(Get-ChildItem public\\\\texts\\).Count } else { 'no public/texts' }; Write-Host '--- scripts:'; Get-ChildItem scripts | Select-Object Name; Write-Host '--- book-sources tracked:'; git ls-files book-sources | Select-Object -First 5)"
     ]
   }
 }

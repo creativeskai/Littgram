@@ -7,7 +7,7 @@ import { BOOKS_DB } from '../data/books.js';
 
 export const WORDS_PER_PAGE = 700; // legacy KINDLE_WORDS_PER_PAGE
 
-const META_FIELDS = ['seeded', 'bytes', 'lang', 'title', 'native', 'author', 'chunks', 'totalChunks', 'source'];
+const META_FIELDS = ['seeded', 'bytes', 'lang', 'title', 'native', 'author', 'chunks', 'totalChunks', 'source', 'seededAt', 'storedAt'];
 
 // List every readable book in Firebase (seeded:true, bytes>5000 — legacy rule)
 export async function listCloudBooks() {
@@ -36,6 +36,7 @@ export async function listCloudBooks() {
       lang: meta.lang || dbEntry?.lang || '?',
       bytes: bytes === -1 ? null : bytes,
       source: meta.source,
+      seededAt: meta.seededAt || meta.storedAt || 0,
       db: dbEntry || null,
     });
   }

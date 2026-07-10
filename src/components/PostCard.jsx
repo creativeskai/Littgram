@@ -26,11 +26,11 @@ function QuoteSlide({ emoji, quote, author }) {
 }
 
 // User-uploaded photo with the quote (optional) printed over a bottom scrim.
-function ImageSlide({ image, quote, author }) {
+function ImageSlide({ image, quote, author, onError }) {
   return (
     <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)' }}>
       <img src={image} alt={quote ? 'Photo with quote' : 'Post photo'}
-        style={{ width: '100%', maxHeight: 420, objectFit: 'cover' }} loading="lazy" />
+        style={{ width: '100%', maxHeight: 420, objectFit: 'cover' }} loading="lazy" onError={onError} />
       {(quote || author) && (
         <div style={{
           position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
@@ -53,6 +53,7 @@ export default function PostCard({ post, onDelete }) {
   const toast = useToast();
   const [liked, setLiked] = useState(isLiked(post.id));
   const [slide, setSlide] = useState(0);
+  const [imgBroken, setImgBroken] = useState(false); // AI/remote image failed → quote card
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState(() => listComments(post.id));
   const [draft, setDraft] = useState('');
@@ -114,8 +115,9 @@ export default function PostCard({ post, onDelete }) {
 
       <div onClick={() => slides.length > 1 && setSlide(s => (s + 1) % slides.length)}
         style={{ cursor: slides.length > 1 ? 'pointer' : 'default' }}>
-        {post.image
-          ? <ImageSlide image={post.image} quote={post.quote} author={post.author || post.bookTitle} />
+        {post.image && !imgBroken
+          ? <ImageSlide image={post.image} quote={post.quote} author={post.author || post.bookTitle}
+              onError={() => setImgBroken(true)} />
           : <QuoteSlide {...slides[slide]} />}
       </div>
       {slides.length > 1 && (

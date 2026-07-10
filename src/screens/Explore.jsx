@@ -16,17 +16,34 @@ export default function Explore() {
   const [lang, setLang] = useState('all');
   const [topic, setTopic] = useState(null);
   const [selected, setSelected] = useState(null);
-  const [cloudIds, setCloudIds] = useState(null); // null = loading
+  const [cloud, setCloud] = useState(null); // null = loading
 
   useEffect(() => {
-    listCloudBooks().then(list => setCloudIds(new Set(list.map(b => b.id)))).catch(() => setCloudIds(new Set()));
+    listCloudBooks().then(setCloud).catch(() => setCloud([]));
   }, []);
 
-  // Only books that are actually readable in the cloud library
+  const cloudIds = useMemo(() => cloud && new Set(cloud.map(b => b.id)), [cloud]);
+
+  // Every readable cloud book: rich BOOKS_DB entries where the catalog has
+  // one, otherwise an entry synthesized from the cloud metadata — so books
+  // added straight to the cloud library still appear here.
   const readable = useMemo(() => {
-    if (!cloudIds) return [];
-    return BOOKS_DB.filter(b => cloudIds.has(b.id) || cloudIds.has(b.id + '_en'));
-  }, [cloudIds]);
+    if (!cloud) return [];
+    const matched = BOOKS_DB.filter(b => cloudIds.has(b.id) || cloudIds.has(b.id + '_en'));
+    const matchedIds = new Set(matched.flatMap(b => [b.id, b.id + '_en']));
+    const extras = [];
+    for (const cb of cloud) {
+      if (matchedIds.has(cb.id)) continue;
+      // prefer the native edition when both `x` and `x_en` exist
+      if (cb.id.endsWith('_en') && cloudIds.has(cb.id.slice(0, -3))) continue;
+      extras.push({
+        id: cb.id, title: cb.title, native: cb.native, author: cb.author,
+        lang: cb.lang && cb.lang !== '?' ? cb.lang : 'en',
+        emoji: '📖', topics: [], quotes: [],
+      });
+    }
+    return [...matched, ...extras];
+  }, [cloud, cloudIds]);
 
   // Filter options derive from the library — they grow with new uploads
   const langPills = useMemo(() => [
@@ -110,12 +127,12 @@ export default function Explore() {
             <span className="chip">{(b.lang || '').toUpperCase()}</span>
           </div>
         ))}
-        {cloudIds === null && (
+        {cloud === null && (
           <p className="sub" style={{ textAlign: 'center', padding: '40px 0' }}>
             Loading your books…
           </p>
         )}
-        {cloudIds !== null && books.length === 0 && (
+        {cloud !== null && books.length === 0 && (
           <p className="sub" style={{ textAlign: 'center', padding: '40px 0' }}>
             No books match — try a different language or topic.
           </p>

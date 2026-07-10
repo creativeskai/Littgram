@@ -2,7 +2,7 @@
 // My Library: live cloud collection (every seeded book in Firebase, including
 // freshly uploaded ones) + Continue Reading shelf with real progress bars.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { listCloudBooks } from '../lib/books.js';
 import { listRecent } from '../lib/progress.js';
@@ -28,6 +28,23 @@ export default function Library() {
     BOOKS_DB.find(b => b.id === id.replace(/_en$/, '')) ||
     { emoji: '📖', title: id };
 
+  // The 3 most recently uploaded titles (English editions fold into the
+  // native one) — shown in the scrolling ticker under the header.
+  const newest = useMemo(() => {
+    if (!cloud) return [];
+    const seen = new Set();
+    const out = [];
+    for (const b of [...cloud].sort((a, c) => (c.seededAt || 0) - (a.seededAt || 0))) {
+      if (!b.seededAt) continue; // legacy docs without a timestamp
+      const base = b.id.replace(/_en$/, '');
+      if (seen.has(base)) continue;
+      seen.add(base);
+      out.push(b);
+      if (out.length === 3) break;
+    }
+    return out;
+  }, [cloud]);
+
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
@@ -36,6 +53,24 @@ export default function Library() {
           + Add book
         </Link>
       </div>
+
+      {newest.length > 0 && (
+        <div className="ticker" aria-label="Recently added books">
+          <div className="ticker-track">
+            {[0, 1].map(copy => ( // two identical copies = seamless loop
+              <div className="ticker-group" key={copy} aria-hidden={copy === 1}>
+                <span className="ticker-flag">NEW</span>
+                {newest.map(b => (
+                  <Link key={b.id} to={'/read/' + b.id} className="ticker-item">
+                    📖 <b>{b.native || b.title}</b>
+                    {b.author && <span className="a"> — {b.author}</span>}
+                  </Link>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="stats-row">
         <div className="stats-card">

@@ -1,9 +1,34 @@
 // src/screens/Login.jsx
 // Google Sign-In landing screen shown to unauthenticated users.
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { signInWithGoogle } from '../lib/auth.js';
 import { UI_LANGS, getUiLang, setUiLang } from '../lib/i18n.js';
+
+// Ambient background: open books and one letterform from each major Indian
+// script, drifting slowly upward. Deterministic layout (no flicker on rerender).
+const AMBIENT_GLYPHS = ['📖', 'অ', '📚', 'क', '📖', 'ম', 'आ', '📖', 'த', 'తె', '📚', 'ಕ', 'മ', 'ਅ', '📖', 'ଓ', 'ক', '📚'];
+
+function AmbientBackground() {
+  const items = useMemo(() => AMBIENT_GLYPHS.map((g, i) => ({
+    g,
+    x: ((i * 53 + 7) % 96) + '%',                    // spread across the width
+    size: (g === '📖' || g === '📚' ? 20 : 26) + ((i * 7) % 20) + 'px',
+    dur: 18 + ((i * 5) % 18) + 's',                  // 18–35s per crossing
+    delay: -(i * 4.3) + 's',                         // negative = mid-flight on load
+    o: (0.16 + ((i * 13) % 15) / 100).toFixed(2),    // 0.16–0.30
+    y: (8 + ((i * 37) % 80)) + 'vh',                 // static scatter (reduced-motion)
+  })), []);
+  return (
+    <div className="login-bg" aria-hidden="true">
+      {items.map((it, i) => (
+        <span key={i} style={{ '--x': it.x, '--size': it.size, '--dur': it.dur, '--delay': it.delay, '--o': it.o, '--y': it.y }}>
+          {it.g}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 export default function Login() {
   const [loading, setLoading] = useState(false);
@@ -40,8 +65,10 @@ export default function Login() {
       minHeight: '100dvh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
       padding: '32px 28px', background: 'var(--bg)',
+      position: 'relative', overflow: 'hidden',
     }}>
-      <div className="brand-word login-in" style={{ fontSize: 36, marginBottom: 10, '--stagger': 0 }}>Littgram</div>
+      <AmbientBackground />
+      <div className="brand-word login-in" style={{ fontSize: 36, marginBottom: 10, '--stagger': 0, position: 'relative' }}>Littgram</div>
       <p className="sub login-in" style={{ textAlign: 'center', maxWidth: 260, marginBottom: 28, lineHeight: 1.6, '--stagger': 1 }}>
         A literary social world — read, share, and discover books in every Indian language.
       </p>
@@ -81,10 +108,10 @@ export default function Login() {
       </button>
 
       {error && (
-        <p style={{ color: 'var(--err)', fontSize: 13, marginTop: 16, textAlign: 'center' }}>{error}</p>
+        <p className="login-in" style={{ color: 'var(--err)', fontSize: 13, marginTop: 16, textAlign: 'center' }}>{error}</p>
       )}
 
-      <p className="sub" style={{ fontSize: 11, marginTop: 40, textAlign: 'center', maxWidth: 260 }}>
+      <p className="sub login-in" style={{ fontSize: 11, marginTop: 40, textAlign: 'center', maxWidth: 260, '--stagger': 4 }}>
         By signing in you agree that your posts will be visible to all Littgram readers.
       </p>
     </div>

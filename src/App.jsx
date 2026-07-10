@@ -18,6 +18,7 @@ import { onAuthChange } from './lib/auth.js';
 const Reader = lazy(() => import('./screens/Reader.jsx'));
 const ComicReader = lazy(() => import('./screens/ComicReader.jsx'));
 const Uploader = lazy(() => import('./screens/Uploader.jsx'));
+const Seeder = lazy(() => import('./screens/Seeder.jsx'));
 
 const Wait = ({ children }) => (
   <Suspense fallback={<div className="placeholder"><div className="emoji">📖</div></div>}>{children}</Suspense>
@@ -64,6 +65,7 @@ export default function App() {
             <Route path="/read/:bookId" element={<Wait><Reader /></Wait>} />
             <Route path="/comic/:comicId" element={<Wait><ComicReader /></Wait>} />
             <Route path="/upload" element={<Wait><Uploader /></Wait>} />
+            <Route path="/seed" element={<Wait><Seeder /></Wait>} />
             <Route path="*" element={<Placeholder emoji="🗺️" title="Not found" note="This page doesn't exist" />} />
           </Routes>
         </main>
