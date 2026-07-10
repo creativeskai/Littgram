@@ -41,13 +41,13 @@ export default function Login() {
       alignItems: 'center', justifyContent: 'center',
       padding: '32px 28px', background: 'var(--bg)',
     }}>
-      <div className="brand-word" style={{ fontSize: 36, marginBottom: 10 }}>Littgram</div>
-      <p className="sub" style={{ textAlign: 'center', maxWidth: 260, marginBottom: 28, lineHeight: 1.6 }}>
+      <div className="brand-word login-in" style={{ fontSize: 36, marginBottom: 10, '--stagger': 0 }}>Littgram</div>
+      <p className="sub login-in" style={{ textAlign: 'center', maxWidth: 260, marginBottom: 28, lineHeight: 1.6, '--stagger': 1 }}>
         A literary social world — read, share, and discover books in every Indian language.
       </p>
 
-      <p className="label" style={{ marginBottom: 8 }}>App language</p>
-      <div className="pill-row" style={{ justifyContent: 'center', marginBottom: 36 }}>
+      <p className="label login-in" style={{ marginBottom: 8, '--stagger': 2 }}>App language</p>
+      <div className="pill-row login-in" style={{ justifyContent: 'center', marginBottom: 36, '--stagger': 2 }}>
         {UI_LANGS.map(l => (
           <button key={l.code} className={'pill' + (uiLang === l.code ? ' on' : '')}
             onClick={() => pickLang(l.code)}>{l.label}</button>
@@ -57,7 +57,9 @@ export default function Login() {
       <button
         onClick={handleGoogle}
         disabled={loading}
+        className="login-in"
         style={{
+          '--stagger': 3,
           width: '100%', maxWidth: 320,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
           background: '#fff', color: '#1a1a1a',

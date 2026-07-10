@@ -63,13 +63,17 @@ export function setHandle(handle) {
 }
 
 // ── Community posts (shared via Firebase `community_posts`) ──
-export async function publishPost({ quote, caption, book }) {
+export async function publishPost({ quote, caption, book, image }) {
+  // Images are stored inline as compressed JPEG data-URIs — Firestore caps a
+  // document at 1 MB, so anything bigger is rejected before the write fails.
+  if (image && image.length > 700000) throw new Error('Image too large — try a smaller photo');
   const id = 'cp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
   const post = {
     id,
     user: getProfile().handle,
     quote: quote || '',
     caption: caption || '',
+    image: image || '',
     bookId: book?.id || '',
     bookTitle: book?.native || book?.title || '',
     author: book?.author || '',

@@ -20,7 +20,16 @@
       "PowerShell(cd \"C:\\\\Users\\\\avishek.n\\\\Desktop\\\\Littgeram books\\\\littgram-react\\\\littgram-react\"; $covers = Select-String -Path \"src\\\\data\\\\books.js\" -Pattern \"cover:'\\([^']+\\)'\" -AllMatches | ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique; Write-Host \"$\\($covers.Count\\) unique cover URLs\"; $covers | Select-Object -First 5)",
       "PowerShell(cd \"C:\\\\Users\\\\avishek.n\\\\Desktop\\\\Littgeram books\\\\littgram-react\\\\littgram-react\"; $covers = Select-String -Path \"src\\\\data\\\\books.js\" -Pattern \"cover:'\\([^']+\\)'\" -AllMatches | ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique; $ok=0; $bad=0; $badList=@\\(\\); foreach \\($u in $covers\\) { $proxied = \"https://littgram.vercel.app/api/cover?u=\" + [uri]::EscapeDataString\\($u\\); try { $r = Invoke-WebRequest -Uri $proxied -Method Get -UseBasicParsing -TimeoutSec 25; if \\($r.StatusCode -eq 200 -and $r.RawContentLength -gt 1500\\) { $ok++ } else { $bad++; $badList += $u } } catch { $bad++; $badList += $u } }; Write-Host \"OK: $ok | BROKEN: $bad\"; Write-Host \"--- broken ---\"; $badList)",
       "PowerShell(Get-Content *)",
-      "PowerShell(Set-Content *)"
+      "PowerShell(Set-Content *)",
+      "WebSearch",
+      "Skill(artifact-design)",
+      "PowerShell(node \"C:\\\\Users\\\\avishek.n\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\bundled-skills\\\\2.1.201\\\\9c8cd01c812f016d1f9dcfde20bc3464\\\\dataviz\\\\scripts\\\\validate_palette.js\" \"#2a78d6,#898781\" --mode light; node \"C:\\\\Users\\\\avishek.n\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\bundled-skills\\\\2.1.201\\\\9c8cd01c812f016d1f9dcfde20bc3464\\\\dataviz\\\\scripts\\\\validate_palette.js\" \"#3987e5,#898781\" --mode dark)",
+      "Artifact",
+      "PowerShell(npm run *)",
+      "WebFetch(domain:archive.org)",
+      "PowerShell(New-Item *)",
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\avishek.n\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-avishek-n-Desktop-Littgeram-books-littgram-react-littgram-react\\\\88da4471-5e9d-402a-adcb-1e96662c4943\\\\scratchpad\\\\fetch-comics.ps1\")",
+      "PowerShell(git add *)"
     ]
   }
 }

@@ -50,9 +50,11 @@ export default function Feed() {
       <StoriesBar onOpen={() => setComposing(true)} />
 
       <div style={{ marginTop: 14 }} />
-      {posts.map(p => (
-        <PostCard key={p.id} post={p}
-          onDelete={id => setCommunity(c => c.filter(x => x.id !== id))} />
+      {posts.map((p, i) => (
+        <div key={p.id} className="feed-in" style={{ '--stagger': Math.min(i, 6) }}>
+          <PostCard post={p}
+            onDelete={id => setCommunity(c => c.filter(x => x.id !== id))} />
+        </div>
       ))}
       {posts.length === 0 && (
         <p className="sub" style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -67,19 +69,57 @@ export default function Feed() {
   );
 }
 
+// Downscale + re-encode a photo so it fits comfortably in a Firestore doc.
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const max = 1000;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      let out = c.toDataURL('image/jpeg', 0.78);
+      if (out.length > 480000) out = c.toDataURL('image/jpeg', 0.6);
+      if (out.length > 480000) {
+        const c2 = document.createElement('canvas');
+        c2.width = Math.round(c.width * 0.7);
+        c2.height = Math.round(c.height * 0.7);
+        c2.getContext('2d').drawImage(img, 0, 0, c2.width, c2.height);
+        out = c2.toDataURL('image/jpeg', 0.6);
+      }
+      URL.revokeObjectURL(img.src);
+      resolve(out);
+    };
+    img.onerror = () => { URL.revokeObjectURL(img.src); reject(new Error('Could not read image')); };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 function Composer({ onPublish, onClose }) {
+  const toast = useToast();
   const [bookId, setBookId] = useState('');
   const [quoteIdx, setQuoteIdx] = useState(-1);
   const [quote, setQuote] = useState('');
   const [caption, setCaption] = useState('');
+  const [image, setImage] = useState('');
   const [sending, setSending] = useState(false);
   const book = BOOKS_DB.find(b => b.id === bookId) || null;
 
   async function submit() {
     if (sending) return;
     setSending(true);
-    try { await onPublish({ quote: quote.trim(), caption: caption.trim(), book }); }
+    try { await onPublish({ quote: quote.trim(), caption: caption.trim(), book, image }); }
     finally { setSending(false); }
+  }
+
+  async function onPickImage(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-picking the same file
+    if (!file) return;
+    try { setImage(await compressImage(file)); }
+    catch { toast("Couldn't read that image — try another"); }
   }
 
   function pickQuote(i) {
@@ -117,7 +157,34 @@ function Composer({ onPublish, onClose }) {
           </>
         )}
 
-        <p className="label" style={{ marginTop: 12 }}>Quote</p>
+        <p className="label" style={{ marginTop: 12 }}>Photo (optional)</p>
+        {image ? (
+          <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)' }}>
+            <img src={image} alt="Your upload" style={{ width: '100%', maxHeight: 260, objectFit: 'cover' }} />
+            {quote.trim() && (
+              <div style={{
+                position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+                padding: '40px 14px 12px',
+                background: 'linear-gradient(to top, rgba(0,0,0,0.72), rgba(0,0,0,0.2) 55%, transparent)',
+              }}>
+                <div className="serif" style={{ fontSize: 14, lineHeight: 1.55, color: '#fff', fontStyle: 'italic', textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
+                  “{quote.trim()}”
+                </div>
+              </div>
+            )}
+            <button onClick={() => setImage('')} aria-label="Remove photo" style={{
+              position: 'absolute', top: 8, right: 8, width: 26, height: 26, borderRadius: 13,
+              border: 'none', cursor: 'pointer', background: 'rgba(0,0,0,0.65)', color: '#fff', fontSize: 13,
+            }}>✕</button>
+          </div>
+        ) : (
+          <label className="btn ghost" style={{ width: '100%', cursor: 'pointer' }}>
+            📷 Add a photo — your quote appears on top of it
+            <input type="file" accept="image/*" onChange={onPickImage} style={{ display: 'none' }} />
+          </label>
+        )}
+
+        <p className="label" style={{ marginTop: 12 }}>Quote{image ? ' (optional — overlaid on your photo)' : ''}</p>
         <textarea className="input" rows={2} value={quote}
           onChange={e => { setQuote(e.target.value); setQuoteIdx(-1); }}
           placeholder="A line worth sharing…" />
@@ -128,7 +195,7 @@ function Composer({ onPublish, onClose }) {
 
         <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
           <button className="btn" style={{ flex: 1 }}
-            disabled={sending || (!quote.trim() && !caption.trim())}
+            disabled={sending || (!quote.trim() && !caption.trim() && !image)}
             onClick={submit}>
             {sending ? 'Publishing…' : 'Publish'}
           </button>

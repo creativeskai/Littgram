@@ -16,6 +16,7 @@ import Login from './screens/Login.jsx';
 import Onboarding, { tutorialDone } from './components/Onboarding.jsx';
 import { onAuthChange } from './lib/auth.js';
 const Reader = lazy(() => import('./screens/Reader.jsx'));
+const ComicReader = lazy(() => import('./screens/ComicReader.jsx'));
 const Uploader = lazy(() => import('./screens/Uploader.jsx'));
 
 const Wait = ({ children }) => (
@@ -24,7 +25,7 @@ const Wait = ({ children }) => (
 
 export default function App() {
   const loc = useLocation();
-  const fullscreen = loc.pathname.startsWith('/read/');
+  const fullscreen = loc.pathname.startsWith('/read/') || loc.pathname.startsWith('/comic/');
 
   // undefined = checking auth, null = signed out, object = signed in
   const [user, setUser] = useState(undefined);
@@ -61,6 +62,7 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/legal/:page" element={<Legal />} />
             <Route path="/read/:bookId" element={<Wait><Reader /></Wait>} />
+            <Route path="/comic/:comicId" element={<Wait><ComicReader /></Wait>} />
             <Route path="/upload" element={<Wait><Uploader /></Wait>} />
             <Route path="*" element={<Placeholder emoji="🗺️" title="Not found" note="This page doesn't exist" />} />
           </Routes>

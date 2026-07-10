@@ -29,6 +29,8 @@ export default function Reader() {
   const [showChapters, setShowChapters] = useState(false);
   const [showJump, setShowJump] = useState(false);
   const [jumpVal, setJumpVal] = useState('');
+  // First-run cue: readers weren't discovering the horizontal page swipe.
+  const [showSwipeHint, setShowSwipeHint] = useState(() => !localStorage.getItem('littgram_swipe_hint_v1'));
   const [, force] = useState(0);
   const touchX = useRef(null);
   const bodyRef = useRef(null);
@@ -68,11 +70,19 @@ export default function Reader() {
     }
   }, [page, state, pages.length, bookId, meta]);
 
+  const dismissSwipeHint = useCallback(() => {
+    setShowSwipeHint(s => {
+      if (s) localStorage.setItem('littgram_swipe_hint_v1', '1');
+      return false;
+    });
+  }, []);
+
   const go = useCallback((delta) => {
     tts.stop();
+    dismissSwipeHint(); // they've turned a page — the cue has done its job
     setPage(p => Math.max(0, Math.min(pages.length - 1, p + delta)));
     bodyRef.current?.scrollTo(0, 0);
-  }, [pages.length, tts]);
+  }, [pages.length, tts, dismissSwipeHint]);
 
   useEffect(() => {
     const onKey = e => {
@@ -192,6 +202,23 @@ export default function Reader() {
       >
         {pages[page]?.split('\n\n').map((para, i) => <p key={i}>{para}</p>)}
       </div>
+
+      {/* Persistent, quiet page-turn affordances at the screen edges */}
+      {page < pages.length - 1 && <span className="page-edge next" aria-hidden="true">›</span>}
+      {page > 0 && <span className="page-edge prev" aria-hidden="true">‹</span>}
+
+      {showSwipeHint && pages.length > 1 && (
+        <div className="swipe-hint" onClick={dismissSwipeHint} role="button" aria-label="Dismiss swipe hint">
+          <div className="swipe-hint-card">
+            <div className="swipe-hint-hand">👉</div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginTop: 10 }}>Swipe to turn the page</div>
+            <p className="sub" style={{ marginTop: 6 }}>
+              Swipe left (or tap the right edge) for the next page. Swipe right to go back.
+            </p>
+            <p className="sub" style={{ marginTop: 8, fontSize: 10.5 }}>Tap anywhere to start reading</p>
+          </div>
+        </div>
+      )}
 
       {showControls && (
         <div className="reader-bottom">

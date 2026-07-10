@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { listCloudBooks } from '../lib/books.js';
 import { listRecent } from '../lib/progress.js';
 import { BOOKS_DB } from '../data/books.js';
+import { COMICS_DB, comicCover } from '../data/comics.js';
 import BookCover from '../components/BookCover.jsx';
 import { t } from '../lib/i18n.js';
 
@@ -80,6 +81,24 @@ export default function Library() {
               </Link>
             );
           })}
+        </>
+      )}
+
+      {COMICS_DB.length > 0 && (
+        <>
+          <p className="label" style={{ marginTop: 18 }}>Classic comics</p>
+          <div className="comic-shelf">
+            {COMICS_DB.map(c => (
+              <Link key={c.id} to={'/comic/' + c.id} className="comic-tile">
+                <img src={comicCover(c)} alt={`${c.title} cover`} loading="lazy" />
+                <div className="t">{c.title}</div>
+                <div className="s">{c.series} · {c.year}</div>
+              </Link>
+            ))}
+          </div>
+          <p className="sub" style={{ fontSize: 10.5 }}>
+            Original public-domain scans — untouched Golden Age printing.
+          </p>
         </>
       )}
 

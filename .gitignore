@@ -5,3 +5,9 @@ dist/
 .env
 .env.*
 .DS_Store
+
+# book source files dropped for ingestion — too big for git; keep the checklist
+book-sources/*.pdf
+book-sources/*.epub
+book-sources/*.djvu
+book-sources/*.zip

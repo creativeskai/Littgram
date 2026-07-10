@@ -25,6 +25,30 @@ function QuoteSlide({ emoji, quote, author }) {
   );
 }
 
+// User-uploaded photo with the quote (optional) printed over a bottom scrim.
+function ImageSlide({ image, quote, author }) {
+  return (
+    <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)' }}>
+      <img src={image} alt={quote ? 'Photo with quote' : 'Post photo'}
+        style={{ width: '100%', maxHeight: 420, objectFit: 'cover' }} loading="lazy" />
+      {(quote || author) && (
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+          padding: '46px 16px 14px',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.72), rgba(0,0,0,0.22) 55%, transparent)',
+        }}>
+          {quote && (
+            <div className="serif" style={{ fontSize: 15, lineHeight: 1.55, color: '#fff', fontStyle: 'italic', textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
+              “{quote}”
+            </div>
+          )}
+          {author && <div style={{ marginTop: 6, fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>— {author}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PostCard({ post, onDelete }) {
   const toast = useToast();
   const [liked, setLiked] = useState(isLiked(post.id));
@@ -90,7 +114,9 @@ export default function PostCard({ post, onDelete }) {
 
       <div onClick={() => slides.length > 1 && setSlide(s => (s + 1) % slides.length)}
         style={{ cursor: slides.length > 1 ? 'pointer' : 'default' }}>
-        <QuoteSlide {...slides[slide]} />
+        {post.image
+          ? <ImageSlide image={post.image} quote={post.quote} author={post.author || post.bookTitle} />
+          : <QuoteSlide {...slides[slide]} />}
       </div>
       {slides.length > 1 && (
         <div style={{ display: 'flex', gap: 5, justifyContent: 'center', marginTop: 8 }}>
@@ -105,7 +131,7 @@ export default function PostCard({ post, onDelete }) {
 
       <div style={{ display: 'flex', gap: 16, marginTop: 9, fontSize: 11, color: 'var(--muted)' }}>
         <button className="action" onClick={onLike} style={{ color: liked ? 'var(--text)' : 'inherit', fontSize: 11 }}>
-          {liked ? '❤️' : '🤍'} {post.likes || ''}
+          <span key={String(liked)} className="like-pop">{liked ? '❤️' : '🤍'}</span> {post.likes || ''}
         </button>
         <button className="action" onClick={() => setShowComments(true)} style={{ fontSize: 11 }}>
           💬 {comments.length || post.comments || ''}
