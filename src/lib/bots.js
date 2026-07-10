@@ -5,6 +5,7 @@
 
 import { BOOKS_DB } from '../data/books.js';
 import { initFirebase, fbWrite, fbRead } from './firebase.js';
+import { fetchCommunityPosts } from './social.js';
 
 export const BOT_PROFILES = [
   {
@@ -43,51 +44,90 @@ function dailyQuote(bot, dayKey) {
   return pool[h % pool.length];
 }
 
-// AI illustration for the day's quote — free Pollinations endpoint, no key.
+// AI illustration for a quote — free Pollinations endpoint, no key.
 // The seed is derived from the post id, so every client renders the same
 // image; only the URL is stored (Firestore docs stay small).
-function quoteImageUrl(pick, id) {
+function quoteImageUrl({ title, author, quote }, id) {
   let seed = 0;
   for (let i = 0; i < id.length; i++) seed = (seed * 31 + id.charCodeAt(i)) % 999999;
   const prompt =
     `Atmospheric painterly literary illustration, moody, evocative, no text or lettering, ` +
-    `inspired by the book "${pick.book.title}" by ${pick.book.author}. ` +
-    `Mood of this quote: ${pick.q.slice(0, 160)}`;
+    `inspired by the book "${title}" by ${author}. ` +
+    `Mood of this quote: ${quote.slice(0, 160)}`;
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=720&height=540&nologo=true&seed=${seed}`;
 }
 
-// Called on app open (fire-and-forget). Creates today's bot posts if absent.
+// Kick off image generation server-side, one at a time — Pollinations
+// generates on first request and rate-limits concurrent ones, so a slow
+// sequential warm-up beats the feed firing them all at once.
+function warmUpImages(urls) {
+  const queue = [...new Set(urls)];
+  const next = () => {
+    const url = queue.shift();
+    if (!url) return;
+    const img = new Image();
+    img.onload = img.onerror = () => setTimeout(next, 4000);
+    img.src = url;
+  };
+  next();
+}
+
+// One-time sweep: older bot posts were created without images — derive one
+// from each post's own quote/book fields and patch it in.
+async function backfillBotImages() {
+  const guard = 'littgram_botimg_backfill_v1';
+  if (localStorage.getItem(guard)) return [];
+  const urls = [];
+  const posts = await fetchCommunityPosts(100);
+  for (const p of posts) {
+    if (!p.bot || p.image || !p.quote) continue;
+    const url = quoteImageUrl({ title: p.bookTitle || '', author: p.author || '', quote: p.quote }, p.id);
+    await fbWrite('community_posts/' + p.id, { ...p, image: url });
+    urls.push(url);
+  }
+  localStorage.setItem(guard, '1');
+  return urls;
+}
+
+// Called on app open (fire-and-forget). Creates today's bot posts if absent,
+// patches images onto older ones, and warms up the image generator.
 export async function ensureBotPosts() {
   const dayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   const guard = 'littgram_botposts_v2_' + dayKey; // v2: posts carry an AI image
-  if (localStorage.getItem(guard)) return; // this client already checked today
+  const warm = [];
   try {
     await initFirebase();
-    for (const bot of BOT_PROFILES) {
-      const id = `bp_${bot.handle}_${dayKey.replace(/-/g, '')}`;
-      const pick = dailyQuote(bot, dayKey);
-      if (!pick) continue;
-      const existing = await fbRead('community_posts/' + id);
-      if (existing?.image) continue;
-      if (existing) { // pre-image post from earlier today — backfill the picture
-        await fbWrite('community_posts/' + id, { ...existing, image: quoteImageUrl(pick, id) });
-        continue;
+    if (!localStorage.getItem(guard)) {
+      for (const bot of BOT_PROFILES) {
+        const id = `bp_${bot.handle}_${dayKey.replace(/-/g, '')}`;
+        const pick = dailyQuote(bot, dayKey);
+        if (!pick) continue;
+        const img = quoteImageUrl({ title: pick.book.title, author: pick.book.author, quote: pick.q }, id);
+        const existing = await fbRead('community_posts/' + id);
+        if (existing?.image) { warm.push(existing.image); continue; }
+        if (existing) { // pre-image post from earlier today — backfill the picture
+          await fbWrite('community_posts/' + id, { ...existing, image: img });
+        } else {
+          await fbWrite('community_posts/' + id, {
+            id,
+            user: bot.handle,
+            bot: true,
+            quote: pick.q,
+            caption: '',
+            image: img,
+            bookId: pick.book.id,
+            bookTitle: pick.book.native || pick.book.title,
+            author: pick.book.author,
+            emoji: bot.emoji,
+            lang: pick.book.lang,
+            at: Date.now(),
+          });
+        }
+        warm.push(img);
       }
-      await fbWrite('community_posts/' + id, {
-        id,
-        user: bot.handle,
-        bot: true,
-        quote: pick.q,
-        caption: '',
-        image: quoteImageUrl(pick, id),
-        bookId: pick.book.id,
-        bookTitle: pick.book.native || pick.book.title,
-        author: pick.book.author,
-        emoji: bot.emoji,
-        lang: pick.book.lang,
-        at: Date.now(),
-      });
+      localStorage.setItem(guard, '1');
     }
-    localStorage.setItem(guard, '1');
+    warm.push(...await backfillBotImages());
   } catch {} // best-effort
+  warmUpImages(warm);
 }

@@ -2,7 +2,7 @@
 // Feed post: gradient quote card (carousel-aware), header with user + book
 // tag, like/comment/share row, caption + hashtags, comments bottom sheet.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { isLiked, toggleLike, listComments, addComment, getProfile, deletePost } from '../lib/social.js';
 import { useToast } from './Toast.jsx';
 
@@ -25,12 +25,35 @@ function QuoteSlide({ emoji, quote, author }) {
   );
 }
 
-// User-uploaded photo with the quote (optional) printed over a bottom scrim.
-function ImageSlide({ image, quote, author, onError }) {
+// Photo (or AI illustration) with the quote printed over a bottom scrim.
+// AI images are generated on first request and the service rate-limits, so a
+// failed load retries with backoff; the quote card fills in until (or unless)
+// the image arrives.
+const IMG_RETRIES = 4;
+const RETRY_MS = 8000;
+
+function ImageSlide({ image, quote, author, fallback }) {
+  const [state, setState] = useState('loading'); // loading | ok | dead
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    if (state !== 'loading') return;
+    let timer;
+    const img = new Image();
+    img.onload = () => setState('ok');
+    img.onerror = () => {
+      if (attempt >= IMG_RETRIES) { setState('dead'); return; }
+      timer = setTimeout(() => setAttempt(a => a + 1), RETRY_MS * (attempt + 1));
+    };
+    img.src = image;
+    return () => { clearTimeout(timer); img.onload = img.onerror = null; };
+  }, [image, attempt]); // eslint-disable-line
+
+  if (state !== 'ok') return fallback; // quote card while generating / if dead
   return (
     <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)' }}>
       <img src={image} alt={quote ? 'Photo with quote' : 'Post photo'}
-        style={{ width: '100%', maxHeight: 420, objectFit: 'cover' }} loading="lazy" onError={onError} />
+        style={{ width: '100%', maxHeight: 420, objectFit: 'cover' }} />
       {(quote || author) && (
         <div style={{
           position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
@@ -53,7 +76,6 @@ export default function PostCard({ post, onDelete }) {
   const toast = useToast();
   const [liked, setLiked] = useState(isLiked(post.id));
   const [slide, setSlide] = useState(0);
-  const [imgBroken, setImgBroken] = useState(false); // AI/remote image failed → quote card
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState(() => listComments(post.id));
   const [draft, setDraft] = useState('');
@@ -115,9 +137,9 @@ export default function PostCard({ post, onDelete }) {
 
       <div onClick={() => slides.length > 1 && setSlide(s => (s + 1) % slides.length)}
         style={{ cursor: slides.length > 1 ? 'pointer' : 'default' }}>
-        {post.image && !imgBroken
+        {post.image
           ? <ImageSlide image={post.image} quote={post.quote} author={post.author || post.bookTitle}
-              onError={() => setImgBroken(true)} />
+              fallback={<QuoteSlide {...slides[slide]} />} />
           : <QuoteSlide {...slides[slide]} />}
       </div>
       {slides.length > 1 && (
