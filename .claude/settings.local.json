@@ -47,7 +47,17 @@
       "PowerShell(git ls-files public/texts | Select-Object -First 3; Write-Host '---'; if \\(Test-Path public\\\\texts\\) { \"{0:N1} MB public/texts \\({1} files\\)\" -f \\(\\(Get-ChildItem public\\\\texts | Measure-Object Length -Sum\\).Sum/1MB\\), \\(Get-ChildItem public\\\\texts\\).Count } else { 'no public/texts' }; Write-Host '--- scripts:'; Get-ChildItem scripts | Select-Object Name; Write-Host '--- book-sources tracked:'; git ls-files book-sources | Select-Object -First 5)",
       "PowerShell($urls = node \"C:\\\\Users\\\\avishek.n\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-avishek-n-Desktop-Littgeram-books-littgram-react-littgram-react\\\\fefbfb92-1fe5-46a7-889a-ed2f9a58eaff\\\\scratchpad\\\\bot-urls.mjs\"; $i=0; foreach \\($u in $urls\\) { $i++; try { $r = Invoke-WebRequest -Uri $u -UseBasicParsing -TimeoutSec 180 -ErrorAction Stop; \"img $i : $\\($r.StatusCode\\) $\\($r.Headers.'Content-Type'\\) $\\([math]::Round\\($r.RawContentLength/1KB\\)\\)KB\" } catch { \"img $i : FAILED $\\($_.Exception.Message.Substring\\(0, [Math]::Min\\(90, $_.Exception.Message.Length\\)\\)\\)\" }; Start-Sleep -Seconds 5 })",
       "PowerShell(node \"C:\\\\Users\\\\avishek.n\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-avishek-n-Desktop-Littgeram-books-littgram-react-littgram-react\\\\fefbfb92-1fe5-46a7-889a-ed2f9a58eaff\\\\scratchpad\\\\search-test.mjs\")",
-      "PowerShell(Get-ChildItem book-sources\\\\texts | Sort-Object Name | Select-Object Name, @{n='KB';e={[math]::Round\\($_.Length/1KB\\)}} | Format-Table -AutoSize)"
+      "PowerShell(Get-ChildItem book-sources\\\\texts | Sort-Object Name | Select-Object Name, @{n='KB';e={[math]::Round\\($_.Length/1KB\\)}} | Format-Table -AutoSize)",
+      "PowerShell(node scripts\\\\audit-cloud.mjs)",
+      "PowerShell(node scripts\\\\fetch-texts.mjs gitanjali)",
+      "PowerShell($r = Invoke-RestMethod -Uri \"https://bn.wikisource.org/w/api.php?action=query&list=allpages&apprefix=$\\([uri]::EscapeDataString\\('গীতাঞ্জলি'\\)\\)&aplimit=500&format=json\" -TimeoutSec 30; $r.query.allpages | Select-Object -ExpandProperty title | Select-Object -First 40; Write-Host \"--- total: $\\($r.query.allpages.Count\\)\")",
+      "PowerShell(node \"C:\\\\Users\\\\avishek.n\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-avishek-n-Desktop-Littgeram-books-littgram-react-littgram-react\\\\fefbfb92-1fe5-46a7-889a-ed2f9a58eaff\\\\scratchpad\\\\gitanjali-debug.mjs\")",
+      "PowerShell(node \"C:\\\\Users\\\\avishek.n\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-avishek-n-Desktop-Littgeram-books-littgram-react-littgram-react\\\\fefbfb92-1fe5-46a7-889a-ed2f9a58eaff\\\\scratchpad\\\\gitanjali-debug2.mjs\")",
+      "PowerShell(node scripts\\\\fetch-texts.mjs gitanjali; Write-Host '--- tail of fetched file:'; $t = Get-Content book-sources\\\\texts\\\\gitanjali.txt -Raw -Encoding utf8; \"chars: $\\($t.Length\\)\"; $t.Substring\\($t.Length - 400\\))",
+      "PowerShell(node \"C:\\\\Users\\\\avishek.n\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-avishek-n-Desktop-Littgeram-books-littgram-react-littgram-react\\\\fefbfb92-1fe5-46a7-889a-ed2f9a58eaff\\\\scratchpad\\\\inspect-tails.mjs\")",
+      "PowerShell(node \"C:\\\\Users\\\\avishek.n\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-avishek-n-Desktop-Littgeram-books-littgram-react-littgram-react\\\\fefbfb92-1fe5-46a7-889a-ed2f9a58eaff\\\\scratchpad\\\\inspect2.mjs\")",
+      "PowerShell(node scripts\\\\fix-cloud-texts.mjs)",
+      "PowerShell(node \"C:\\\\Users\\\\avishek.n\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-avishek-n-Desktop-Littgeram-books-littgram-react-littgram-react\\\\fefbfb92-1fe5-46a7-889a-ed2f9a58eaff\\\\scratchpad\\\\inspect3.mjs\")"
     ]
   }
 }

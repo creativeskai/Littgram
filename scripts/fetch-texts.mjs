@@ -14,6 +14,7 @@
 
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { scrub, validateText } from './scrub.mjs';
 
 const OUT = 'book-sources/texts';
 mkdirSync(OUT, { recursive: true });
@@ -44,7 +45,9 @@ const BOOKS = [
   // ── Tagore ──
   { id: 'gora', base: 'গোরা', roots: ['গোরা (রবীন্দ্রনাথ ঠাকুর)'] },
   { id: 'chokher_bali', base: 'চোখের বালি' },
-  { id: 'gitanjali', base: 'গীতাঞ্জলি' },
+  // base 'গীতাঞ্জলি' resolves to a 33K anthology EXCERPT — pin the full 1913
+  // edition (songs 1–157) explicitly.
+  { id: 'gitanjali', base: 'গীতাঞ্জলি', roots: ['গীতাঞ্জলি (১৯১৩)'], min: 60000, keepNumbers: true },
   { id: 'noukadubi', base: 'নৌকাডুবি' },
   { id: 'ghore_baire', base: 'ঘরে বাইরে', alts: ['ঘরে-বাইরে'] },
   { id: 'shesher_kabita', base: 'শেষের কবিতা' },
@@ -273,10 +276,16 @@ for (const book of list) {
   }
   process.stdout.write(`${book.id} … `);
   try {
-    const { text, chapters, root, notes } = await fetchBook(book);
-    if (text.length < 3000) {
-      console.log(`FAIL (${text.length} chars) ${notes.join(' ;; ')}`);
-      report.push({ id: book.id, ok: false, notes });
+    const fetched = await fetchBook(book);
+    const { chapters, root, notes } = fetched;
+    const text = scrub(fetched.text, { keepNumbers: !!book.keepNumbers });
+    // Safeguards: refuse to write a file that is shorter than the known
+    // plausible minimum for this work, ends mid-text, or leaks HTML/JSON — a
+    // bad fetch must FAIL LOUDLY here, never flow silently into the library.
+    const problems = validateText(text, { min: book.min || 3000 });
+    if (problems.length) {
+      console.log(`FAIL (${problems.join('; ')}) ${notes.join(' ;; ')}`);
+      report.push({ id: book.id, ok: false, problems, notes });
     } else {
       writeFileSync(outFile, text, 'utf8');
       console.log(`OK — ${chapters} chapters, ${(text.length / 1000).toFixed(0)}K chars (root: ${root})`);

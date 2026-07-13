@@ -1,43 +1,34 @@
 // scripts/clean-texts.mjs — scrub Wikisource artifacts out of fetched texts.
-// Removes leaked Parsoid template JSON, chapter-nav arrows, bare page numbers,
-// page-range header lines, and lines repeated on every chapter page (running
-// author/title headers). Rewrites book-sources/texts/*.txt in place.
+// Thin wrapper over the shared scrubber (scripts/scrub.mjs). The old version
+// deleted whole lines that contained leaked Parsoid JSON — since the leaks sit
+// MID-PROSE, that silently removed real paragraphs (the root cause of the
+// truncated godan/nirmala/shesher_kabita cloud copies). The shared scrubber
+// excises the junk and keeps the prose.
+// Usage: node scripts/clean-texts.mjs [bookId ...]   (no args = all)
 
 import { readdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { scrub, validateText } from './scrub.mjs';
 
 const DIR = 'book-sources/texts';
+const KEEP_NUMBERS = new Set(['gitanjali', 'gitabitan', 'madhushala', 'chitrangada']); // song numbers are content
+
+const only = process.argv.slice(2);
+let failed = 0;
 
 for (const f of readdirSync(DIR).filter(f => f.endsWith('.txt'))) {
+  const id = f.replace(/\.txt$/, '');
+  if (only.length && !only.includes(id)) continue;
   const path = join(DIR, f);
-  let t = readFileSync(path, 'utf8');
-  const before = t.length;
-
-  // leaked Parsoid data-mw fragments (broken span attributes)
-  t = t.replace(/",\{"template[\s\S]{0,2000}?id="mw[^"]*">/g, '');
-  t = t.replace(/^.*(\{"template"|"wt":"|data-mw|id="mw).*$/gm, '');
-
-  let lines = t.split('\n');
-
-  // count short headerish lines to find running headers (repeat on each chapter)
-  const counts = {};
-  for (const l of lines) {
-    const s = l.trim();
-    if (s && s.length < 60 && !/[।.!?…—”"]$/.test(s)) counts[s] = (counts[s] || 0) + 1;
+  const before = readFileSync(path, 'utf8');
+  const t = scrub(before, { keepNumbers: KEEP_NUMBERS.has(id) });
+  const problems = validateText(t, { min: 3000 });
+  if (problems.length) {
+    console.log(`✗ ${f}: NOT REWRITTEN — ${problems.join('; ')}`);
+    failed++;
+    continue;
   }
-
-  lines = lines.filter(l => {
-    const s = l.trim();
-    if (!s) return true;
-    if (/[►◄←→↑]/.test(s)) return false;                        // chapter nav
-    if (/^[0-9০-৯०-९]{1,4}$/.test(s)) return false;              // bare page numbers
-    if (s.length < 100 && /[0-9০-৯०-९]+[-–][0-9০-৯०-९]+$/.test(s)) return false; // "title…5-12" headers
-    if (s.includes('(পৃ.') || s.includes('(पृ.')) return false;  // page-range notes
-    if (s.length < 60 && counts[s] >= 6) return false;           // running headers
-    return true;
-  });
-
-  t = lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
   writeFileSync(path, t, 'utf8');
-  console.log(`${f}: ${before} → ${t.length} chars`);
+  console.log(`✓ ${f}: ${before.length.toLocaleString()} → ${t.length.toLocaleString()} chars`);
 }
+process.exitCode = failed ? 1 : 0;

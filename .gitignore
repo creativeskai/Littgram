@@ -12,3 +12,4 @@ book-sources/*.epub
 book-sources/*.djvu
 book-sources/*.zip
 book-sources/texts/
+public/texts/
