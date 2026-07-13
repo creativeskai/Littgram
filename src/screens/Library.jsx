@@ -17,6 +17,7 @@ export default function Library() {
   const [cloud, setCloud] = useState(null); // null = loading
   const [recents, setRecents] = useState([]);
   const [error, setError] = useState(null);
+  const [q, setQ] = useState('');
 
   useEffect(() => {
     setRecents(listRecent(8));
@@ -44,6 +45,17 @@ export default function Library() {
     }
     return out;
   }, [cloud]);
+
+  // Cloud list filtered by the search box — matches book name, author, and
+  // genre (the catalog entry's tag + topics, when the book has one).
+  const shown = useMemo(() => {
+    if (!cloud) return null;
+    const needle = q.trim().toLowerCase();
+    if (!needle) return cloud;
+    return cloud.filter(b =>
+      [b.title, b.native, b.author, b.db?.tag, ...(b.db?.topics || [])]
+        .filter(Boolean).join(' ').toLowerCase().includes(needle));
+  }, [cloud, q]);
 
   return (
     <div>
@@ -138,6 +150,10 @@ export default function Library() {
       )}
 
       <p className="label" style={{ marginTop: 18 }}>{t('cloudLibrary')}</p>
+      {cloud?.length > 0 && (
+        <input className="input" placeholder="Search by book, author, or genre…"
+          value={q} onChange={e => setQ(e.target.value)} style={{ margin: '4px 0 10px' }} />
+      )}
       {cloud === null && <p className="sub">Loading your books…</p>}
       {error && <p className="sub" style={{ color: 'var(--err)' }}>Couldn't reach the cloud library: {error}</p>}
       {cloud?.length === 0 && !error && (
@@ -147,7 +163,12 @@ export default function Library() {
           <Link className="btn" to="/upload" style={{ textDecoration: 'none' }}>Upload a book</Link>
         </div>
       )}
-      {cloud?.map(b => (
+      {shown?.length === 0 && q.trim() && (
+        <p className="sub" style={{ textAlign: 'center', padding: '20px 0' }}>
+          No books match “{q.trim()}” — try an author, title, or genre like Fiction.
+        </p>
+      )}
+      {shown?.map(b => (
         <Link key={b.id} to={'/read/' + b.id} style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="card row-card">
             <div style={{ width: 44, flexShrink: 0 }}>
