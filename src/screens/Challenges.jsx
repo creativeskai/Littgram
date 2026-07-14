@@ -4,6 +4,7 @@
 // is computed from books actually finished this month on this device.
 
 import { useEffect, useState } from 'react';
+import { Trophy } from 'lucide-react';
 import { listChallenges, joinChallenge, joinedChallenges } from '../lib/social.js';
 import { listRecent } from '../lib/progress.js';
 import { useToast } from '../components/Toast.jsx';
@@ -32,7 +33,7 @@ export default function Challenges() {
       await joinChallenge(ch.id);
       setJoined(joinedChallenges());
       setChallenges(cs => cs.map(c => c.id === ch.id ? { ...c, members: c.members + 1 } : c));
-      toast('Joined — happy reading 🏆');
+      toast('Joined — happy reading');
     } catch (e) { toast("Couldn't join — check your connection and try again"); }
     finally { setJoining(null); }
   }
@@ -53,7 +54,7 @@ export default function Challenges() {
         return (
           <div key={ch.id} className="card" style={{ marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ fontSize: 26 }}>🏆</div>
+              <Trophy size={26} strokeWidth={1.6} style={{ color: 'var(--gold)', flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 15, fontWeight: 700 }}>{ch.title}</div>
                 <div className="sub" style={{ marginTop: 2 }}>{ch.description}</div>
@@ -70,7 +71,7 @@ export default function Challenges() {
                   <div className="progress-fill" style={{ width: pct + '%' }} />
                 </div>
                 <div className="sub" style={{ marginTop: 6 }}>
-                  {finished}/{ch.target} finished this month{finished >= ch.target ? ' — challenge complete! 🎉' : ''}
+                  {finished}/{ch.target} finished this month{finished >= ch.target ? ' — challenge complete!' : ''}
                 </div>
               </>
             ) : (

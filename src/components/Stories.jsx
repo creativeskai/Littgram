@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { BookOpen } from 'lucide-react';
 import { auth } from '../lib/auth.js';
 import { t } from '../lib/i18n.js';
 import { fetchReaders, getProfile, followingLocal, fetchCommunityPosts } from '../lib/social.js';
@@ -118,7 +119,7 @@ function ReaderSheet({ reader, onClose }) {
 
         <p className="label">Currently reading</p>
         <div className="card row-card" style={{ marginTop: 6 }}>
-          <div style={{ fontSize: 22 }}>📖</div>
+          <BookOpen size={22} strokeWidth={1.6} style={{ color: 'var(--gold)', flexShrink: 0 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 600 }}>{reader.title}</div>
             {reader.totalPages > 0 && (

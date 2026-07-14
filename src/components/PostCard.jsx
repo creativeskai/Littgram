@@ -3,6 +3,7 @@
 // tag, like/comment/share row, caption + hashtags, comments bottom sheet.
 
 import { useEffect, useState } from 'react';
+import { Heart, MessageCircle, Share2 } from 'lucide-react';
 import { isLiked, toggleLike, listComments, addComment, getProfile, deletePost } from '../lib/social.js';
 import { useToast } from './Toast.jsx';
 
@@ -154,13 +155,17 @@ export default function PostCard({ post, onDelete }) {
       )}
 
       <div style={{ display: 'flex', gap: 16, marginTop: 9, fontSize: 11, color: 'var(--muted)' }}>
-        <button className="action" onClick={onLike} style={{ color: liked ? 'var(--text)' : 'inherit', fontSize: 11 }}>
-          <span key={String(liked)} className="like-pop">{liked ? '❤️' : '🤍'}</span> {post.likes || ''}
+        <button className="action" onClick={onLike} style={{ color: liked ? 'var(--err)' : 'inherit', fontSize: 11 }}>
+          <span key={String(liked)} className="like-pop" style={{ display: 'inline-flex' }}>
+            <Heart size={15} strokeWidth={1.8} fill={liked ? 'currentColor' : 'none'} />
+          </span> {post.likes || ''}
         </button>
         <button className="action" onClick={() => setShowComments(true)} style={{ fontSize: 11 }}>
-          💬 {comments.length || post.comments || ''}
+          <MessageCircle size={15} strokeWidth={1.8} /> {comments.length || post.comments || ''}
         </button>
-        <button className="action" onClick={onShare} style={{ fontSize: 11 }}>↗ Share</button>
+        <button className="action" onClick={onShare} style={{ fontSize: 11 }}>
+          <Share2 size={15} strokeWidth={1.8} /> Share
+        </button>
         <span style={{ marginLeft: 'auto' }}>
           {isMine ? (
             confirmDelete ? (

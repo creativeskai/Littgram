@@ -35,6 +35,7 @@ export function useTTS() {
   const [gender, setGender] = useState('m');
 
   const audioRef = useRef(null);
+  const statusRef = useRef('idle');      // mirrors status for non-render reads
   const sessionRef = useRef(0);          // bumped to cancel an in-flight session
   const chunksRef = useRef([]);
   const idxRef = useRef(0);
@@ -144,7 +145,25 @@ export function useTTS() {
     setChunkInfo({ i: 0, n: 0 });
   }, []);
 
-  const setVoice = useCallback((g) => { genderRef.current = g; setGender(g); }, []);
+  // Voice can change mid-read: cancel the old session, drop audio fetched
+  // with the previous voice, and restart the current part in the new one.
+  const setVoice = useCallback((g) => {
+    if (g === genderRef.current) return;
+    genderRef.current = g;
+    setGender(g);
+    const st = statusRef.current;
+    if (st === 'idle' || st === 'error') return;
+    sessionRef.current++;
+    const session = sessionRef.current;
+    Object.values(cacheRef.current).forEach(u => URL.revokeObjectURL(u));
+    cacheRef.current = {};
+    const el = audioRef.current;
+    if (el) { el.pause(); el.onended = null; el.removeAttribute('src'); }
+    // If paused, stay paused — resume() refetches this chunk in the new voice.
+    if (st !== 'paused') playFrom(idxRef.current, session);
+  }, [playFrom]);
+
+  useEffect(() => { statusRef.current = status; }, [status]);
 
   // cleanup on unmount
   useEffect(() => () => { sessionRef.current++; Object.values(cacheRef.current).forEach(u => URL.revokeObjectURL(u)); }, []);

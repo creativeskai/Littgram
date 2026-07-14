@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Pause, Play, Headphones, LoaderCircle, TriangleAlert, BookOpen } from 'lucide-react';
 import BookCover from './BookCover.jsx';
 import { chaptersFor } from '../lib/chapters.js';
 import { useTTS } from '../lib/useTTS.js';
@@ -68,10 +69,13 @@ export default function BookDetail({ book, cloudIds, onClose }) {
 
             <div className="tts-strip" style={{ marginTop: 8 }}>
               <button className="tts-voice on" onClick={onListenSummary} style={{ fontWeight: 700 }}>
-                {tts.status === 'playing' ? '⏸ Pause' : tts.status === 'loading' ? '⏳ Loading…' : tts.status === 'paused' ? '▶ Resume' : '🎧 Listen · 5-min summary'}
+                {tts.status === 'playing' ? <><Pause size={13} /> Pause</>
+                  : tts.status === 'loading' ? <><LoaderCircle size={13} className="spin" /> Loading…</>
+                  : tts.status === 'paused' ? <><Play size={13} /> Resume</>
+                  : <><Headphones size={13} /> Listen · 5-min summary</>}
               </button>
               <span style={{ fontSize: 11 }}>
-                {tts.status === 'error' ? '⚠️ ' + (tts.error || 'audio error')
+                {tts.status === 'error' ? <><TriangleAlert size={12} style={{ verticalAlign: '-2px' }} /> {tts.error || 'audio error'}</>
                   : tts.status === 'playing' && tts.chunkInfo.n > 0 ? `part ${tts.chunkInfo.i}/${tts.chunkInfo.n}` : ''}
               </span>
               {tts.status !== 'idle' && (
@@ -115,7 +119,7 @@ export default function BookDetail({ book, cloudIds, onClose }) {
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
           {readableId ? (
             <button className="btn" style={{ flex: 1 }} onClick={() => nav('/read/' + readableId)}>
-              📖 Read now
+              <BookOpen size={15} strokeWidth={1.8} /> Read now
             </button>
           ) : (
             <button className="btn ghost" style={{ flex: 1 }} disabled>

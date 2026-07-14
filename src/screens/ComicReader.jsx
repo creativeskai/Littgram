@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { TriangleAlert, Hand } from 'lucide-react';
 import { COMICS_DB, comicPage } from '../data/comics.js';
 
 const POS_KEY = 'littgram_comic_pos_v1';
@@ -66,7 +67,7 @@ export default function ComicReader() {
   if (!comic) {
     return (
       <div className="placeholder" style={{ paddingTop: 90 }}>
-        <div className="emoji">⚠️</div>
+        <TriangleAlert size={44} strokeWidth={1.4} style={{ color: 'var(--warn)' }} />
         <h1 className="h-screen serif">Comic not found</h1>
         <button className="btn ghost" onClick={() => nav('/library')}>Back to Library</button>
       </div>
@@ -127,7 +128,7 @@ export default function ComicReader() {
       {showSwipeHint && (
         <div className="swipe-hint" onClick={dismissSwipeHint} role="button" aria-label="Dismiss swipe hint">
           <div className="swipe-hint-card">
-            <div className="swipe-hint-hand">👉</div>
+            <div className="swipe-hint-hand"><Hand size={34} strokeWidth={1.6} /></div>
             <div style={{ fontSize: 14, fontWeight: 700, marginTop: 10 }}>Swipe to turn the page</div>
             <p className="sub" style={{ marginTop: 6 }}>
               Swipe left (or tap the right edge) for the next page. Swipe right to go back.

@@ -15,7 +15,7 @@ import { BOOKS_DB } from '../data/books.js';
 import PostCard from '../components/PostCard.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { signOut, auth } from '../lib/auth.js';
-import { t, UI_LANGS, getUiLang, setUiLang } from '../lib/i18n.js';
+import { t, UI_LANGS, setUiLang, useUiLang } from '../lib/i18n.js';
 
 // Language/genre options are derived from what's actually in the library —
 // they grow automatically as new books are uploaded.
@@ -28,7 +28,7 @@ export default function Profile() {
   const [draft, setDraft] = useState(profile.handle);
   const [lang, setLangState] = useState(localStorage.getItem('littgram_feed_lang') || 'all');
   const [topic, setTopicState] = useState(localStorage.getItem('littgram_feed_topic') || null);
-  const [uiLang, setUiLangState] = useState(getUiLang());
+  const uiLang = useUiLang();
   const [following, setFollowing] = useState([]);   // [{handle, at}]
   const [followers, setFollowers] = useState([]);
   const [listSheet, setListSheet] = useState(null); // 'followers' | 'following' | null
@@ -87,7 +87,7 @@ export default function Profile() {
   const recents = listRecent(50);
   const finished = recents.filter(r => r.totalPages && r.page >= r.totalPages - 1).length;
   const reading = recents.length - finished;
-  const posts = myPosts();
+  const [posts, setPosts] = useState(() => myPosts());
 
   function saveHandle() {
     setProfile({ ...setHandle(draft) });
@@ -170,7 +170,7 @@ export default function Profile() {
         <div className="pill-row">
           {UI_LANGS.map(l => (
             <button key={l.code} className={'pill' + (uiLang === l.code ? ' on' : '')}
-              onClick={() => { setUiLang(l.code); setUiLangState(l.code); window.location.reload(); }}>{l.label}</button>
+              onClick={() => setUiLang(l.code)}>{l.label}</button>
           ))}
         </div>
         <p className="label" style={{ marginTop: 12 }}>{t('feedLanguage')}</p>
@@ -204,7 +204,7 @@ export default function Profile() {
         <p className="sub">Nothing published yet — share a quote from the home feed with the ＋ button.</p>
       )}
       {posts.map(p => (
-        <PostCard key={p.id} post={p} onDelete={() => window.location.reload()} />
+        <PostCard key={p.id} post={p} onDelete={id => setPosts(ps => ps.filter(x => x.id !== id))} />
       ))}
 
       {/* ── Footer ── */}

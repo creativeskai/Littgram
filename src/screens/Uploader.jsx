@@ -1,4 +1,4 @@
-// src/screens/Uploader.jsx
+﻿// src/screens/Uploader.jsx
 // The merged book uploader — replaces book-processor.html AND book-uploader.html.
 //
 // Pipeline:
@@ -126,7 +126,7 @@ export default function Uploader() {
         setStep(3, 'done', 'saved ✓');
         setProgress(100);
         setResult({ bookId, chars: raw.length, en: !!enTxt });
-        toast('☁️ Book saved to cloud library');
+        toast('Book saved to cloud library');
         return;
       }
 
@@ -230,7 +230,7 @@ export default function Uploader() {
       setStep(3, 'done', 'saved ✓');
       setProgress(100);
       setResult({ bookId, chars: srcText.length, en: !!enText });
-      toast('☁️ Book saved to cloud library');
+      toast('Book saved to cloud library');
     } catch (e) {
       log('ERROR: ' + e.message, 'ler');
       setSteps(ss => ss.map(s => (s.state === 'active' ? { ...s, state: 'fail', status: e.message.slice(0, 60) } : s)));
@@ -269,7 +269,7 @@ export default function Uploader() {
       forgetJob(job.jobId);
       setRecoverable(listJobs().filter(j => !j.finished));
       setResult({ bookId: job.bookId, chars: text.length, en: !!enText });
-      toast('☁️ Recovered & saved');
+      toast('Recovered & saved');
     } catch (e) {
       log('Recovery failed: ' + e.message, 'ler');
       toast('Recovery failed: ' + e.message.slice(0, 80), 4000);

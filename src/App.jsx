@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
+import { BookOpen, Map } from 'lucide-react';
 import { ToastProvider } from './components/Toast.jsx';
 import TopNav from './components/TopNav.jsx';
 import BottomNav from './components/BottomNav.jsx';
@@ -21,7 +22,9 @@ const Uploader = lazy(() => import('./screens/Uploader.jsx'));
 const Seeder = lazy(() => import('./screens/Seeder.jsx'));
 
 const Wait = ({ children }) => (
-  <Suspense fallback={<div className="placeholder"><div className="emoji">📖</div></div>}>{children}</Suspense>
+  <Suspense fallback={
+    <div className="placeholder"><BookOpen size={44} strokeWidth={1.4} style={{ color: 'var(--muted)' }} /></div>
+  }>{children}</Suspense>
 );
 
 export default function App() {
@@ -39,7 +42,7 @@ export default function App() {
   if (user === undefined) {
     return (
       <div className="placeholder" style={{ minHeight: '100dvh' }}>
-        <div className="emoji">📖</div>
+        <BookOpen size={44} strokeWidth={1.4} style={{ color: 'var(--muted)' }} />
       </div>
     );
   }
@@ -66,7 +69,7 @@ export default function App() {
             <Route path="/comic/:comicId" element={<Wait><ComicReader /></Wait>} />
             <Route path="/upload" element={<Wait><Uploader /></Wait>} />
             <Route path="/seed" element={<Wait><Seeder /></Wait>} />
-            <Route path="*" element={<Placeholder emoji="🗺️" title="Not found" note="This page doesn't exist" />} />
+            <Route path="*" element={<Placeholder icon={Map} title="Not found" note="This page doesn't exist" />} />
           </Routes>
         </main>
         {!fullscreen && <BottomNav />}

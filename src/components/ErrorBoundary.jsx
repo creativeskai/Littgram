@@ -3,6 +3,7 @@
 // screen instead of a blank white page.
 
 import { Component } from 'react';
+import { BookX } from 'lucide-react';
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -23,7 +24,7 @@ export default class ErrorBoundary extends Component {
         alignItems: 'center', justifyContent: 'center', padding: 32,
         background: 'var(--bg, #0C0C0D)', color: 'var(--text, #ECEAE3)', textAlign: 'center',
       }}>
-        <div style={{ fontSize: 44, marginBottom: 14 }}>📖</div>
+        <div style={{ marginBottom: 14 }}><BookX size={44} strokeWidth={1.4} /></div>
         <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 20, fontWeight: 900, marginBottom: 8 }}>
           Something went wrong
         </div>

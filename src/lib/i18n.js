@@ -1,6 +1,10 @@
 // src/lib/i18n.js
 // UI language for menus and screen titles. Chosen on the login screen,
 // changeable in Profile. Content (books, posts) is not affected.
+// The language lives in a tiny subscribable store so components re-render
+// in place on change — no full page reload.
+
+import { useSyncExternalStore } from 'react';
 
 const KEY = 'littgram_ui_lang';
 
@@ -42,6 +46,18 @@ const STRINGS = {
   },
 };
 
-export const getUiLang = () => localStorage.getItem(KEY) || 'en';
-export const setUiLang = (code) => localStorage.setItem(KEY, code);
-export const t = (key) => STRINGS[getUiLang()]?.[key] ?? STRINGS.en[key] ?? key;
+let current = localStorage.getItem(KEY) || 'en';
+const listeners = new Set();
+
+export const getUiLang = () => current;
+export const setUiLang = (code) => {
+  current = code;
+  localStorage.setItem(KEY, code);
+  listeners.forEach(fn => fn());
+};
+const subscribe = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
+
+// Components that render t() strings call this so they update live.
+export const useUiLang = () => useSyncExternalStore(subscribe, getUiLang);
+
+export const t = (key) => STRINGS[current]?.[key] ?? STRINGS.en[key] ?? key;

@@ -1,6 +1,7 @@
 // src/screens/Reader.jsx
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Pause, Play, Volume2, LoaderCircle, TriangleAlert, Hand, BookOpen, Bookmark } from 'lucide-react';
 import { loadBookText, buildPages, siblingEditionId } from '../lib/books.js';
 import {
   savePosition, getPosition, toggleBookmark, listBookmarks,
@@ -153,7 +154,9 @@ export default function Reader() {
   if (state === 'loading' || state === 'error') {
     return (
       <div className="placeholder" style={{ paddingTop: 90 }}>
-        <div className="emoji">{state === 'error' ? '⚠️' : '📖'}</div>
+        {state === 'error'
+          ? <TriangleAlert size={44} strokeWidth={1.4} style={{ color: 'var(--warn)' }} />
+          : <BookOpen size={44} strokeWidth={1.4} style={{ color: 'var(--muted)' }} />}
         <h1 className="h-screen serif">{state === 'error' ? "Couldn't open book" : (meta.title || bookId)}</h1>
         <p className="sub">{loadMsg}</p>
         {state === 'error' && (
@@ -183,10 +186,12 @@ export default function Reader() {
             </button>
           )}
           <button className="rbtn" onClick={onListen} title="Read aloud">
-            {tts.status === 'playing' ? '||' : tts.status === 'loading' ? '...' : '🔊'}
+            {tts.status === 'playing' ? <Pause size={15} />
+              : tts.status === 'loading' ? <LoaderCircle size={15} className="spin" />
+              : <Volume2 size={15} />}
           </button>
-          <button className="rbtn" onClick={onBookmark}>
-            {isBookmarked(bookId, page) ? '🔖' : '🏷️'}
+          <button className="rbtn" onClick={onBookmark} title="Bookmark this page">
+            <Bookmark size={15} fill={isBookmarked(bookId, page) ? 'currentColor' : 'none'} />
           </button>
           {chaptersFor(bookId).length > 0 && (
             <button className="rbtn" onClick={() => setShowChapters(s => !s)} title="Chapters">§</button>
@@ -210,7 +215,7 @@ export default function Reader() {
       {showSwipeHint && pages.length > 1 && (
         <div className="swipe-hint" onClick={dismissSwipeHint} role="button" aria-label="Dismiss swipe hint">
           <div className="swipe-hint-card">
-            <div className="swipe-hint-hand">👉</div>
+            <div className="swipe-hint-hand"><Hand size={34} strokeWidth={1.6} /></div>
             <div style={{ fontSize: 14, fontWeight: 700, marginTop: 10 }}>Swipe to turn the page</div>
             <p className="sub" style={{ marginTop: 6 }}>
               Swipe left (or tap the right edge) for the next page. Swipe right to go back.
@@ -224,10 +229,13 @@ export default function Reader() {
         <div className="reader-bottom">
           <div className="tts-strip">
             <button className="tts-voice on" onClick={onListen} style={{ fontWeight: 700 }}>
-              {tts.status === 'playing' ? '⏸ Pause' : tts.status === 'loading' ? '⏳ Loading…' : tts.status === 'paused' ? '▶ Resume' : '🔊 Listen'}
+              {tts.status === 'playing' ? <><Pause size={13} /> Pause</>
+                : tts.status === 'loading' ? <><LoaderCircle size={13} className="spin" /> Loading…</>
+                : tts.status === 'paused' ? <><Play size={13} /> Resume</>
+                : <><Volume2 size={13} /> Listen</>}
             </button>
             <span style={{ fontSize: 11 }}>
-              {tts.status === 'error' ? '⚠️ ' + (tts.error || 'audio error')
+              {tts.status === 'error' ? <><TriangleAlert size={12} style={{ verticalAlign: '-2px' }} /> {tts.error || 'audio error'}</>
                 : tts.status === 'playing' && tts.chunkInfo.n > 0 ? `Reading · part ${tts.chunkInfo.i}/${tts.chunkInfo.n}`
                 : tts.status === 'idle' ? 'Read aloud' : ''}
             </span>

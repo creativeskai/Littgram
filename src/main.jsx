@@ -5,10 +5,15 @@ import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import './styles/global.css';
 
-// Unregister the legacy service worker so it can't serve stale cached
-// versions of the new app shell.
+// Register the PWA service worker (production only — caching in dev gets in
+// the way). Registering at root scope also replaces the legacy worker, so
+// stale legacy caches can't serve the old app shell.
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+  if (import.meta.env.PROD) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
+  } else {
+    navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+  }
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(

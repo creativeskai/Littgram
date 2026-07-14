@@ -4,6 +4,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { BookOpen, Cloud } from 'lucide-react';
 import { listCloudBooks } from '../lib/books.js';
 import { listRecent } from '../lib/progress.js';
 import { BOOKS_DB } from '../data/books.js';
@@ -74,7 +75,7 @@ export default function Library() {
                 <span className="ticker-flag">NEW</span>
                 {newest.map(b => (
                   <Link key={b.id} to={'/read/' + b.id} className="ticker-item">
-                    📖 <b>{b.native || b.title}</b>
+                    <BookOpen size={12} strokeWidth={1.8} style={{ verticalAlign: '-2px', marginRight: 4 }} /><b>{b.native || b.title}</b>
                     {b.author && <span className="a"> — {b.author}</span>}
                   </Link>
                 ))}
@@ -158,7 +159,7 @@ export default function Library() {
       {error && <p className="sub" style={{ color: 'var(--err)' }}>Couldn't reach the cloud library: {error}</p>}
       {cloud?.length === 0 && !error && (
         <div className="placeholder" style={{ padding: '30px 20px' }}>
-          <div className="emoji">☁️</div>
+          <Cloud size={44} strokeWidth={1.4} style={{ color: 'var(--muted)' }} />
           <p className="sub">No books in the cloud yet — digitize your first one.</p>
           <Link className="btn" to="/upload" style={{ textDecoration: 'none' }}>Upload a book</Link>
         </div>
