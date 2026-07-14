@@ -68,7 +68,7 @@ export default function Profile() {
   // Discoverable accounts: bots + active readers (excluding self), searchable
   const needle = q.trim().toLowerCase();
   const discoverable = [
-    ...BOT_PROFILES.map(b => ({ handle: b.handle, name: b.name, emoji: b.emoji, bio: b.bio, bot: true })),
+    ...BOT_PROFILES.map(b => ({ handle: b.handle, name: b.name, icon: b.icon, bio: b.bio, bot: true })),
     ...readers.filter(r => r.handle !== profile.handle)
       .map(r => ({ handle: r.handle, name: '@' + r.handle, bio: r.title ? `Reading ${r.title}` : '', bot: false })),
   ].filter(a => !needle || a.handle.includes(needle) || a.name.toLowerCase().includes(needle));
@@ -148,7 +148,9 @@ export default function Profile() {
           onChange={e => setQ(e.target.value)} style={{ marginBottom: 10 }} />
         {discoverable.slice(0, 8).map(a => (
           <div key={a.handle} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-            <div className="avatar">{a.emoji || a.handle[0].toUpperCase()}</div>
+            <div className="avatar">
+              {a.icon ? <a.icon size={15} strokeWidth={1.8} /> : a.handle[0].toUpperCase()}
+            </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 12.5, fontWeight: 700 }}>
                 {a.name}{a.bot && <span className="chip" style={{ marginLeft: 6, fontSize: 8 }}>AUTO</span>}
@@ -244,7 +246,9 @@ export default function Profile() {
               const bot = BOT_PROFILES.find(b => b.handle === f.handle);
               return (
                 <div key={f.handle} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid var(--border)' }}>
-                  <div className="avatar">{bot?.emoji || f.handle[0].toUpperCase()}</div>
+                  <div className="avatar">
+                    {bot?.icon ? <bot.icon size={15} strokeWidth={1.8} /> : f.handle[0].toUpperCase()}
+                  </div>
                   <div style={{ flex: 1, fontSize: 12.5, fontWeight: 600 }}>
                     {bot?.name || '@' + f.handle}
                   </div>

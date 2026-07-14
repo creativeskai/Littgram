@@ -5,15 +5,15 @@ import { useMemo, useState } from 'react';
 import { signInWithGoogle } from '../lib/auth.js';
 import { UI_LANGS, getUiLang, setUiLang } from '../lib/i18n.js';
 
-// Ambient background: open books and one letterform from each major Indian
-// script, drifting slowly upward. Deterministic layout (no flicker on rerender).
-const AMBIENT_GLYPHS = ['📖', 'অ', '📚', 'क', '📖', 'ম', 'आ', '📖', 'த', 'తె', '📚', 'ಕ', 'മ', 'ਅ', '📖', 'ଓ', 'ক', '📚'];
+// Ambient background: letterforms from every major Indian script drifting
+// slowly upward like sparks. Deterministic layout (no flicker on rerender).
+const AMBIENT_GLYPHS = ['ধ', 'অ', 'श', 'क', 'ম', 'ज्ञ', 'आ', 'ர', 'த', 'తె', 'ब', 'ಕ', 'മ', 'ਅ', 'ষ', 'ଓ', 'ক', 'ळ'];
 
 function AmbientBackground() {
   const items = useMemo(() => AMBIENT_GLYPHS.map((g, i) => ({
     g,
     x: ((i * 53 + 7) % 96) + '%',                    // spread across the width
-    size: (g === '📖' || g === '📚' ? 20 : 26) + ((i * 7) % 20) + 'px',
+    size: 26 + ((i * 7) % 20) + 'px',
     dur: 18 + ((i * 5) % 18) + 's',                  // 18–35s per crossing
     delay: -(i * 4.3) + 's',                         // negative = mid-flight on load
     o: (0.16 + ((i * 13) % 15) / 100).toFixed(2),    // 0.16–0.30

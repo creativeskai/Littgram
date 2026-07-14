@@ -3,28 +3,31 @@
 // every 24 hours. Posting happens lazily on app open; post IDs are keyed
 // by date so concurrent clients can't create duplicates.
 
+import { Flame, Landmark, Feather, PenLine } from 'lucide-react';
 import { BOOKS_DB } from '../data/books.js';
 import { initFirebase, fbWrite, fbRead } from './firebase.js';
 import { fetchCommunityPosts } from './social.js';
 
+// `emoji` stays as the stored Firestore identity (old posts reference it);
+// `icon` is the lucide component the UI renders for avatars.
 export const BOT_PROFILES = [
   {
-    handle: 'motivations', name: 'Motivations', emoji: '🔥',
+    handle: 'motivations', name: 'Motivations', emoji: '🔥', icon: Flame,
     bio: 'One thought to carry through your day — from the great philosophers.',
     pick: b => (b.topics || []).some(t => ['Philosophy', 'Self-growth', 'Spirituality'].includes(t)),
   },
   {
-    handle: 'bharat_gyaan', name: 'Bharat Gyaan', emoji: '🇮🇳',
+    handle: 'bharat_gyaan', name: 'Bharat Gyaan', emoji: '🇮🇳', icon: Landmark,
     bio: 'Wisdom of the Indian classics — Tagore, Premchand, Bankim and beyond.',
     pick: b => ['bn', 'hi', 'mr'].includes(b.lang),
   },
   {
-    handle: 'tagore_daily', name: 'Tagore Daily', emoji: '🪶',
+    handle: 'tagore_daily', name: 'Tagore Daily', emoji: '🪶', icon: Feather,
     bio: 'Every day, one line from Rabindranath Tagore.',
     pick: b => /tagore/i.test(b.author),
   },
   {
-    handle: 'premchand_says', name: 'Premchand Says', emoji: '🖋️',
+    handle: 'premchand_says', name: 'Premchand Says', emoji: '🖋️', icon: PenLine,
     bio: 'Daily lines from Munshi Premchand, the voice of the Hindi heartland.',
     pick: b => /premchand/i.test(b.author),
   },

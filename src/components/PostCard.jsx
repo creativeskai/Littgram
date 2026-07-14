@@ -3,13 +3,14 @@
 // tag, like/comment/share row, caption + hashtags, comments bottom sheet.
 
 import { useEffect, useState } from 'react';
-import { Heart, MessageCircle, Share2 } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Quote } from 'lucide-react';
 import { isLiked, toggleLike, listComments, addComment, getProfile, deletePost } from '../lib/social.js';
+import { botByHandle } from '../lib/bots.js';
 import { useToast } from './Toast.jsx';
 
 // Neutral ink-styled quote card — the colored book gradients clashed with
 // the monochrome theme, so quotes render like a printed pull-quote instead.
-function QuoteSlide({ emoji, quote, author }) {
+function QuoteSlide({ quote, author }) {
   return (
     <div style={{
       background: 'var(--surface2)', border: '1px solid var(--border)',
@@ -17,7 +18,8 @@ function QuoteSlide({ emoji, quote, author }) {
       borderRadius: 10, minHeight: 120, padding: '18px 16px',
       display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', overflow: 'hidden',
     }}>
-      <div style={{ position: 'absolute', top: 10, right: 12, fontSize: 18, opacity: 0.5 }}>{emoji}</div>
+      <Quote size={16} strokeWidth={1.8}
+        style={{ position: 'absolute', top: 10, right: 12, opacity: 0.4, color: 'var(--gold)' }} />
       <div className="serif" style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text)', fontStyle: 'italic' }}>
         “{quote}”
       </div>
@@ -104,8 +106,9 @@ export default function PostCard({ post, onDelete }) {
   }
 
   const slides = post.carousel && post.quotes
-    ? post.quotes.map(q => ({ quote: q.q, author: q.a, accent: q.c, bg: post.bg, emoji: post.emoji }))
-    : [{ quote: post.quote, author: post.author, accent: post.accent, bg: post.bg, emoji: post.emoji }];
+    ? post.quotes.map(q => ({ quote: q.q, author: q.a }))
+    : [{ quote: post.quote, author: post.author }];
+  const BotIcon = post.bot ? botByHandle(post.user)?.icon : null;
 
   function onLike() {
     setLiked(toggleLike(post.id));
@@ -124,7 +127,9 @@ export default function PostCard({ post, onDelete }) {
   return (
     <div className="card" style={{ marginBottom: 10, padding: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <div className="avatar sm">{post.bot ? post.emoji : (post.user || '?')[0].toUpperCase()}</div>
+        <div className="avatar sm">
+          {BotIcon ? <BotIcon size={13} strokeWidth={1.8} /> : (post.user || '?')[0].toUpperCase()}
+        </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12, fontWeight: 700 }}>
             {post.user}{post.bot && <span className="chip" style={{ marginLeft: 6, fontSize: 8 }}>AUTO</span>}

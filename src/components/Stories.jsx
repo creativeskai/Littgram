@@ -27,7 +27,7 @@ export function StoriesBar({ onOpen }) {
   const circles = [];
   for (const h of followed) {
     const bot = botByHandle(h);
-    if (bot) circles.push({ key: h, label: bot.name.slice(0, 11), face: bot.emoji, onClick: () => setSelected({ type: 'bot', data: bot }) });
+    if (bot) circles.push({ key: h, label: bot.name.slice(0, 11), Face: bot.icon, onClick: () => setSelected({ type: 'bot', data: bot }) });
     else circles.push({ key: h, label: h.slice(0, 11), face: h[0].toUpperCase(), onClick: () => setSelected({ type: 'reader', data: readerByHandle[h] || { handle: h } }) });
   }
   for (const r of readers) {
@@ -53,7 +53,9 @@ export function StoriesBar({ onOpen }) {
         {circles.map(c => (
           <div key={c.key} className="story-ring-wrap" onClick={c.onClick}>
             <div className="story-ring">
-              <div className="story-ring-inner">{c.face}</div>
+              <div className="story-ring-inner">
+                {c.Face ? <c.Face size={18} strokeWidth={1.8} /> : c.face}
+              </div>
             </div>
             <div className="story-name">{c.label}</div>
           </div>
@@ -77,7 +79,7 @@ function BotSheet({ bot, onClose }) {
       <div className="sheet" onClick={e => e.stopPropagation()}>
         <div className="sheet-grab" />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-          <div className="avatar lg">{bot.emoji}</div>
+          <div className="avatar lg"><bot.icon size={26} strokeWidth={1.6} /></div>
           <div>
             <div className="serif" style={{ fontSize: 17, fontWeight: 900 }}>
               {bot.name} <span className="chip" style={{ fontSize: 8, verticalAlign: 'middle' }}>AUTO</span>

@@ -1,9 +1,13 @@
 // src/components/BookCover.jsx
-// Gradient + emoji + title plate renders instantly as the base layer.
+// Gradient + genre icon + title plate renders instantly as the base layer.
 // OpenLibrary cover image fades in on top when it loads — no crossOrigin
 // (OpenLibrary doesn't need it and it was causing CORS rejections).
 
 import { useState } from 'react';
+import { BookOpen, Feather, Scroll, Fingerprint } from 'lucide-react';
+
+// Genre → cover motif (the catalog's emoji field is data-only now)
+const TAG_ICONS = { Poetry: Feather, Philosophy: Scroll, Mystery: Fingerprint };
 
 // Route external covers through our own /api/cover proxy — some networks
 // block covers.openlibrary.org directly.
@@ -17,7 +21,7 @@ export default function BookCover({ book, height = 150, width, radius = 12 }) {
   const c1 = book?.c1 || '#2A2018';
   const c2 = book?.c2 || '#1E1610';
   const accent = book?.accent || 'var(--gold)';
-  const emoji = book?.emoji || '📖';
+  const Motif = TAG_ICONS[book?.tag] || BookOpen;
   const title = (book?.native || book?.title || '').slice(0, 26);
   const author = (book?.author || '').slice(0, 28);
 
@@ -37,14 +41,15 @@ export default function BookCover({ book, height = 150, width, radius = 12 }) {
         background: 'rgba(0,0,0,0.28)', zIndex: 1,
       }} />
 
-      {/* Emoji + title plate — always visible as fallback */}
+      {/* Genre motif + title plate — always visible as fallback */}
       <div style={{
         position: 'absolute', inset: 0, zIndex: 1,
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         padding: '8px 8px 0', textAlign: 'center',
       }}>
-        <div style={{ fontSize: Math.max(18, height / 4.5), lineHeight: 1 }}>{emoji}</div>
+        <Motif size={Math.max(18, height / 4.5)} strokeWidth={1.3}
+          style={{ color: 'rgba(255,255,255,0.85)' }} />
       </div>
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 3,
