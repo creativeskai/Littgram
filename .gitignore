@@ -13,3 +13,6 @@ book-sources/*.djvu
 book-sources/*.zip
 book-sources/texts/
 public/texts/
+
+# Android package output (contains the signing keystore — never commit)
+release/

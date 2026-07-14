@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.littgram.twa",
+        "sha256_cert_fingerprints": ["A5:69:CD:38:93:40:31:EC:07:42:90:40:24:95:1E:96:8C:E0:7C:DD:7F:32:FB:05:49:B6:38:2C:16:80:7C:E9"]
+      }
+    }]
