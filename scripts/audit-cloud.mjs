@@ -34,6 +34,17 @@ const minFor = id => id.endsWith('_en')
 
 const fromFs = v => v?.stringValue ?? (v?.integerValue ? +v.integerValue : v?.booleanValue);
 const ENDINGS = /[।॥.!?"'”’)\]…—-]\s*$/;
+// Books whose real published ending doesn't match the generic punctuation
+// heuristic (explicit end markers, signatures, quatrain numbers, dates).
+const EXPECTED_END = {
+  1984: /THE END\s*$/,
+  chander_pahar: /J\. G\. Fitzgerald\s*$/,
+  chander_pahar_en: /J\. G\. Fitzgerald\s*$/,
+  madhushala: /\| 135 \| \|\s*$/,
+  madhushala_en: /\| 135 \| \|\s*$/,
+  gitanjali: /১৩১৭\s*$/, // song 157's composition date
+};
+const endOk = (id, text) => (EXPECTED_END[id] || ENDINGS).test(text);
 
 async function j(url) { const r = await fetch(url); return r.ok ? r.json() : null; }
 
@@ -79,12 +90,24 @@ for (const b of books) {
 
   if (missing.length) flags.push(`MISSING CHUNKS ${missing.join(',')}/${b.chunks}`);
   if (chars < minFor(b.id)) flags.push(`TRUNCATED? ${chars.toLocaleString()} chars < expected ≥${minFor(b.id).toLocaleString()}`);
-  if (!ENDINGS.test(text)) flags.push(`ABRUPT END "…${tail.slice(-40)}"`);
+  if (!endOk(b.id, text)) flags.push(`ABRUPT END "…${tail.slice(-40)}"`);
 
-  const localFile = join(LOCAL, b.id.replace(/_en$/, '') + '.txt');
+  // Compare against the corrected staged text (public/texts) when one exists —
+  // that is the authoritative version; raw book-sources files deliberately
+  // contain front/back matter the staged texts trim, so they only serve as a
+  // fallback baseline.
+  const stagedFile = join('public/texts', b.id + '.txt');
+  const rawFile = join(LOCAL, b.id.replace(/_en$/, '') + '.txt');
   let localNote = '';
-  if (!b.id.endsWith('_en') && existsSync(localFile)) {
-    const localChars = readFileSync(localFile, 'utf8').trim().length;
+  if (existsSync(stagedFile)) {
+    const stagedChars = readFileSync(stagedFile, 'utf8').trim().length;
+    const ratio = chars / stagedChars;
+    localNote = ` staged=${stagedChars.toLocaleString()}`;
+    // post-seed the cloud text IS the staged text — anything beyond rounding
+    // noise means the /seed "Text updates" step hasn't been applied
+    if (ratio < 0.995 || ratio > 1.005) flags.push(`CLOUD ≠ STAGED (${(ratio * 100).toFixed(0)}%) — /seed "Text updates" not applied?`);
+  } else if (!b.id.endsWith('_en') && existsSync(rawFile)) {
+    const localChars = readFileSync(rawFile, 'utf8').trim().length;
     const ratio = chars / localChars;
     localNote = ` local=${localChars.toLocaleString()}`;
     if (ratio < 0.97) flags.push(`CLOUD < LOCAL (${(ratio * 100).toFixed(0)}%)`);
