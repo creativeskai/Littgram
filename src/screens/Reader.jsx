@@ -202,6 +202,7 @@ export default function Reader() {
       <div
         ref={bodyRef}
         className="reader-body"
+        lang={(meta.lang || (bookId.endsWith('_en') ? 'en' : 'bn')).slice(0, 2)}
         style={{ fontSize: font, fontFamily: isBn ? "'Noto Serif Bengali',Georgia,serif" : "Georgia,'Playfair Display',serif" }}
         onClick={onTap} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
       >
