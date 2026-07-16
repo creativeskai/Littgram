@@ -3,8 +3,8 @@
 // topic chips, two-column cover grid. Tapping a book opens the detail sheet.
 
 import { useEffect, useMemo, useState } from 'react';
-import { BOOKS_DB } from '../data/books.js';
 import { listCloudBooks } from '../lib/books.js';
+import { readableCatalog } from '../lib/recommend.js';
 import BookCover from '../components/BookCover.jsx';
 import BookDetail from '../components/BookDetail.jsx';
 import { t } from '../lib/i18n.js';
@@ -27,23 +27,7 @@ export default function Explore() {
   // Every readable cloud book: rich BOOKS_DB entries where the catalog has
   // one, otherwise an entry synthesized from the cloud metadata — so books
   // added straight to the cloud library still appear here.
-  const readable = useMemo(() => {
-    if (!cloud) return [];
-    const matched = BOOKS_DB.filter(b => cloudIds.has(b.id) || cloudIds.has(b.id + '_en'));
-    const matchedIds = new Set(matched.flatMap(b => [b.id, b.id + '_en']));
-    const extras = [];
-    for (const cb of cloud) {
-      if (matchedIds.has(cb.id)) continue;
-      // prefer the native edition when both `x` and `x_en` exist
-      if (cb.id.endsWith('_en') && cloudIds.has(cb.id.slice(0, -3))) continue;
-      extras.push({
-        id: cb.id, title: cb.title, native: cb.native, author: cb.author,
-        lang: cb.lang && cb.lang !== '?' ? cb.lang : 'en',
-        emoji: '📖', topics: [], quotes: [],
-      });
-    }
-    return [...matched, ...extras];
-  }, [cloud, cloudIds]);
+  const readable = useMemo(() => readableCatalog(cloud), [cloud]);
 
   // Filter options derive from the library — they grow with new uploads
   const langPills = useMemo(() => [

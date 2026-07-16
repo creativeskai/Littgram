@@ -2,7 +2,7 @@
 // Your profile: editable handle, reading stats from real positions,
 // your published community posts, and links to settings-ish things.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   getProfile, setHandle, myPosts, fetchReaders,
@@ -12,6 +12,9 @@ import { BOT_PROFILES } from '../lib/bots.js';
 import { listRecent } from '../lib/progress.js';
 import { listCloudBooks } from '../lib/books.js';
 import { BOOKS_DB } from '../data/books.js';
+import { readableCatalog, suggestNextReads } from '../lib/recommend.js';
+import BookCover from '../components/BookCover.jsx';
+import BookDetail from '../components/BookDetail.jsx';
 import PostCard from '../components/PostCard.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { signOut, auth } from '../lib/auth.js';
@@ -36,6 +39,8 @@ export default function Profile() {
   const [readers, setReaders] = useState([]);
   const [langPills, setLangPills] = useState([{ code: 'all', label: 'All' }]);
   const [topics, setTopics] = useState([]);
+  const [cloud, setCloud] = useState(null);   // readable cloud books
+  const [detail, setDetail] = useState(null); // suggested book opened in sheet
 
   useEffect(() => {
     syncFollowing().then(setFollowing);
@@ -43,6 +48,7 @@ export default function Profile() {
     fetchReaders().then(setReaders);
     // derive filter options from the actual cloud library
     listCloudBooks().then(cloud => {
+      setCloud(cloud);
       const inLib = BOOKS_DB.filter(b =>
         cloud.some(c => c.id === b.id || c.id === b.id + '_en'));
       const langs = [...new Set(inLib.map(b => b.lang))].sort();
@@ -88,6 +94,16 @@ export default function Profile() {
   const finished = recents.filter(r => r.totalPages && r.page >= r.totalPages - 1).length;
   const reading = recents.length - finished;
   const [posts, setPosts] = useState(() => myPosts());
+
+  // Next-read suggestions: your languages + genres, or what's hot with readers
+  const cloudIds = useMemo(() => cloud && new Set(cloud.map(b => b.id)), [cloud]);
+  const suggestions = useMemo(() => suggestNextReads({
+    readable: readableCatalog(cloud),
+    recents: listRecent(50),
+    readers,
+    feedLang: lang,
+    feedTopic: topic,
+  }), [cloud, readers, lang, topic]);
 
   function saveHandle() {
     setProfile({ ...setHandle(draft) });
@@ -141,6 +157,30 @@ export default function Profile() {
         <div className="stats-card"><div className="stats-num" style={{ color: 'var(--ok)' }}>{finished}</div><div className="stats-lbl">Finished</div></div>
         <div className="stats-card"><div className="stats-num" style={{ color: 'var(--gold)' }}>{posts.length}</div><div className="stats-lbl">Posts</div></div>
       </div>
+
+      {suggestions.length > 0 && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <p className="label">{t('nextRead')}</p>
+          {suggestions.map(({ book, reason }) => (
+            <div key={book.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+              onClick={() => setDetail(book)}>
+              <div style={{ width: 40, flexShrink: 0 }}>
+                <BookCover book={book} height={56} width={40} radius={7} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {book.native || book.title}
+                </div>
+                <div className="sub" style={{ fontSize: 10.5, marginTop: 1 }}>{book.author}</div>
+                <div style={{ fontSize: 10, color: 'var(--gold)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {reason}
+                </div>
+              </div>
+              <span className="chip" style={{ flexShrink: 0 }}>{(book.lang || '').toUpperCase()}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="card" style={{ marginTop: 16 }}>
         <p className="label">Discover profiles</p>
@@ -231,6 +271,8 @@ export default function Profile() {
           A personal project · Made in India
         </div>
       </div>
+
+      {detail && <BookDetail book={detail} cloudIds={cloudIds} onClose={() => setDetail(null)} />}
 
       {listSheet && (
         <div className="sheet-backdrop" onClick={() => setListSheet(null)}>

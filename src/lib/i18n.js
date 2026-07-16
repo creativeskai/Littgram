@@ -21,28 +21,28 @@ const STRINGS = {
     myLibrary: 'My Library', challenges: 'Challenges', notifications: 'Notifications',
     quotesWall: 'Quotes wall', continueReading: 'Continue reading', cloudLibrary: 'Cloud library',
     feedLanguage: 'Feed language', genre: 'Genre', signOut: 'Sign out', myPosts: 'My posts',
-    yourStory: 'Your story', uiLanguage: 'App language',
+    yourStory: 'Your story', uiLanguage: 'App language', nextRead: 'What to read next',
   },
   bn: {
     home: 'হোম', explore: 'অন্বেষণ', library: 'লাইব্রেরি', goals: 'লক্ষ্য', profile: 'প্রোফাইল',
     myLibrary: 'আমার লাইব্রেরি', challenges: 'চ্যালেঞ্জ', notifications: 'বিজ্ঞপ্তি',
     quotesWall: 'উদ্ধৃতি দেয়াল', continueReading: 'পড়া চালিয়ে যান', cloudLibrary: 'ক্লাউড লাইব্রেরি',
     feedLanguage: 'ফিডের ভাষা', genre: 'ধরন', signOut: 'সাইন আউট', myPosts: 'আমার পোস্ট',
-    yourStory: 'আপনার স্টোরি', uiLanguage: 'অ্যাপের ভাষা',
+    yourStory: 'আপনার স্টোরি', uiLanguage: 'অ্যাপের ভাষা', nextRead: 'এরপর কী পড়বেন',
   },
   hi: {
     home: 'होम', explore: 'खोजें', library: 'पुस्तकालय', goals: 'लक्ष्य', profile: 'प्रोफ़ाइल',
     myLibrary: 'मेरा पुस्तकालय', challenges: 'चुनौतियाँ', notifications: 'सूचनाएँ',
     quotesWall: 'उद्धरण दीवार', continueReading: 'पढ़ना जारी रखें', cloudLibrary: 'क्लाउड पुस्तकालय',
     feedLanguage: 'फ़ीड भाषा', genre: 'शैली', signOut: 'साइन आउट', myPosts: 'मेरी पोस्ट',
-    yourStory: 'आपकी स्टोरी', uiLanguage: 'ऐप की भाषा',
+    yourStory: 'आपकी स्टोरी', uiLanguage: 'ऐप की भाषा', nextRead: 'आगे क्या पढ़ें',
   },
   mr: {
     home: 'होम', explore: 'शोधा', library: 'ग्रंथालय', goals: 'ध्येय', profile: 'प्रोफाइल',
     myLibrary: 'माझे ग्रंथालय', challenges: 'आव्हाने', notifications: 'सूचना',
     quotesWall: 'उद्धरण भिंत', continueReading: 'वाचन सुरू ठेवा', cloudLibrary: 'क्लाउड ग्रंथालय',
     feedLanguage: 'फीड भाषा', genre: 'प्रकार', signOut: 'साइन आउट', myPosts: 'माझ्या पोस्ट',
-    yourStory: 'तुमची स्टोरी', uiLanguage: 'अ‍ॅपची भाषा',
+    yourStory: 'तुमची स्टोरी', uiLanguage: 'अ‍ॅपची भाषा', nextRead: 'पुढे काय वाचाल',
   },
 };
 
