@@ -24,6 +24,11 @@ const SEED_IDS = [
   'gora', 'chokher_bali', 'gitanjali', 'noukadubi', 'ghore_baire',
   'shesher_kabita', 'golpoguchho', 'chitrangada', 'gitabitan',
   'godan', 'nirmala', 'shyamchi_aai',
+  // epics round (scripts/fetch-epics.mjs) — Ganguli Mahabharata is seeded as
+  // 4 volume books so the reader never loads 15MB in one go
+  'bhavartha_ramayan',
+  'mahabharata_1', 'mahabharata_2', 'mahabharata_3', 'mahabharata_4',
+  'valmiki_ramayan',
 ];
 
 const CHUNK_CHARS = 80000; // ~240KB UTF-8 for Indic scripts — well under the 1MB doc cap

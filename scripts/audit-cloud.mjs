@@ -25,6 +25,10 @@ const EXPECTED_MIN = {
   chander_pahar: 130000, adarsha_hindu_hotel: 250000, aparajito: 350000,
   heera_manik_jwale: 90000, asani_sanket: 110000,
   devdas: 120000, parineeta: 100000, srikanto: 500000, ananda_math: 200000,
+  // epics round (fetch-epics.mjs)
+  bhavartha_ramayan: 300000, valmiki_ramayan: 1700000,
+  mahabharata_1: 3200000, mahabharata_2: 3500000,
+  mahabharata_3: 4200000, mahabharata_4: 2200000,
 };
 // English translations are usually 0.8–1.4x the native char count; use a
 // looser floor of half the native minimum.
@@ -43,6 +47,12 @@ const EXPECTED_END = {
   madhushala: /\| 135 \| \|\s*$/,
   madhushala_en: /\| 135 \| \|\s*$/,
   gitanjali: /১৩১৭\s*$/, // song 157's composition date
+  // Ganguli volumes 1–3 end inside a parva's numbered endnotes (kept as part
+  // of the translation), so the last line has no closing punctuation.
+  mahabharata_1: /decrepitude, and death\s*$/,
+  mahabharata_2: /Death or the Destroyer\.\s*$/,
+  mahabharata_3: /Amvopakhyana Parvan in Udyoga Parvan\.\s*$/,
+  mahabharata_4: /thus complete\.\s*$/,
 };
 const endOk = (id, text) => (EXPECTED_END[id] || ENDINGS).test(text);
 

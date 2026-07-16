@@ -72,6 +72,22 @@ architecture; this file records project history and operational knowledge.
     exists because precomposed vs decomposed য়/ড় broke exact matching).
     Re-seed via /seed → "Text updates", then run the audit.
 
+11. **Epics round (July 16, 2026)** — `scripts/fetch-epics.mjs` builds 6 new
+    validated texts into public/texts/: `bhavartha_ramayan` (Eknath's Balkand,
+    mr.wikisource अध्याय १–२७ — the kanda is complete, ends with its colophon;
+    the other kandas are NOT on Wikisource), `mahabharata_1..4` (Ganguli's
+    complete 18-parva English translation, PG 15474–77, seeded as one book per
+    volume so the reader never loads 15MB at once), `valmiki_ramayan`
+    (Griffith's verse Ramayan, PG 24869, TOC/appendix/notes/index cut, footnote
+    markers stripped). PG plain text is CRLF — pgBody() normalizes to LF or
+    chunkText/buildPages never split ("\n\n" ≠ "\r\n\r\n").
+    **Ramcharitmanas is BLOCKED** (hi.wikisource has only doha 1–35 of Balakand
+    with 1925 commentary interleaved — tracked NEED-FILE in SOURCING.md; never
+    seed a fragment). BOOKS_DB epic entries carry `authorNative` (व्यास, संत
+    एकनाथ…) and Explore/Library search now match it; quotes in the entries are
+    verbatim from the ingested texts. Feed share (PostCard) now attaches the
+    post image via Web Share Level 2 when present, falling back to text-only.
+
 ## Ingestion pipeline — USE THE SAFEGUARDS, never bypass
 
 - `scripts/scrub.mjs` — THE shared scrubber + `validateText` gate (surgical

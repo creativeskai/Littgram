@@ -122,3 +122,17 @@ Two ingestion paths — both end in the same Firestore shape
 Either way the book appears in Library automatically (seeded + bytes > 5000 rule).
 
 PDFs/EPUBs in this folder are gitignored — only this checklist is committed.
+
+
+## Epics round (July 2026 — scripts/fetch-epics.mjs)
+
+| bookId | Title | Source | Status |
+|---|---|---|---|
+| `bhavartha_ramayan` | भावार्थ रामायण · बाळकाण्ड (Eknath) | AUTO — mr.wikisource, अध्याय १–२७ | staged (Balkand is complete and ends with its colophon; the other kandas are NOT on Wikisource) |
+| `mahabharata_1..4` | The Mahabharata (Ganguli, complete, 18 parvas) | AUTO — PG 15474–15477, one book per volume so the reader never loads 15MB at once | staged |
+| `valmiki_ramayan` | The Rámáyan of Válmíki (Griffith verse, Books I–VI) | AUTO — PG 24869 | staged |
+| `ramcharitmanas` | रामचरितमानस (Tulsidas) | **BLOCKED / NEED-FILE** — hi.wikisource has only doha 1–35 of Balakand (a stalled transcription with the 1925 commentary interleaved). No other clean PD Unicode source found; needs a complete mool-text Unicode source or a scan for OCR. Do NOT seed a fragment. |
+
+Raw PG downloads live in book-sources/texts/ as pg15474–pg15477.txt and
+pg24869.txt (gitignored); re-run `node scripts/fetch-epics.mjs` to rebuild the
+cleaned texts into public/texts/.

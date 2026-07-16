@@ -44,7 +44,7 @@ export default function Explore() {
       if (lang !== 'all' && b.lang !== lang) return false;
       if (topic && !(b.topics || []).includes(topic)) return false;
       if (!needle) return true;
-      return [b.title, b.native, b.author, b.tag, b.summary, ...(b.topics || []), ...(b.quotes || [])]
+      return [b.title, b.native, b.author, b.authorNative, b.tag, b.summary, ...(b.topics || []), ...(b.quotes || [])]
         .filter(Boolean).join(' ').toLowerCase().includes(needle);
     });
   }, [readable, q, lang, topic]);

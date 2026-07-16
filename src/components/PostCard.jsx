@@ -113,8 +113,24 @@ export default function PostCard({ post, onDelete }) {
   function onLike() {
     setLiked(toggleLike(post.id));
   }
-  function onShare() {
+  async function onShare() {
     const text = `“${slides[slide].quote}” — ${slides[slide].author || post.bookTitle || ''} · via Littgram`;
+    // Share the post's image alongside the quote when the platform can
+    // (Web Share Level 2). The image is already in the browser cache from
+    // rendering, so the fetch is fast enough to keep the user gesture alive.
+    if (post.image && navigator.canShare) {
+      try {
+        const blob = await (await fetch(post.image)).blob();
+        const file = new File([blob], 'littgram-post.jpg', { type: blob.type || 'image/jpeg' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ text, files: [file] });
+          return;
+        }
+      } catch (e) {
+        if (e?.name === 'AbortError') return; // user closed the share sheet
+        // image fetch/share failed — fall through to text-only share
+      }
+    }
     if (navigator.share) navigator.share({ text }).catch(() => {});
     else { navigator.clipboard?.writeText(text); toast('Quote copied to clipboard'); }
   }

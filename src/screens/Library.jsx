@@ -54,7 +54,7 @@ export default function Library() {
     const needle = q.trim().toLowerCase();
     if (!needle) return cloud;
     return cloud.filter(b =>
-      [b.title, b.native, b.author, b.db?.tag, ...(b.db?.topics || [])]
+      [b.title, b.native, b.author, b.db?.authorNative, b.db?.tag, ...(b.db?.topics || [])]
         .filter(Boolean).join(' ').toLowerCase().includes(needle));
   }, [cloud, q]);
 
