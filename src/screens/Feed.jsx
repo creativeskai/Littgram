@@ -5,15 +5,22 @@
 // quote overlay, caption — restored per user request, July 2026).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, ImagePlus, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, ImagePlus, X, BookOpen } from 'lucide-react';
 import { POSTS_DB } from '../data/posts.js';
 import { BOOKS_DB } from '../data/books.js';
 import { MOODS } from '../data/moods.js';
 import { fetchCommunityPosts, publishPost } from '../lib/social.js';
 import { ensureBotPosts } from '../lib/bots.js';
+import { listRecent } from '../lib/progress.js';
 import PostCard from '../components/PostCard.jsx';
+import BookCover from '../components/BookCover.jsx';
 import { StoriesBar } from '../components/Stories.jsx';
 import { useToast } from '../components/Toast.jsx';
+
+// Short, approachable first reads for brand-new users (the data shows most
+// readers stall within pages of a heavyweight classic — give an easy win).
+const STARTER_IDS = ['madhushala', 'gitanjali', 'asani_sanket'];
 
 const PAGE_SIZE = 25; // posts shown initially; more load as you reach the bottom
 
@@ -74,9 +81,51 @@ export default function Feed() {
     }
   }
 
+  // Reading first: returning readers resume in one tap from Home; brand-new
+  // users get a short "first win" instead of facing a 250-page classic cold.
+  const recent = useMemo(() => listRecent(1)[0] || null, []);
+  const starters = useMemo(
+    () => (recent ? [] : STARTER_IDS.map(id => BOOKS_DB.find(b => b.id === id)).filter(Boolean)),
+    [recent]);
+
   return (
     <div>
       <StoriesBar onOpen={() => setComposing(true)} />
+
+      {recent && (
+        <Link to={'/read/' + recent.bookId} style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="card row-card" style={{ marginTop: 12 }}>
+            <div style={{ width: 40, flexShrink: 0 }}>
+              <BookCover book={{ ...(BOOKS_DB.find(b => b.id === recent.bookId.replace(/_en$/, '')) || { emoji: '📖' }), title: recent.title }} height={56} width={40} radius={7} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p className="label" style={{ margin: 0 }}>Continue reading</p>
+              <div className="row-title">{recent.title || recent.bookId}</div>
+              <div className="progress-track" style={{ marginTop: 5 }}>
+                <div className="progress-fill" style={{ width: (recent.totalPages ? Math.round(((recent.page + 1) / recent.totalPages) * 100) : 0) + '%' }} />
+              </div>
+            </div>
+            <BookOpen size={17} strokeWidth={1.8} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+          </div>
+        </Link>
+      )}
+
+      {starters.length > 0 && (
+        <div className="card" style={{ marginTop: 12 }}>
+          <p className="label" style={{ margin: 0 }}>Start small — a classic in one sitting</p>
+          <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+            {starters.map(b => (
+              <Link key={b.id} to={'/read/' + b.id} style={{ flex: 1, textDecoration: 'none', color: 'inherit', minWidth: 0 }}>
+                <BookCover book={b} height={96} radius={9} />
+                <div className="row-title" style={{ marginTop: 6, whiteSpace: 'normal', fontSize: 11.5, lineHeight: 1.3 }}>
+                  {b.native || b.title}
+                </div>
+                <div className="row-sub">{(b.lang || '').toUpperCase()}</div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ marginTop: 14 }} />
       {posts.slice(0, visible).map((p, i) => (

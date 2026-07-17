@@ -63,9 +63,13 @@ export default function Reader() {
   useEffect(() => {
     if (state === 'ready' && pages.length) {
       savePosition(bookId, page, pages.length, meta.native || meta.title || bookId);
-      // Share reading activity (debounced — settles after page turns stop)
+      // Share reading activity (debounced — settles after page turns stop).
+      // Guard the single-page race: publishing while pagination is still
+      // settling wrote totalPages:1 rows that corrupt the funnel data.
       const timer = setTimeout(() => {
-        publishReading({ bookId, title: meta.native || meta.title || bookId, page, totalPages: pages.length });
+        if (pages.length > 1 && page < pages.length) {
+          publishReading({ bookId, title: meta.native || meta.title || bookId, page, totalPages: pages.length });
+        }
       }, 4000);
       return () => clearTimeout(timer);
     }
