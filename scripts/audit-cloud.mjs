@@ -29,6 +29,7 @@ const EXPECTED_MIN = {
   bhavartha_ramayan: 300000, valmiki_ramayan: 1700000,
   mahabharata_1: 3200000, mahabharata_2: 3500000,
   mahabharata_3: 4200000, mahabharata_4: 2200000,
+  odyssey: 550000,
 };
 // English translations are usually 0.8–1.4x the native char count; use a
 // looser floor of half the native minimum.
@@ -53,6 +54,7 @@ const EXPECTED_END = {
   mahabharata_2: /Death or the Destroyer\.\s*$/,
   mahabharata_3: /Amvopakhyana Parvan in Udyoga Parvan\.\s*$/,
   mahabharata_4: /thus complete\.\s*$/,
+  odyssey: /between the two contending parties\.\s*$/,
 };
 const endOk = (id, text) => (EXPECTED_END[id] || ENDINGS).test(text);
 

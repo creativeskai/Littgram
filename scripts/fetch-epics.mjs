@@ -10,6 +10,8 @@
 //                       15474–15477 (Books 1–3 / 4–7 / 8–12 / 13–18).
 //                       Local raw files book-sources/texts/pg1547N.txt.
 //   valmiki_ramayan     Griffith's English verse Ramayan, PG 24869.
+//   odyssey             Butler's English prose Odyssey, PG 1727. Local raw
+//                       file book-sources/texts/pg1727.txt.
 //
 // NOT ingested: Ramcharitmanas — hi.wikisource has only doha 1–35 of
 // Balakand (a stalled transcription with 1925 commentary interleaved).
@@ -123,6 +125,20 @@ function cleanGriffith(t) {
   return t.replace(/\n{3,}/g, '\n\n').trim();
 }
 
+// ── Butler Odyssey cleaning ─────────────────────────────────────────────
+// Keeps the "BOOK N" headings and Butler's own argument lines under them;
+// removes PG front matter, the contents list, the dedication, both
+// translator prefaces and the trailing FOOTNOTES section (this plain-text
+// edition carries no in-text note markers, so nothing dangles).
+function cleanButler(t) {
+  t = pgBody(t);
+  const first = t.search(/^BOOK I$/m); // the contents entry is " BOOK I."
+  if (first < 0) throw new Error('BOOK I heading not found');
+  t = t.slice(first);
+  t = cutTail(t, 'between the two contending parties.');
+  return t.replace(/\n{3,}/g, '\n\n').trim();
+}
+
 // ── Bhavartha Ramayan (Balkand) ─────────────────────────────────────────
 // mr.wikisource chapter pages carry a sourcing-review banner at the bottom
 // (the WORK is PD — Eknath d. 1599; the banner is wiki housekeeping) and the
@@ -164,6 +180,8 @@ const BOOKS = [
   { id: 'mahabharata_3', min: 4200000, build: () => cleanGanguli(readFileSync(join(SRC, 'pg15476.txt'), 'utf8'), { firstBook: 8 }) },
   { id: 'mahabharata_4', min: 2200000, build: () => cleanGanguli(readFileSync(join(SRC, 'pg15477.txt'), 'utf8'), { firstBook: 13 }) },
   { id: 'valmiki_ramayan', min: 1700000, build: () => cleanGriffith(readFileSync(join(SRC, 'pg24869.txt'), 'utf8')) },
+  { id: 'odyssey', min: 550000, build: () => cleanButler(readFileSync(join(SRC, 'pg1727.txt'), 'utf8')),
+    expectEnd: 'between the two contending parties.' },
 ];
 
 const only = process.argv.slice(2);

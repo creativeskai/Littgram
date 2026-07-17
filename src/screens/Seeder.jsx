@@ -29,6 +29,7 @@ const SEED_IDS = [
   'bhavartha_ramayan',
   'mahabharata_1', 'mahabharata_2', 'mahabharata_3', 'mahabharata_4',
   'valmiki_ramayan',
+  'odyssey',
 ];
 
 const CHUNK_CHARS = 80000; // ~240KB UTF-8 for Indic scripts — well under the 1MB doc cap

@@ -375,6 +375,13 @@ export const BOOKS_DB = [
   topics:['Literature','Spirituality','Romance'],
   },
 
+  { cover:'https://covers.openlibrary.org/b/id/2849727-L.jpg', id:'odyssey', title:'The Odyssey', author:'Homer · tr. Samuel Butler', authorNative:'Ὅμηρος', lang:'en', tag:'Epic', emoji:'🏺', c1:'#0d1f33', c2:'#1a3d66', accent:'#e8a33d',
+    quotes:["Tell me, O Muse, of that ingenious hero who travelled far and wide after he had sacked the famous town of Troy.","there is nothing better in this world than that man and wife should be of one mind in a house","there is nothing dearer to a man than his own country and his parents"],
+    summary:"Butler's celebrated prose translation, complete in twenty-four books — Telemachus's search for his father, Odysseus's ten years of wandering from the Cyclops's cave to Calypso's isle, and the homecoming to Ithaca where a beggar strings the bow and the long-suffering Penelope is won again.",
+  pdfUrl:'',
+  topics:['Literature','History','Romance'],
+  },
+
   { id:'oitihasik_kahini', title:'Oitihasik Kahini Samagra', author:'Sharadindu Bandyopadhyay', lang:'bn', tag:'Fiction', emoji:'⚔️', c1:'#1a0800', c2:'#3d1a00', accent:'#fa8c16', native:'ঐতিহাসিক কাহিনী সমগ্র',
     quotes:["ইতিহাসের পাতায় লুকিয়ে আছে বাংলার বীরত্বের গল্প।","তুমুরু থেকে শুরু করে মরাঠা — প্রতিটি যুগের বাংলা জীবন্ত।","ঐতিহাসিক উপন্যাসে অতীত বর্তমানের সাথে কথা বলে।"],
     summary:"শরদিন্দু বন্দ্যোপাধ্যায়ের ঐতিহাসিক উপন্যাস ও গল্পের সংকলন। বাংলার বিভিন্ন ঐতিহাসিক যুগের পটভূমিতে রচিত রোমাঞ্চকর ও হৃদয়গ্রাহী কাহিনিসমূহ।",

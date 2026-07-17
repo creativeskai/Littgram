@@ -104,6 +104,13 @@ architecture; this file records project history and operational knowledge.
     a mistake, user asked for the old interface back. Post share now renders
     the post to canvas (photo+scrim or ink quote-card) and shares it as an
     image file (Web Share L2), downloading it where files can't be shared.
+    **Odyssey added** (same session): Butler's prose translation, PG 1727 →
+    `cleanButler` in fetch-epics.mjs (cut PG matter/contents/dedication/
+    prefaces/FOOTNOTES endnotes — this plain-text edition has NO in-text note
+    markers, so nothing dangles), 611K chars, ends "…between the two
+    contending parties." Full feature set: 6 grouped chapter summaries,
+    verbatim quotes, Butler-edition cover, authorNative Ὅμηρος; in Seeder
+    SEED_IDS + audit EXPECTED_MIN/END.
 
 ## Ingestion pipeline — USE THE SAFEGUARDS, never bypass
 
