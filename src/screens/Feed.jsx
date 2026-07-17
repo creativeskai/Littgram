@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Plus, ImagePlus, X } from 'lucide-react';
 import { POSTS_DB } from '../data/posts.js';
 import { BOOKS_DB } from '../data/books.js';
+import { MOODS } from '../data/moods.js';
 import { fetchCommunityPosts, publishPost } from '../lib/social.js';
 import { ensureBotPosts } from '../lib/bots.js';
 import PostCard from '../components/PostCard.jsx';
@@ -135,17 +136,32 @@ function compressImage(file) {
   });
 }
 
-// Full composer: write a line (autofocused), optionally attach a book, pick
-// one of its quotes, add a photo (the quote overlays it) and a caption.
+// Full composer: write a line (autofocused), describe your mood for quote
+// suggestions, optionally attach a book (searchable), pick one of its
+// quotes, add a photo (the quote overlays it) and a caption.
 function Composer({ onPublish, onClose }) {
   const toast = useToast();
   const [bookId, setBookId] = useState('');
+  const [bookQuery, setBookQuery] = useState('');
+  const [mood, setMood] = useState(null);
   const [quoteIdx, setQuoteIdx] = useState(-1);
   const [quote, setQuote] = useState('');
   const [caption, setCaption] = useState('');
   const [image, setImage] = useState('');
   const [sending, setSending] = useState(false);
   const book = BOOKS_DB.find(b => b.id === bookId) || null;
+
+  // Book list filtered by the search box (title/native/author/series)
+  const bookOptions = useMemo(() => {
+    const n = bookQuery.trim().toLowerCase();
+    const list = !n ? BOOKS_DB : BOOKS_DB.filter(b =>
+      [b.title, b.native, b.author, b.authorNative, b.series]
+        .filter(Boolean).join(' ').toLowerCase().includes(n));
+    // never filter away the currently selected book
+    return book && !list.includes(book) ? [book, ...list] : list;
+  }, [bookQuery, book]);
+
+  const moodEntry = MOODS.find(m => m.key === mood);
 
   async function submit() {
     if (sending) return;
@@ -167,6 +183,12 @@ function Composer({ onPublish, onClose }) {
     setQuote(i >= 0 ? book.quotes[i] : '');
   }
 
+  function pickMoodQuote(e) {
+    setQuote(e.quote);
+    setBookId(e.bookId);
+    setQuoteIdx(-1);
+  }
+
   return (
     <div className="sheet-backdrop" onClick={onClose}>
       <div className="sheet" onClick={e => e.stopPropagation()}>
@@ -177,11 +199,37 @@ function Composer({ onPublish, onClose }) {
           onChange={e => { setQuote(e.target.value); setQuoteIdx(-1); }}
           placeholder="A line worth sharing…" style={{ marginTop: 8 }} />
 
+        <p className="label" style={{ marginTop: 12 }}>How are you feeling? — quotes to match</p>
+        <div className="pill-row">
+          {MOODS.map(m => (
+            <button key={m.key} className={'pill sm' + (mood === m.key ? ' on' : '')}
+              onClick={() => setMood(mood === m.key ? null : m.key)}>{m.label}</button>
+          ))}
+        </div>
+        {moodEntry && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 4 }}>
+            {moodEntry.entries.slice(0, 5).map((e, i) => {
+              const eb = BOOKS_DB.find(b => b.id === e.bookId);
+              return (
+                <div key={i} className="quote-block serif" onClick={() => pickMoodQuote(e)}
+                  style={{ cursor: 'pointer', marginTop: 0, opacity: quote === e.quote ? 1 : 0.75, borderLeftColor: quote === e.quote ? 'var(--accent)' : 'var(--gold)' }}>
+                  “{e.quote.length > 140 ? e.quote.slice(0, 140) + '…' : e.quote}”
+                  <div style={{ fontSize: 10, color: 'var(--gold)', marginTop: 4, fontFamily: 'Inter,sans-serif', fontStyle: 'normal' }}>
+                    — {eb?.native || eb?.title}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <p className="label" style={{ marginTop: 12 }}>Book (optional)</p>
+        <input className="input" placeholder="Search books or authors…" value={bookQuery}
+          onChange={e => setBookQuery(e.target.value)} style={{ marginBottom: 6 }} />
         <select className="input" value={bookId}
           onChange={e => { setBookId(e.target.value); setQuoteIdx(-1); }}>
           <option value="">— no book —</option>
-          {BOOKS_DB.map(b => (
+          {bookOptions.map(b => (
             <option key={b.id} value={b.id}>{(b.native || b.title) + ' — ' + b.author}</option>
           ))}
         </select>

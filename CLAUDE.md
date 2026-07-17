@@ -144,6 +144,25 @@ architecture; this file records project history and operational knowledge.
     letter-perfect against the ingested editions (case/spelling/translation
     variants) — the verbatim rule so far applies to the epics only.
 
+14. **Quotes-recall + composer round (July 17, 2026)** — user asked for the
+    "best bits": every cloud book's catalog quotes replaced with 3–5
+    HIGH-RECALL passages verified letter-for-letter against the REAL cloud
+    texts (dump script + NFC-normalized matching — Wikisource dumps are
+    DECOMPOSED Unicode, so verbatim checks must `.normalize('NFC')` both
+    sides; quotes in books.js are stored NFC). The old catalog quotes for
+    the 14 legacy books were largely invented paraphrases — never
+    reintroduce unverified quotes. Exceptions: heera_manik_jwale (OCR too
+    poor, still carries 3 unverified quotes — pending hand pass) and
+    adarsha_hindu_hotel (only 2 clean passages found). Legacy CHAPTER
+    quotes (chapters.js/chaptersExtra/chaptersLong) are still unverified —
+    only the epics' chapter quotes are verbatim-checked. Composer: mood
+    chips ("How are you feeling?") suggest quotes from `src/data/moods.js`
+    (mood → {bookId, quote}; every entry must exactly match a books.js
+    quote — the verify pass cross-checks); book picker got a search filter.
+    App-wide font reduced ~1px (global.css primary sizes; Reader typography
+    untouched). Cloud text dumps for verification: scratchpad
+    `dump-cloud.mjs` (read-only chunk fetch, same REST as audit).
+
 ## Ingestion pipeline — USE THE SAFEGUARDS, never bypass
 
 - `scripts/scrub.mjs` — THE shared scrubber + `validateText` gate (surgical
