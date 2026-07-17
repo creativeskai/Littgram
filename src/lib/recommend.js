@@ -31,7 +31,23 @@ export function readableCatalog(cloud) {
       emoji: '📖', topics: [], quotes: [],
     });
   }
-  return [...matched, ...extras];
+  // Newly seeded books lead the Explore list too — same grouped-recency
+  // order as the Library: a series rides on its newest part's seededAt,
+  // parts stay in order, undated legacy docs keep catalog order at the end.
+  const seededAt = {};
+  for (const cb of cloud) seededAt[cb.id] = cb.seededAt || 0;
+  const timeOf = b => Math.max(seededAt[b.id] || 0, seededAt[b.id + '_en'] || 0);
+  const groupOf = b => b.series || b.id;
+  const newest = {};
+  const all = [...matched, ...extras];
+  for (const b of all) newest[groupOf(b)] = Math.max(newest[groupOf(b)] || 0, timeOf(b));
+  const order = new Map(all.map((b, i) => [b.id, i])); // catalog order tiebreak
+  return all.sort((a, b) => {
+    const ga = groupOf(a), gb = groupOf(b);
+    if (newest[gb] !== newest[ga]) return newest[gb] - newest[ga];
+    if (ga === gb && (a.part || b.part)) return (a.part || 0) - (b.part || 0);
+    return order.get(a.id) - order.get(b.id);
+  });
 }
 
 // → [{ book, reason }] — top picks the user hasn't opened yet

@@ -130,8 +130,19 @@ architecture; this file records project history and operational knowledge.
     seeded:false (metadata preserved via read-modify-write) so nothing lists
     the monolith twice. Sectioning caught a quote misattribution: "Entangled
     in the toils of Fate" is Viśvámitra in Book I, NOT Márícha in Book III.
-    **Seeding still pending: /seed → seed the 6 sections, retire
-    valmiki_ramayan (odyssey monolith was never seeded), then audit.**
+    Seeded July 17: audit = 37 cloud books ALL CLEAN, monolith retired.
+    Follow-up same day: every cloud book now has ≥3 chapter summaries
+    (odyssey_1..3 and valmiki_ramayan_1 expanded to 3); Explore/Library
+    order by grouped recency (newest seeded series first, parts in order,
+    undated legacy docs keep old order at the bottom); `/api/cover` proxy is
+    bypassed under `vite dev` (the Vercel function doesn't exist locally —
+    covers looked missing on localhost); 11 more OpenLibrary covers added
+    (aranyak, srikanto, shyamchi_aai, parineeta, charitrahin, shesh_prasna,
+    pallisamaj, janani, dibaratrir_kabya, padma_nadir_majhi, chitrangada) —
+    the rest have no OL cover and keep the designed gradient plates.
+    KNOWN GAP: quotes of the 14 pre-epics books are canonical but not
+    letter-perfect against the ingested editions (case/spelling/translation
+    variants) — the verbatim rule so far applies to the epics only.
 
 ## Ingestion pipeline — USE THE SAFEGUARDS, never bypass
 

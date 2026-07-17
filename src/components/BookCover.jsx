@@ -10,9 +10,11 @@ import { BookOpen, Feather, Scroll, Fingerprint } from 'lucide-react';
 const TAG_ICONS = { Poetry: Feather, Philosophy: Scroll, Mystery: Fingerprint };
 
 // Route external covers through our own /api/cover proxy — some networks
-// block covers.openlibrary.org directly.
+// block covers.openlibrary.org directly. The proxy is a Vercel function and
+// doesn't exist under `vite dev`, so dev loads the direct URL instead
+// (otherwise every cover 404s locally and the app looks coverless).
 const coverSrc = (url) =>
-  url && url.startsWith('https://covers.openlibrary.org/')
+  url && url.startsWith('https://covers.openlibrary.org/') && !import.meta.env.DEV
     ? '/api/cover?u=' + encodeURIComponent(url)
     : url;
 

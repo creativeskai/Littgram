@@ -44,7 +44,19 @@ export async function listCloudBooks() {
       db: dbEntry || null,
     });
   }
-  return out.sort((a, b) => a.title.localeCompare(b.title));
+  // Newly seeded books surface first (user request, July 2026). Books are
+  // grouped — a multi-part series rides on its newest part's seededAt and
+  // keeps its parts in order — and legacy docs without timestamps fall back
+  // to the old alphabetical order at the bottom.
+  const groupOf = b => b.db?.series || b.id.replace(/_en$/, '');
+  const newest = {};
+  for (const b of out) newest[groupOf(b)] = Math.max(newest[groupOf(b)] || 0, b.seededAt || 0);
+  return out.sort((a, b) => {
+    const ga = groupOf(a), gb = groupOf(b);
+    if (newest[gb] !== newest[ga]) return newest[gb] - newest[ga];
+    if (ga === gb && (a.db?.part || b.db?.part)) return (a.db?.part || 0) - (b.db?.part || 0);
+    return a.title.localeCompare(b.title);
+  });
 }
 
 // Load a book's full text from its Firestore chunks (parallel fetch)
