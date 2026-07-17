@@ -44,6 +44,15 @@
     },
     "api/diagnose.js": {
       "maxDuration": 30
+    },
+    "api/push-daily.js": {
+      "maxDuration": 60
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/push-daily",
+      "schedule": "0 3 * * *"
+    }
+  ]
 }

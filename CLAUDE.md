@@ -163,6 +163,25 @@ architecture; this file records project history and operational knowledge.
     untouched). Cloud text dumps for verification: scratchpad
     `dump-cloud.mjs` (read-only chunk fetch, same REST as audit).
 
+15. **Retention round (July 17, 2026)** — funnel analysis (see memory
+    funnel-findings-july-2026): 25 real users, ~90% stop on page 2 of a
+    heavy first book, only 4 ever return. Fixes: Continue-Reading card +
+    "Start small" starters on Home (commit dcdae5f), then **web push**
+    (standards Push API + VAPID, NO FCM): `src/lib/push.js`
+    (enable/disable, sub stored in `push_subs/<handle>`), sw.js push +
+    notificationclick handlers, Profile "Daily nudge" toggle, one-time Feed
+    prompt for readers, `api/push-daily.js` Vercel cron (03:00 UTC = 8:30
+    IST; personal continue-reading nudge, else today's bot quote; ?dry=1
+    preview; CRON_SECRET Bearer check). VAPID keys in gitignored
+    `book-sources/push-vapid-keys.txt` — NEVER regenerate (orphans all
+    subs), public key embedded in push.js/push-daily.js, private key must
+    be set as Vercel env VAPID_PRIVATE_KEY (+ CRON_SECRET) by the user.
+    Firestore rules now live in-repo (`firestore.rules` + firebase.json)
+    and were deployed via the Rules REST API with the CLI OAuth token
+    (scratchpad deploy-rules.mjs pattern; `firebase deploy` itself rejects
+    the injected configstore token). Rules enumerate collections — any NEW
+    collection needs a rules block + deploy.
+
 ## Ingestion pipeline — USE THE SAFEGUARDS, never bypass
 
 - `scripts/scrub.mjs` — THE shared scrubber + `validateText` gate (surgical

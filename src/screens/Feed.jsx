@@ -13,6 +13,7 @@ import { MOODS } from '../data/moods.js';
 import { fetchCommunityPosts, publishPost } from '../lib/social.js';
 import { ensureBotPosts } from '../lib/bots.js';
 import { listRecent } from '../lib/progress.js';
+import { pushSupported, enablePush } from '../lib/push.js';
 import PostCard from '../components/PostCard.jsx';
 import BookCover from '../components/BookCover.jsx';
 import { StoriesBar } from '../components/Stories.jsx';
@@ -88,6 +89,20 @@ export default function Feed() {
     () => (recent ? [] : STARTER_IDS.map(id => BOOKS_DB.find(b => b.id === id)).filter(Boolean)),
     [recent]);
 
+  // One-time push prompt for people who have started reading
+  const [pushCard, setPushCard] = useState(() =>
+    !!recent && pushSupported() && Notification.permission === 'default' &&
+    !localStorage.getItem('littgram_push_prompted'));
+  function dismissPushCard() {
+    localStorage.setItem('littgram_push_prompted', '1');
+    setPushCard(false);
+  }
+  async function onEnablePush() {
+    try { await enablePush(); toast('Daily nudge on — one notification a day'); }
+    catch (e) { toast(e.message.slice(0, 80)); }
+    dismissPushCard();
+  }
+
   return (
     <div>
       <StoriesBar onOpen={() => setComposing(true)} />
@@ -108,6 +123,17 @@ export default function Feed() {
             <BookOpen size={17} strokeWidth={1.8} style={{ color: 'var(--accent)', flexShrink: 0 }} />
           </div>
         </Link>
+      )}
+
+      {pushCard && (
+        <div className="card" style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="row-title">Keep the thread going</div>
+            <div className="row-sub">One nudge a day — your bookmark, or the day's best line.</div>
+          </div>
+          <button className="pill sm on" onClick={onEnablePush}>Enable</button>
+          <button className="pill sm" onClick={dismissPushCard}>Later</button>
+        </div>
       )}
 
       {starters.length > 0 && (

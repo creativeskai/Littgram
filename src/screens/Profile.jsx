@@ -18,6 +18,8 @@ import BookDetail from '../components/BookDetail.jsx';
 import PostCard from '../components/PostCard.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { signOut, auth } from '../lib/auth.js';
+import { getPushState, enablePush, disablePush } from '../lib/push.js';
+import { Bell, BellOff } from 'lucide-react';
 import { t, UI_LANGS, setUiLang, useUiLang } from '../lib/i18n.js';
 
 // Language/genre options are derived from what's actually in the library —
@@ -38,6 +40,19 @@ export default function Profile() {
   const [q, setQ] = useState('');
   const [readers, setReaders] = useState([]);
   const [langPills, setLangPills] = useState([{ code: 'all', label: 'All' }]);
+  const [push, setPush] = useState('unsupported'); // on | off | blocked | unsupported
+
+  useEffect(() => { getPushState().then(setPush); }, []);
+
+  async function onPushToggle() {
+    try {
+      if (push === 'on') { await disablePush(); setPush('off'); toast('Daily nudge off'); }
+      else { await enablePush(); setPush('on'); toast('Daily nudge on — one notification a day, mornings'); }
+    } catch (e) {
+      toast(e.message.slice(0, 80));
+      getPushState().then(setPush);
+    }
+  }
   const [topics, setTopics] = useState([]);
   const [cloud, setCloud] = useState(null);   // readable cloud books
   const [detail, setDetail] = useState(null); // suggested book opened in sheet
@@ -228,6 +243,17 @@ export default function Profile() {
           ))}
           {topics.length === 0 && <span className="sub" style={{ fontSize: 10.5 }}>Loading genres…</span>}
         </div>
+        <p className="label" style={{ marginTop: 12 }}>Daily nudge</p>
+        {push === 'unsupported' ? (
+          <p className="sub" style={{ margin: 0 }}>Notifications work in the installed app (Android/Chrome).</p>
+        ) : push === 'blocked' ? (
+          <p className="sub" style={{ margin: 0 }}><BellOff size={11} style={{ verticalAlign: '-1px' }} /> Blocked in browser settings — allow notifications for this site to enable.</p>
+        ) : (
+          <button className={'pill' + (push === 'on' ? ' on' : '')} onClick={onPushToggle}>
+            <Bell size={11} style={{ verticalAlign: '-1px', marginRight: 4 }} />
+            {push === 'on' ? 'On — one a day, mornings' : 'Enable daily reading nudge'}
+          </button>
+        )}
       </div>
 
       <div style={{ marginTop: 14 }}>
