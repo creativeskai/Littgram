@@ -50,6 +50,7 @@ export default function BookDetail({ book, cloudIds, onClose }) {
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
               <span className="chip">{(book.lang || '').toUpperCase()}</span>
               {book.tag && <span className="chip">{book.tag}</span>}
+              {book.part && <span className="chip">Part {book.part} of {book.parts}</span>}
             </div>
           </div>
         </div>

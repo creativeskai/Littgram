@@ -112,6 +112,27 @@ architecture; this file records project history and operational knowledge.
     verbatim quotes, Butler-edition cover, authorNative Ὅμηρος; in Seeder
     SEED_IDS + audit EXPECTED_MIN/END.
 
+13. **Epic sectioning round (July 17, 2026)** — user wants the big epics
+    compartmentalised into meaningful sections as separate line items in
+    Explore/Library (each section = own summary/quotes/chapters, so more
+    content per part). Implementation: sections are ordinary cloud books.
+    `sliceSection()` in fetch-epics.mjs cuts the cleaned monoliths at BOOK
+    heading boundaries — `valmiki_ramayan_1..3` (Books I–II / III–V / VI) and
+    `odyssey_1..3` (Books I–VIII / IX–XVI / XVII–XXIV); the split partitions
+    the original exactly (verified by char-sum). Mahabharata was already 4
+    volume docs — only retitled ("The Mahabharata · 1: The Dice and the
+    Exile (Parvas 1–3)" etc; ids/cloud unchanged). BOOKS_DB entries carry
+    `series/part/parts`; Explore/Library rows + BookDetail show a part chip,
+    search matches series. `listCloudBooks` now prefers the exact-id BOOKS_DB
+    title/native/author over seed-time cloud metadata (so retitles don't
+    need reseeds; _en editions still use meta). Seeder gained a "Replaced
+    editions" section — RETIRED_IDS (valmiki_ramayan, odyssey) get
+    seeded:false (metadata preserved via read-modify-write) so nothing lists
+    the monolith twice. Sectioning caught a quote misattribution: "Entangled
+    in the toils of Fate" is Viśvámitra in Book I, NOT Márícha in Book III.
+    **Seeding still pending: /seed → seed the 6 sections, retire
+    valmiki_ramayan (odyssey monolith was never seeded), then audit.**
+
 ## Ingestion pipeline — USE THE SAFEGUARDS, never bypass
 
 - `scripts/scrub.mjs` — THE shared scrubber + `validateText` gate (surgical

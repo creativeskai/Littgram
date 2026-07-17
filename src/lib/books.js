@@ -27,12 +27,16 @@ export async function listCloudBooks() {
     if (bytes !== -1 && bytes <= 5000) continue; // corrupt/stub entries
     const id = doc.name.split('/').pop();
     const meta = Object.fromEntries(Object.entries(f).map(([k, v]) => [k, fromFsVal(v)]));
-    const dbEntry = BOOKS_DB.find(b => b.id === id) || BOOKS_DB.find(b => b.id + '_en' === id);
+    // The curated catalog wins over seed-time cloud metadata for books it
+    // knows exactly (titles get renamed between seedings, e.g. the epic
+    // sections); _en editions keep their meta titles ("X (English)").
+    const dbExact = BOOKS_DB.find(b => b.id === id);
+    const dbEntry = dbExact || BOOKS_DB.find(b => b.id + '_en' === id);
     out.push({
       id,
-      title: meta.title || dbEntry?.title || id,
-      native: meta.native || dbEntry?.native,
-      author: meta.author || dbEntry?.author || '',
+      title: dbExact?.title || meta.title || dbEntry?.title || id,
+      native: dbExact ? dbExact.native : (meta.native || dbEntry?.native),
+      author: dbExact?.author || meta.author || dbEntry?.author || '',
       lang: meta.lang || dbEntry?.lang || '?',
       bytes: bytes === -1 ? null : bytes,
       source: meta.source,

@@ -44,7 +44,7 @@ export default function Explore() {
       if (lang !== 'all' && b.lang !== lang) return false;
       if (topic && !(b.topics || []).includes(topic)) return false;
       if (!needle) return true;
-      return [b.title, b.native, b.author, b.authorNative, b.tag, b.summary, ...(b.topics || []), ...(b.quotes || [])]
+      return [b.title, b.native, b.author, b.authorNative, b.tag, b.series, b.summary, ...(b.topics || []), ...(b.quotes || [])]
         .filter(Boolean).join(' ').toLowerCase().includes(needle);
     });
   }, [readable, q, lang, topic]);
@@ -108,6 +108,7 @@ export default function Explore() {
               </div>
               <div className="sub" style={{ marginTop: 2 }}>{b.author}</div>
             </div>
+            {b.part && <span className="chip">{b.part}/{b.parts}</span>}
             <span className="chip">{(b.lang || '').toUpperCase()}</span>
           </div>
         ))}

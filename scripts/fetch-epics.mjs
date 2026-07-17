@@ -9,9 +9,13 @@
 //   mahabharata_1..4    Ganguli's complete English Mahabharata, PG vols
 //                       15474–15477 (Books 1–3 / 4–7 / 8–12 / 13–18).
 //                       Local raw files book-sources/texts/pg1547N.txt.
-//   valmiki_ramayan     Griffith's English verse Ramayan, PG 24869.
-//   odyssey             Butler's English prose Odyssey, PG 1727. Local raw
-//                       file book-sources/texts/pg1727.txt.
+//   valmiki_ramayan_1..3  Griffith's English verse Ramayan, PG 24869 —
+//                       sectioned at BOOK boundaries (I–II / III–V / VI) so
+//                       Explore & Library show meaningful parts of the epic.
+//   odyssey_1..3        Butler's English prose Odyssey, PG 1727 — sectioned
+//                       Books I–VIII / IX–XVI / XVII–XXIV. Raw file
+//                       book-sources/texts/pg1727.txt.
+//   (The Ganguli Mahabharata was born sectioned: one book per PG volume.)
 //
 // NOT ingested: Ramcharitmanas — hi.wikisource has only doha 1–35 of
 // Balakand (a stalled transcription with 1925 commentary interleaved).
@@ -139,6 +143,30 @@ function cleanButler(t) {
   return t.replace(/\n{3,}/g, '\n\n').trim();
 }
 
+// ── sectioning: slice a cleaned text between two ^heading$ lines ────────
+// startRe null = from the top; endRe null = to the end (end is exclusive).
+// Loud failure when a heading is missing, same contract as the cut helpers.
+function sliceSection(t, startRe, endRe) {
+  let a = 0;
+  if (startRe) {
+    a = t.search(startRe);
+    if (a < 0) throw new Error('section start not found: ' + startRe);
+  }
+  let b = t.length;
+  if (endRe) {
+    const rest = t.slice(a + 1);
+    const m = rest.search(endRe);
+    if (m < 0) throw new Error('section end not found: ' + endRe);
+    b = a + 1 + m;
+  }
+  return t.slice(a, b).trim();
+}
+
+// Clean once, slice three ways — the section builders share the parse.
+let griffithCache, butlerCache;
+const griffith = () => (griffithCache ??= cleanGriffith(readFileSync(join(SRC, 'pg24869.txt'), 'utf8')));
+const butler = () => (butlerCache ??= cleanButler(readFileSync(join(SRC, 'pg1727.txt'), 'utf8')));
+
 // ── Bhavartha Ramayan (Balkand) ─────────────────────────────────────────
 // mr.wikisource chapter pages carry a sourcing-review banner at the bottom
 // (the WORK is PD — Eknath d. 1599; the banner is wiki housekeeping) and the
@@ -179,8 +207,13 @@ const BOOKS = [
   { id: 'mahabharata_2', min: 3500000, build: () => cleanGanguli(readFileSync(join(SRC, 'pg15475.txt'), 'utf8'), { firstBook: 4 }) },
   { id: 'mahabharata_3', min: 4200000, build: () => cleanGanguli(readFileSync(join(SRC, 'pg15476.txt'), 'utf8'), { firstBook: 8 }) },
   { id: 'mahabharata_4', min: 2200000, build: () => cleanGanguli(readFileSync(join(SRC, 'pg15477.txt'), 'utf8'), { firstBook: 13 }) },
-  { id: 'valmiki_ramayan', min: 1700000, build: () => cleanGriffith(readFileSync(join(SRC, 'pg24869.txt'), 'utf8')) },
-  { id: 'odyssey', min: 550000, build: () => cleanButler(readFileSync(join(SRC, 'pg1727.txt'), 'utf8')),
+  { id: 'valmiki_ramayan_1', min: 650000, build: () => sliceSection(griffith(), null, /^BOOK III\.$/m) },
+  { id: 'valmiki_ramayan_2', min: 500000, build: () => sliceSection(griffith(), /^BOOK III\.$/m, /^BOOK VI\.$/m) },
+  { id: 'valmiki_ramayan_3', min: 220000, build: () => sliceSection(griffith(), /^BOOK VI\.$/m, null),
+    expectEnd: 'So calm, so happy was the time.' },
+  { id: 'odyssey_1', min: 150000, build: () => sliceSection(butler(), null, /^BOOK IX$/m) },
+  { id: 'odyssey_2', min: 150000, build: () => sliceSection(butler(), /^BOOK IX$/m, /^BOOK XVII$/m) },
+  { id: 'odyssey_3', min: 150000, build: () => sliceSection(butler(), /^BOOK XVII$/m, null),
     expectEnd: 'between the two contending parties.' },
 ];
 

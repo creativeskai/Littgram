@@ -54,7 +54,7 @@ export default function Library() {
     const needle = q.trim().toLowerCase();
     if (!needle) return cloud;
     return cloud.filter(b =>
-      [b.title, b.native, b.author, b.db?.authorNative, b.db?.tag, ...(b.db?.topics || [])]
+      [b.title, b.native, b.author, b.db?.authorNative, b.db?.tag, b.db?.series, ...(b.db?.topics || [])]
         .filter(Boolean).join(' ').toLowerCase().includes(needle));
   }, [cloud, q]);
 
@@ -184,6 +184,7 @@ export default function Library() {
                 {b.bytes && ' · ' + (b.bytes > 100000 ? Math.round(b.bytes / 1000) + 'K chars' : b.bytes.toLocaleString() + ' chars')}
               </div>
             </div>
+            {b.db?.part && <span className="chip">{b.db.part}/{b.db.parts}</span>}
             <span className="chip">{(b.lang || '').toUpperCase()}</span>
           </div>
         </Link>

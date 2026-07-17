@@ -28,8 +28,18 @@ const SEED_IDS = [
   // 4 volume books so the reader never loads 15MB in one go
   'bhavartha_ramayan',
   'mahabharata_1', 'mahabharata_2', 'mahabharata_3', 'mahabharata_4',
-  'valmiki_ramayan',
-  'odyssey',
+  // sectioned epics (July 2026): Griffith Ramayan Books I–II / III–V / VI,
+  // Butler Odyssey Books I–VIII / IX–XVI / XVII–XXIV
+  'valmiki_ramayan_1', 'valmiki_ramayan_2', 'valmiki_ramayan_3',
+  'odyssey_1', 'odyssey_2', 'odyssey_3',
+];
+
+// Monolith editions replaced by the sections above. Retiring writes
+// seeded:false (the doc is replaced whole; its chunks stay, harmlessly
+// orphaned) so Library/Explore/Reader stop listing the duplicate.
+const RETIRED_IDS = [
+  { id: 'valmiki_ramayan', replacedBy: 'valmiki_ramayan_1–3' },
+  { id: 'odyssey', replacedBy: 'odyssey_1–3' },
 ];
 
 const CHUNK_CHARS = 80000; // ~240KB UTF-8 for Indic scripts — well under the 1MB doc cap
@@ -95,12 +105,15 @@ export default function Seeder() {
   const email = window.__littgramUser?.email || '';
   const [updates, setUpdates] = useState(null); // manifest rows, null = loading
   const [rows, setRows] = useState(() => SEED_IDS.map(id => ({ id, status: 'checking', note: '' })));
+  const [retired, setRetired] = useState(() => RETIRED_IDS.map(r => ({ ...r, status: 'checking', note: '' })));
   const [running, setRunning] = useState(false);
 
   const setUpdate = (id, patch) =>
     setUpdates(us => us.map(u => (u.id === id ? { ...u, ...patch } : u)));
   const setRow = (id, patch) =>
     setRows(rs => rs.map(r => (r.id === id ? { ...r, ...patch } : r)));
+  const setRet = (id, patch) =>
+    setRetired(rs => rs.map(r => (r.id === id ? { ...r, ...patch } : r)));
 
   // Load the update manifest + check which SEED_IDS are already in the cloud
   useEffect(() => {
@@ -128,11 +141,33 @@ export default function Seeder() {
             setRow(id, { status: 'pending' });
           } catch { setRow(id, { status: 'pending' }); }
         }
+        for (const { id } of RETIRED_IDS) {
+          try {
+            const r = await fetch(fbUrl('books/' + id) + '?mask.fieldPaths=seeded', {
+              headers: { Authorization: 'Bearer ' + token },
+            });
+            const live = r.ok && (await r.json()).fields?.seeded?.booleanValue === true;
+            setRet(id, { status: live ? 'pending' : 'seeded', note: live ? 'still listed — retire it' : 'retired ✓' });
+          } catch { setRet(id, { status: 'pending' }); }
+        }
       } catch (e) {
         setRows(rs => rs.map(r => ({ ...r, status: 'error', note: e.message })));
       }
     })();
   }, []);
+
+  async function retireOne(id) {
+    setRet(id, { status: 'working', note: 'retiring…' });
+    try {
+      // keep the doc's metadata (chunk counts etc.) so stale Continue-Reading
+      // links still load; only the seeded flag flips
+      const existing = (await fbRead('books/' + id)) || {};
+      await fbWrite('books/' + id, { ...existing, seeded: false, retired: true, retiredAt: Date.now() });
+      setRet(id, { status: 'seeded', note: 'retired ✓' });
+    } catch (e) {
+      setRet(id, { status: 'error', note: e.message.slice(0, 80) });
+    }
+  }
 
   async function applyUpdate(u) {
     setUpdate(u.id, { status: 'working', note: 'fetching text…' });
@@ -261,6 +296,24 @@ export default function Seeder() {
           </div>
         );
       })}
+
+      <p className="label" style={{ marginTop: 22 }}>Replaced editions</p>
+      <p className="sub">
+        Single-volume epics superseded by the sectioned editions. Retire them
+        after the sections are seeded so the library doesn't list both.
+      </p>
+      {retired.map(r => (
+        <div key={r.id} className="card row-card" style={{ padding: '10px 14px' }}>
+          <span style={{ color: color[r.status] || 'var(--muted)', fontSize: 15, width: 18 }}>{icon[r.status] || '…'}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>{r.id}</div>
+            <div className="sub" style={{ fontSize: 10.5 }}>→ {r.replacedBy} · {r.note || r.status}</div>
+          </div>
+          {(r.status === 'pending' || r.status === 'error') && !running && (
+            <button className="pill sm" onClick={() => retireOne(r.id)}>Retire</button>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
