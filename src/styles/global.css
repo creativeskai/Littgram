@@ -76,6 +76,10 @@ a{color:var(--gold);}
 .label{font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;}
 .h-screen{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;margin-bottom:4px;}
 .sub{font-size:11px;color:var(--muted);line-height:1.5;}
+/* Standard list-row typography — one look for every book/people row
+   (Explore, Library, Profile, Seeder…). Don't restyle rows inline. */
+.row-title{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.row-sub{font-size:11px;color:var(--muted);line-height:1.5;margin-top:2px;}
 
 /* ── Uploader pipeline ── */
 .steps{display:flex;flex-direction:column;gap:0;margin:14px 0;}

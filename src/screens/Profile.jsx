@@ -168,10 +168,8 @@ export default function Profile() {
                 <BookCover book={book} height={56} width={40} radius={7} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12.5, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {book.native || book.title}
-                </div>
-                <div className="sub" style={{ fontSize: 10.5, marginTop: 1 }}>{book.author}</div>
+                <div className="row-title">{book.native || book.title}</div>
+                <div className="row-sub">{book.author}</div>
                 <div style={{ fontSize: 10, color: 'var(--gold)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {reason}
                 </div>
@@ -192,10 +190,10 @@ export default function Profile() {
               {a.icon ? <a.icon size={15} strokeWidth={1.8} /> : a.handle[0].toUpperCase()}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 700 }}>
+              <div className="row-title">
                 {a.name}{a.bot && <span className="chip" style={{ marginLeft: 6, fontSize: 8 }}>AUTO</span>}
               </div>
-              <div className="sub" style={{ fontSize: 10.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.bio}</div>
+              <div className="row-sub" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.bio}</div>
             </div>
             <button className={followingSet.has(a.handle) ? 'btn ghost' : 'btn'}
               style={{ padding: '6px 14px', fontSize: 11, flexShrink: 0 }}
@@ -291,7 +289,7 @@ export default function Profile() {
                   <div className="avatar">
                     {bot?.icon ? <bot.icon size={15} strokeWidth={1.8} /> : f.handle[0].toUpperCase()}
                   </div>
-                  <div style={{ flex: 1, fontSize: 12.5, fontWeight: 600 }}>
+                  <div className="row-title" style={{ flex: 1 }}>
                     {bot?.name || '@' + f.handle}
                   </div>
                   {listSheet === 'following' && (

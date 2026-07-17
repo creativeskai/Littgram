@@ -103,10 +103,8 @@ export default function Explore() {
               <BookCover book={b} height={60} width={44} radius={8} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {b.native || b.title}
-              </div>
-              <div className="sub" style={{ marginTop: 2 }}>{b.author}</div>
+              <div className="row-title">{b.native || b.title}</div>
+              <div className="row-sub">{b.author}</div>
             </div>
             {b.part && <span className="chip">{b.part}/{b.parts}</span>}
             <span className="chip">{(b.lang || '').toUpperCase()}</span>

@@ -258,7 +258,7 @@ export default function Seeder() {
             <div key={u.id} className="card row-card" style={{ padding: '10px 14px' }}>
               <span style={{ color: color[u.status], fontSize: 15, width: 18 }}>{icon[u.status]}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>{u.native || u.title} <span className="sub">({u.id})</span></div>
+                <div className="row-title">{u.native || u.title} <span className="sub">({u.id})</span></div>
                 <div className="sub" style={{ fontSize: 10.5 }}>{u.note}</div>
               </div>
               {(u.status === 'pending' || u.status === 'error') && !running && (
@@ -287,7 +287,7 @@ export default function Seeder() {
           <div key={r.id} className="card row-card" style={{ padding: '10px 14px' }}>
             <span style={{ color: color[r.status], fontSize: 15, width: 18 }}>{icon[r.status]}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 700 }}>{db?.native || db?.title || r.id}</div>
+              <div className="row-title">{db?.native || db?.title || r.id}</div>
               <div className="sub" style={{ fontSize: 10.5 }}>{db?.author} · {r.note || r.status}</div>
             </div>
             {(r.status === 'pending' || r.status === 'error') && !running && (
@@ -306,7 +306,7 @@ export default function Seeder() {
         <div key={r.id} className="card row-card" style={{ padding: '10px 14px' }}>
           <span style={{ color: color[r.status] || 'var(--muted)', fontSize: 15, width: 18 }}>{icon[r.status] || '…'}</span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>{r.id}</div>
+            <div className="row-title">{r.id}</div>
             <div className="sub" style={{ fontSize: 10.5 }}>→ {r.replacedBy} · {r.note || r.status}</div>
           </div>
           {(r.status === 'pending' || r.status === 'error') && !running && (

@@ -114,10 +114,8 @@ export default function Library() {
                     <BookCover book={{ ...coverFor(r.bookId), title: r.title || r.bookId }} height={72} width={52} radius={8} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {r.title || r.bookId}
-                    </div>
-                    <div className="sub" style={{ margin: '3px 0 7px' }}>
+                    <div className="row-title">{r.title || r.bookId}</div>
+                    <div className="row-sub" style={{ marginBottom: 7 }}>
                       Page {r.page + 1}{r.totalPages ? ` of ${r.totalPages} · ${pct}%` : ''}
                     </div>
                     <div className="progress-track" style={{ marginTop: 0 }}>
@@ -176,10 +174,8 @@ export default function Library() {
               <BookCover book={b.db || { emoji: '📖', title: b.title, author: b.author }} height={60} width={44} radius={8} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {b.native || b.title}
-              </div>
-              <div className="sub" style={{ marginTop: 2 }}>
+              <div className="row-title">{b.native || b.title}</div>
+              <div className="row-sub">
                 {b.author && b.author + ' · '}{LANG_NAMES[b.lang] || b.lang}
                 {b.bytes && ' · ' + (b.bytes > 100000 ? Math.round(b.bytes / 1000) + 'K chars' : b.bytes.toLocaleString() + ' chars')}
               </div>
