@@ -1,11 +1,13 @@
 // src/screens/Feed.jsx
 // The home feed: stories bar, language pills, topic chips, the 50-post
 // legacy catalog merged with live community posts from Firebase, floating
-// compose button, and a minimal write-a-line composer sheet.
+// compose button, and the composer sheet (book + quote picker, photo with
+// quote overlay, caption — restored per user request, July 2026).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, ImagePlus, X } from 'lucide-react';
 import { POSTS_DB } from '../data/posts.js';
+import { BOOKS_DB } from '../data/books.js';
 import { fetchCommunityPosts, publishPost } from '../lib/social.js';
 import { ensureBotPosts } from '../lib/bots.js';
 import PostCard from '../components/PostCard.jsx';
@@ -105,17 +107,64 @@ export default function Feed() {
   );
 }
 
-// Minimal composer: one autofocused text box (the keyboard rises with the
-// sheet) and a publish button — nothing else.
+// Downscale + re-encode a photo so it fits comfortably in a Firestore doc.
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const max = 1000;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      let out = c.toDataURL('image/jpeg', 0.78);
+      if (out.length > 480000) out = c.toDataURL('image/jpeg', 0.6);
+      if (out.length > 480000) {
+        const c2 = document.createElement('canvas');
+        c2.width = Math.round(c.width * 0.7);
+        c2.height = Math.round(c.height * 0.7);
+        c2.getContext('2d').drawImage(img, 0, 0, c2.width, c2.height);
+        out = c2.toDataURL('image/jpeg', 0.6);
+      }
+      URL.revokeObjectURL(img.src);
+      resolve(out);
+    };
+    img.onerror = () => { URL.revokeObjectURL(img.src); reject(new Error('Could not read image')); };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// Full composer: write a line (autofocused), optionally attach a book, pick
+// one of its quotes, add a photo (the quote overlays it) and a caption.
 function Composer({ onPublish, onClose }) {
-  const [text, setText] = useState('');
+  const toast = useToast();
+  const [bookId, setBookId] = useState('');
+  const [quoteIdx, setQuoteIdx] = useState(-1);
+  const [quote, setQuote] = useState('');
+  const [caption, setCaption] = useState('');
+  const [image, setImage] = useState('');
   const [sending, setSending] = useState(false);
+  const book = BOOKS_DB.find(b => b.id === bookId) || null;
 
   async function submit() {
-    if (sending || !text.trim()) return;
+    if (sending) return;
     setSending(true);
-    try { await onPublish({ quote: text.trim() }); }
+    try { await onPublish({ quote: quote.trim(), caption: caption.trim(), book, image }); }
     finally { setSending(false); }
+  }
+
+  async function onPickImage(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-picking the same file
+    if (!file) return;
+    try { setImage(await compressImage(file)); }
+    catch { toast("Couldn't read that image — try another"); }
+  }
+
+  function pickQuote(i) {
+    setQuoteIdx(i);
+    setQuote(i >= 0 ? book.quotes[i] : '');
   }
 
   return (
@@ -124,13 +173,70 @@ function Composer({ onPublish, onClose }) {
         <div className="sheet-grab" />
         <p className="label">New post</p>
 
-        <textarea className="input" rows={3} value={text} autoFocus
-          onChange={e => setText(e.target.value)}
+        <textarea className="input" rows={2} value={quote} autoFocus
+          onChange={e => { setQuote(e.target.value); setQuoteIdx(-1); }}
           placeholder="A line worth sharing…" style={{ marginTop: 8 }} />
 
-        <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+        <p className="label" style={{ marginTop: 12 }}>Book (optional)</p>
+        <select className="input" value={bookId}
+          onChange={e => { setBookId(e.target.value); setQuoteIdx(-1); }}>
+          <option value="">— no book —</option>
+          {BOOKS_DB.map(b => (
+            <option key={b.id} value={b.id}>{(b.native || b.title) + ' — ' + b.author}</option>
+          ))}
+        </select>
+
+        {book?.quotes?.length > 0 && (
+          <>
+            <p className="label" style={{ marginTop: 12 }}>Pick a quote or write your own</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {book.quotes.map((q, i) => (
+                <div key={i} onClick={() => pickQuote(quoteIdx === i ? -1 : i)}
+                  className="quote-block serif"
+                  style={{ cursor: 'pointer', borderLeftColor: quoteIdx === i ? 'var(--accent)' : 'var(--gold)', opacity: quoteIdx === i ? 1 : 0.7 }}>
+                  “{q.slice(0, 120)}{q.length > 120 ? '…' : ''}”
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        <p className="label" style={{ marginTop: 12 }}>Photo (optional{quote.trim() ? ' — your quote appears on top of it' : ''})</p>
+        {image ? (
+          <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)' }}>
+            <img src={image} alt="Your upload" style={{ width: '100%', maxHeight: 260, objectFit: 'cover' }} />
+            {quote.trim() && (
+              <div style={{
+                position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+                padding: '40px 14px 12px',
+                background: 'linear-gradient(to top, rgba(0,0,0,0.72), rgba(0,0,0,0.2) 55%, transparent)',
+              }}>
+                <div className="serif" style={{ fontSize: 14, lineHeight: 1.55, color: '#fff', fontStyle: 'italic', textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
+                  “{quote.trim()}”
+                </div>
+              </div>
+            )}
+            <button onClick={() => setImage('')} aria-label="Remove photo" style={{
+              position: 'absolute', top: 8, right: 8, width: 26, height: 26, borderRadius: 13,
+              border: 'none', cursor: 'pointer', background: 'rgba(0,0,0,0.65)', color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}><X size={14} strokeWidth={2.2} /></button>
+          </div>
+        ) : (
+          <label className="btn ghost" style={{ width: '100%', cursor: 'pointer' }}>
+            <ImagePlus size={15} strokeWidth={1.8} /> Add a photo
+            <input type="file" accept="image/*" onChange={onPickImage} style={{ display: 'none' }} />
+          </label>
+        )}
+
+        <p className="label" style={{ marginTop: 12 }}>Caption</p>
+        <textarea className="input" rows={2} value={caption}
+          onChange={e => setCaption(e.target.value)} placeholder="Why this line?" />
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
           <button className="btn" style={{ flex: 1 }}
-            disabled={sending || !text.trim()} onClick={submit}>
+            disabled={sending || (!quote.trim() && !caption.trim() && !image)}
+            onClick={submit}>
             {sending ? 'Publishing…' : 'Publish'}
           </button>
           <button className="btn ghost" onClick={onClose}>Cancel</button>

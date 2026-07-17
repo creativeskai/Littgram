@@ -115,7 +115,11 @@ function cleanGriffith(t) {
   t = pgBody(t);
   t = cutHead(t, 'INVOCATION');                          // drops TOC/front matter
   t = cutTail(t, 'So calm, so happy was the time.');     // drops appendix/notes/index
-  t = t.replace(/\((\d{1,4})\)/g, '');                   // footnote refs → removed notes
+  // footnote refs → removed notes. PG sets some markers with no surrounding
+  // space ("Válmíki,(2)bird") — leave a space when the marker is glued to a
+  // following letter, else stripping fuses the words.
+  t = t.replace(/(?<=\S)\((\d{1,4})\)(?=[A-Za-zÀ-ž])/g, ' ');
+  t = t.replace(/\((\d{1,4})\)/g, '');
   return t.replace(/\n{3,}/g, '\n\n').trim();
 }
 

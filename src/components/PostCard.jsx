@@ -75,6 +75,99 @@ function ImageSlide({ image, quote, author, fallback }) {
   );
 }
 
+// Greedy word-wrap for canvas text. Returns the lines for the given width.
+function wrapLines(ctx, text, maxWidth) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    const probe = line ? line + ' ' + w : w;
+    if (ctx.measureText(probe).width > maxWidth && line) { lines.push(line); line = w; }
+    else line = probe;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+// Render the post as a shareable image file: the photo with its quote scrim
+// when the post has one (and the image is loadable), otherwise the ink-styled
+// quote card. Share targets like WhatsApp then receive a real picture instead
+// of bare text.
+async function renderPostImage(post, slide) {
+  const W = 1080, PAD = 84;
+  const quote = (slide.quote || '').trim();
+  const author = slide.author || post.bookTitle || '';
+  const c = document.createElement('canvas');
+  const ctx = c.getContext('2d');
+
+  let img = null;
+  if (post.image) {
+    img = await new Promise(res => {
+      const im = new Image();
+      im.crossOrigin = 'anonymous'; // keep the canvas untainted for toBlob
+      im.onload = () => res(im);
+      im.onerror = () => res(null);
+      im.src = post.image;
+    });
+  }
+
+  if (img) {
+    const H = Math.round(Math.min(1350, Math.max(864, W * img.height / img.width)));
+    c.width = W; c.height = H;
+    const s = Math.max(W / img.width, H / img.height);
+    ctx.drawImage(img, (W - img.width * s) / 2, (H - img.height * s) / 2, img.width * s, img.height * s);
+    if (quote || author) {
+      const g = ctx.createLinearGradient(0, H, 0, H * 0.4);
+      g.addColorStop(0, 'rgba(0,0,0,0.8)');
+      g.addColorStop(0.55, 'rgba(0,0,0,0.3)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      ctx.textBaseline = 'alphabetic';
+      let y = H - 56;
+      if (author) {
+        ctx.font = '600 30px Georgia, serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.fillText('— ' + author, PAD, y);
+        y -= 52;
+      }
+      if (quote) {
+        ctx.font = 'italic 44px Georgia, serif';
+        ctx.fillStyle = '#fff';
+        const lines = wrapLines(ctx, '“' + quote + '”', W - PAD * 2);
+        for (let i = lines.length - 1; i >= 0; i--) { ctx.fillText(lines[i], PAD, y); y -= 62; }
+      }
+    }
+  } else {
+    // Quote card in the app's ink-and-paper style
+    ctx.font = 'italic 52px Georgia, serif';
+    const lines = wrapLines(ctx, '“' + (quote || post.caption || 'Littgram') + '”', W - PAD * 2 - 24);
+    const H = Math.max(640, PAD * 2 + lines.length * 76 + (author ? 90 : 0) + 90);
+    c.width = W; c.height = H;
+    ctx.fillStyle = '#171310';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#C9964A'; // accent bar, like the feed's pull-quote
+    ctx.fillRect(0, 0, 10, H);
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = 'italic 52px Georgia, serif';
+    ctx.fillStyle = '#EDE4D3';
+    let y = PAD + 52;
+    for (const ln of lines) { ctx.fillText(ln, PAD + 24, y); y += 76; }
+    if (author) {
+      y += 24;
+      ctx.font = '600 32px Georgia, serif';
+      ctx.fillStyle = '#C9964A';
+      ctx.fillText('— ' + author, PAD + 24, y);
+    }
+    ctx.font = '28px Georgia, serif';
+    ctx.fillStyle = 'rgba(237,228,211,0.45)';
+    ctx.fillText('Littgram', PAD + 24, H - 44);
+  }
+
+  const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.9));
+  if (!blob) throw new Error('render failed');
+  return new File([blob], 'littgram-post.jpg', { type: 'image/jpeg' });
+}
+
 export default function PostCard({ post, onDelete }) {
   const toast = useToast();
   const [liked, setLiked] = useState(isLiked(post.id));
@@ -115,21 +208,23 @@ export default function PostCard({ post, onDelete }) {
   }
   async function onShare() {
     const text = `“${slides[slide].quote}” — ${slides[slide].author || post.bookTitle || ''} · via Littgram`;
-    // Share the post's image alongside the quote when the platform can
-    // (Web Share Level 2). The image is already in the browser cache from
-    // rendering, so the fetch is fast enough to keep the user gesture alive.
-    if (post.image && navigator.canShare) {
-      try {
-        const blob = await (await fetch(post.image)).blob();
-        const file = new File([blob], 'littgram-post.jpg', { type: blob.type || 'image/jpeg' });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ text, files: [file] });
-          return;
-        }
-      } catch (e) {
-        if (e?.name === 'AbortError') return; // user closed the share sheet
-        // image fetch/share failed — fall through to text-only share
-      }
+    // Every post exports as an image — the photo with its quote scrim, or the
+    // quote card rendered to canvas — so WhatsApp & co. receive a picture
+    // (Web Share Level 2), not just text.
+    let file = null;
+    try { file = await renderPostImage(post, slides[slide]); } catch { /* text fallback below */ }
+    if (file && navigator.canShare?.({ files: [file] })) {
+      try { await navigator.share({ text, files: [file] }); return; }
+      catch (e) { if (e?.name === 'AbortError') return; } // user closed the sheet
+    }
+    if (file) {
+      // No file-share support (desktop browsers): download the image instead.
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'littgram-post.jpg'; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      toast('Post image downloaded — attach it anywhere');
+      return;
     }
     if (navigator.share) navigator.share({ text }).catch(() => {});
     else { navigator.clipboard?.writeText(text); toast('Quote copied to clipboard'); }

@@ -88,6 +88,23 @@ architecture; this file records project history and operational knowledge.
     verbatim from the ingested texts. Feed share (PostCard) now attaches the
     post image via Web Share Level 2 when present, falling back to text-only.
 
+12. **Epic completion round (July 17, 2026)** — the 6 epic books got the full
+    feature set: long-form chapter summaries in `chaptersLong2.js` (one chapter
+    per parva/book; Bhavartha Balkand grouped into 6 Marathi+English chapters
+    keyed to अध्याय ranges), authentic period-scan covers from OpenLibrary
+    (Bharata Press/Oriental Publishing title pages mapped to each volume's
+    parvas; Bhavartha has no OL cover — keeps emoji), and all epic quotes made
+    strictly verbatim (normalized-whitespace `includes` against
+    `public/texts/`; chapter `quote` fields too — verify before editing).
+    Griffith footnote stripping hardened in `fetch-epics.mjs`: PG glues some
+    markers ("Válmíki,(2)bird"), so glued markers now leave a space — 4 fused
+    words fixed, valmiki_ramayan restaged (manifest entry added; **needs /seed
+    → Text updates**). Composer RESTORED to full form (book select + quote
+    picker + photo w/ overlay + caption) — the round-9 text-only composer was
+    a mistake, user asked for the old interface back. Post share now renders
+    the post to canvas (photo+scrim or ink quote-card) and shares it as an
+    image file (Web Share L2), downloading it where files can't be shared.
+
 ## Ingestion pipeline — USE THE SAFEGUARDS, never bypass
 
 - `scripts/scrub.mjs` — THE shared scrubber + `validateText` gate (surgical
