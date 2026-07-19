@@ -14,6 +14,7 @@ import { fetchCommunityPosts, publishPost } from '../lib/social.js';
 import { ensureBotPosts } from '../lib/bots.js';
 import { listRecent } from '../lib/progress.js';
 import { pushSupported, enablePush } from '../lib/push.js';
+import { peekComposeDraft, clearComposeDraft } from '../lib/composeDraft.js';
 import PostCard from '../components/PostCard.jsx';
 import BookCover from '../components/BookCover.jsx';
 import { StoriesBar } from '../components/Stories.jsx';
@@ -35,7 +36,11 @@ export default function Feed() {
   const lang = localStorage.getItem('littgram_feed_lang') || 'all';
   const topic = localStorage.getItem('littgram_feed_topic') || null;
   const [community, setCommunity] = useState(communityCache || []);
-  const [composing, setComposing] = useState(false);
+  // A quote shared from Explore / BookDetail / Quotes arrives as a draft —
+  // open the composer immediately, prefilled.
+  const [draft, setDraft] = useState(() => peekComposeDraft());
+  const [composing, setComposing] = useState(() => !!draft);
+  useEffect(() => { clearComposeDraft(); }, []); // one-shot: consumed on arrival
   const [visible, setVisible] = useState(PAGE_SIZE);
 
   // Sentinel at the list's end — scrolling near it reveals the next page.
@@ -76,6 +81,7 @@ export default function Feed() {
         return communityCache;
       });
       setComposing(false);
+      setDraft(null);
       toast('Posted to the community feed ✓');
     } catch (e) {
       toast('Post failed: ' + e.message.slice(0, 60), 3500);
@@ -178,7 +184,8 @@ export default function Feed() {
         <Plus size={26} strokeWidth={2.2} />
       </button>
 
-      {composing && <Composer onPublish={onPublish} onClose={() => setComposing(false)} />}
+      {composing && <Composer initial={draft} onPublish={onPublish}
+        onClose={() => { setComposing(false); setDraft(null); }} />}
     </div>
   );
 }
@@ -214,13 +221,18 @@ function compressImage(file) {
 // Full composer: write a line (autofocused), describe your mood for quote
 // suggestions, optionally attach a book (searchable), pick one of its
 // quotes, add a photo (the quote overlays it) and a caption.
-function Composer({ onPublish, onClose }) {
+function Composer({ initial, onPublish, onClose }) {
   const toast = useToast();
-  const [bookId, setBookId] = useState('');
+  const [bookId, setBookId] = useState(() =>
+    initial?.bookId && BOOKS_DB.some(b => b.id === initial.bookId) ? initial.bookId : '');
   const [bookQuery, setBookQuery] = useState('');
   const [mood, setMood] = useState(null);
-  const [quoteIdx, setQuoteIdx] = useState(-1);
-  const [quote, setQuote] = useState('');
+  const [quoteIdx, setQuoteIdx] = useState(() => {
+    if (!initial?.quote || !initial?.bookId) return -1;
+    const b = BOOKS_DB.find(x => x.id === initial.bookId);
+    return b?.quotes?.indexOf(initial.quote) ?? -1;
+  });
+  const [quote, setQuote] = useState(initial?.quote || '');
   const [caption, setCaption] = useState('');
   const [image, setImage] = useState('');
   const [sending, setSending] = useState(false);

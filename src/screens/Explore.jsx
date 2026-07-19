@@ -3,15 +3,19 @@
 // topic chips, two-column cover grid. Tapping a book opens the detail sheet.
 
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { PenLine } from 'lucide-react';
 import { listCloudBooks } from '../lib/books.js';
 import { readableCatalog } from '../lib/recommend.js';
 import BookCover from '../components/BookCover.jsx';
 import BookDetail from '../components/BookDetail.jsx';
+import { setComposeDraft } from '../lib/composeDraft.js';
 import { t } from '../lib/i18n.js';
 
 const LANG_LABELS = { en: 'English', bn: 'বাংলা', hi: 'हिन्दी', mr: 'मराठी', ta: 'தமிழ்', te: 'తెలుగు' };
 
 export default function Explore() {
+  const nav = useNavigate();
   const [q, setQ] = useState('');
   const [lang, setLang] = useState('all');
   const [topic, setTopic] = useState(null);
@@ -88,8 +92,18 @@ export default function Explore() {
           {quoteHits.map((h, i) => (
             <div key={i} className="quote-block serif" onClick={() => setSelected(h.book)} style={{ cursor: 'pointer' }}>
               “{h.quote}”
-              <div style={{ fontSize: 11, color: 'var(--gold)', marginTop: 6, fontFamily: 'Inter,sans-serif' }}>
-                — {h.book.title}, {h.book.author}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                <div style={{ fontSize: 11, color: 'var(--gold)', fontFamily: 'Inter,sans-serif', flex: 1, minWidth: 0 }}>
+                  — {h.book.title}, {h.book.author}
+                </div>
+                <button className="pill sm" style={{ fontFamily: 'Inter,sans-serif', fontStyle: 'normal', flexShrink: 0 }}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setComposeDraft({ bookId: h.book.id, quote: h.quote });
+                    nav('/');
+                  }}>
+                  <PenLine size={11} style={{ verticalAlign: '-1.5px', marginRight: 4 }} />Post
+                </button>
               </div>
             </div>
           ))}

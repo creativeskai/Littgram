@@ -5,10 +5,11 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Pause, Play, Headphones, LoaderCircle, TriangleAlert, BookOpen } from 'lucide-react';
+import { Pause, Play, Headphones, LoaderCircle, TriangleAlert, BookOpen, PenLine } from 'lucide-react';
 import BookCover from './BookCover.jsx';
 import { chaptersFor } from '../lib/chapters.js';
 import { useTTS } from '../lib/useTTS.js';
+import { setComposeDraft } from '../lib/composeDraft.js';
 
 export default function BookDetail({ book, cloudIds, onClose }) {
   const nav = useNavigate();
@@ -112,7 +113,15 @@ export default function BookDetail({ book, cloudIds, onClose }) {
           <div style={{ marginTop: 14 }}>
             <p className="label">Notable quotes</p>
             {book.quotes.slice(0, 2).map((q, i) => (
-              <div key={i} className="quote-block serif">“{q}”</div>
+              <div key={i} className="quote-block serif">
+                “{q}”
+                <div style={{ marginTop: 6, textAlign: 'right' }}>
+                  <button className="pill sm" style={{ fontFamily: 'Inter,sans-serif', fontStyle: 'normal' }}
+                    onClick={() => { setComposeDraft({ bookId: book.id, quote: q }); nav('/'); }}>
+                    <PenLine size={11} style={{ verticalAlign: '-1.5px', marginRight: 4 }} />Share as post
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         )}
