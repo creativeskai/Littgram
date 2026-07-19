@@ -24,7 +24,10 @@ const EXPECTED_MIN = {
   godan: 600000, nirmala: 200000, madhushala: 20000, shyamchi_aai: 250000,
   chander_pahar: 130000, adarsha_hindu_hotel: 250000, aparajito: 350000,
   heera_manik_jwale: 90000, asani_sanket: 110000,
-  devdas: 120000, parineeta: 100000, srikanto: 500000, ananda_math: 200000,
+  // Sarat round (stage-sarat.mjs) — srikanto is Part 1 only (the sole part
+  // transcribed on bn.wikisource)
+  devdas: 120000, srikanto: 180000, ananda_math: 200000,
+  pallisamaj: 180000, nishkriti: 70000, mohesh: 15000, pather_dabi: 480000,
   // epics round (fetch-epics.mjs)
   bhavartha_ramayan: 300000,
   mahabharata_1: 3200000, mahabharata_2: 3500000,
@@ -50,6 +53,9 @@ const EXPECTED_END = {
   madhushala: /\| 135 \| \|\s*$/,
   madhushala_en: /\| 135 \| \|\s*$/,
   gitanjali: /১৩১৭\s*$/, // song 157's composition date
+  // printed end-words without punctuation
+  devdas: /সমাপ্ত\s*$/,
+  pallisamaj: /সম্পূর্ণ\s*$/,
   // Ganguli volumes 1–3 end inside a parva's numbered endnotes (kept as part
   // of the translation), so the last line has no closing punctuation.
   mahabharata_1: /decrepitude, and death\s*$/,

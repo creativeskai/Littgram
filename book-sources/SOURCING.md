@@ -31,21 +31,31 @@ on the **NEED-FILE** rows (Bibhutibhushan & Manik — 12 titles), where only sca
 | `devi_chowdhurani` | দেবী চৌধুরাণী | AUTO — https://bn.wikisource.org/wiki/দেবী_চৌধুরাণী |
 | `radharani` | রাধারাণী | AUTO — https://bn.wikisource.org/wiki/রাধারাণী |
 
-## Bengali — Sarat Chandra Chattopadhyay (all AUTO — bn.wikisource.org)
+## Bengali — Sarat Chandra Chattopadhyay
+
+Surveyed July 19, 2026: bn.wikisource has transcribed ns0 text for only SIX of
+these works. The other five exist there solely as Wikidata disambiguation
+stubs over unproofread scans — they are **NEED-FILE** now, not AUTO. All PD in
+India since 1999 (d. Jan 1938); everything he published before 1931 is PD in
+the US too (Shesh Prashna 1931 → US PD Jan 2027).
 
 | bookId | Title | Source |
 |---|---|---|
-| `devdas` | দেবদাস | AUTO — https://bn.wikisource.org/wiki/দেবদাস |
-| `parineeta` | পরিণীতা | AUTO — https://bn.wikisource.org/wiki/পরিণীতা |
-| `srikanto` | শ্রীকান্ত | AUTO — https://bn.wikisource.org/wiki/শ্রীকান্ত |
-| `datta` | দত্তা | AUTO — https://bn.wikisource.org/wiki/দত্তা |
-| `nishkriti` | নিষ্কৃতি | AUTO — https://bn.wikisource.org/wiki/নিষ্কৃতি |
-| `mohesh` | মহেশ | AUTO — in short-story collections on bn.wikisource |
-| `grihodaho` | গৃহদাহ | AUTO — https://bn.wikisource.org/wiki/গৃহদাহ |
-| `charitrahin` | চরিত্রহীন | AUTO — https://bn.wikisource.org/wiki/চরিত্রহীন |
-| `pallisamaj` | পল্লীসমাজ | AUTO — https://bn.wikisource.org/wiki/পল্লী-সমাজ |
-| `pather_dabi` | পথের দাবী | AUTO — https://bn.wikisource.org/wiki/পথের_দাবী |
-| `shesh_prasna` | শেষ প্রশ্ন | AUTO — https://bn.wikisource.org/wiki/শেষ_প্রশ্ন |
+| `devdas` | দেবদাস | AUTO — bn.wikisource "দেবদাস (শরৎচন্দ্র চট্টোপাধ্যায়)" · staged |
+| `srikanto` | শ্রীকান্ত · প্রথম পর্ব | AUTO — bn.wikisource "শ্রীকান্ত (প্রথম পর্ব)"; parts 2–4 NOT transcribed · staged |
+| `nishkriti` | নিষ্কৃতি | AUTO — bn.wikisource "নিষ্কৃতি (শরৎচন্দ্র চট্টোপাধ্যায়, ১৯৫২)" · staged |
+| `mohesh` | মহেশ | AUTO — bn.wikisource "শরৎ-সাহিত্য-সংগ্রহ (ত্রয়োদশ সম্ভার)/মহেশ" · staged |
+| `pallisamaj` | পল্লী-সমাজ | AUTO — bn.wikisource "পল্লী-সমাজ (শরৎচন্দ্র চট্টোপাধ্যায়, ১৯১৯)" · staged |
+| `pather_dabi` | পথের দাবী | AUTO — bn.wikisource "শরৎ-সাহিত্য-সংগ্রহ (ত্রয়োদশ সম্ভার)/পথের দাবী" · staged |
+| `parineeta` | পরিণীতা | ⬜ **NEED-FILE** — no transcription; hunt archive.org / DLI |
+| `datta` | দত্তা | ⬜ **NEED-FILE** — no transcription |
+| `grihodaho` | গৃহদাহ | ⬜ **NEED-FILE** — no transcription |
+| `charitrahin` | চরিত্রহীন | ⬜ **NEED-FILE** — no transcription |
+| `shesh_prasna` | শেষ প্রশ্ন | ⬜ **NEED-FILE** — no transcription |
+
+Bonus (transcribed on bn.wikisource, not yet in the catalog): মেজদিদি,
+আঁধারে আলো, দেনা-পাওনা, ষোড়শী, বৈকুণ্ঠের উইল, বিলাসী, অনুরাধা, সতী,
+হরিলক্ষ্মী — candidates for a future round.
 
 ## Bengali — Rabindranath Tagore (all AUTO — tagoreweb.in / rabindra-rachanabali.nltr.org)
 

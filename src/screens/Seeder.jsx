@@ -19,8 +19,10 @@ const ADMIN_EMAILS = ['creativeskai@gmail.com'];
 const SEED_IDS = [
   'durgesh_nandini', 'kapalkundala', 'bishbrikkho', 'jugalanguriya',
   'krishnakanter_will', 'ananda_math', 'rajsingha', 'devi_chowdhurani', 'radharani',
-  'devdas', 'parineeta', 'srikanto', 'datta', 'nishkriti', 'mohesh', 'grihodaho',
-  'charitrahin', 'pallisamaj', 'pather_dabi', 'shesh_prasna',
+  // Sarat: only these six are transcribed on bn.wikisource (July 2026 survey);
+  // parineeta/datta/grihodaho/charitrahin/shesh_prasna are NEED-FILE in
+  // SOURCING.md — do not list them here until a real source is staged.
+  'devdas', 'srikanto', 'nishkriti', 'mohesh', 'pallisamaj', 'pather_dabi',
   'gora', 'chokher_bali', 'gitanjali', 'noukadubi', 'ghore_baire',
   'shesher_kabita', 'golpoguchho', 'chitrangada', 'gitabitan',
   'godan', 'nirmala', 'shyamchi_aai',

@@ -30,18 +30,19 @@ const BOOKS = [
   { id: 'rajsingha', base: 'রাজসিংহ' },
   { id: 'devi_chowdhurani', base: 'দেবী চৌধুরাণী' },
   { id: 'radharani', base: 'রাধারাণী' },
-  // ── Sarat ──
+  // ── Sarat ── (bn.wikisource survey July 2026: only these six works have
+  // transcribed ns0 text; parineeta/datta/grihodaho/charitrahin/shesh_prasna
+  // exist ONLY as Wikidata disambig stubs over unproofread scans — NEED-FILE.
+  // Srikanta: solely প্রথম পর্ব is transcribed; parts 2–4 do not exist there.)
   { id: 'devdas', base: 'দেবদাস', roots: ['দেবদাস (শরৎচন্দ্র চট্টোপাধ্যায়)'] },
-  { id: 'parineeta', base: 'পরিণীতা' },
-  { id: 'srikanto', base: 'শ্রীকান্ত', roots: ['শ্রীকান্ত (প্রথম পর্ব)', 'শ্রীকান্ত (দ্বিতীয় পর্ব)', 'শ্রীকান্ত (তৃতীয় পর্ব)', 'শ্রীকান্ত (চতুর্থ পর্ব)'], allRoots: true },
-  { id: 'datta', base: 'দত্তা' },
-  { id: 'nishkriti', base: 'নিষ্কৃতি' },
-  { id: 'mohesh', base: 'মহেশ' },
-  { id: 'grihodaho', base: 'গৃহদাহ' },
-  { id: 'charitrahin', base: 'চরিত্রহীন' },
-  { id: 'pallisamaj', base: 'পল্লী-সমাজ', alts: ['পল্লীসমাজ'] },
-  { id: 'pather_dabi', base: 'পথের দাবী' },
-  { id: 'shesh_prasna', base: 'শেষ প্রশ্ন', alts: ['শেষপ্রশ্ন'] },
+  // last chapter page carries the 1st-edition printer colophon (Gurudas
+  // Chattopadhyay & Sons block) — dropFrom cuts it; marker avoids য়/ড়
+  // (precomposed-vs-decomposed forms break exact matching).
+  { id: 'srikanto', base: 'শ্রীকান্ত', roots: ['শ্রীকান্ত (প্রথম পর্ব)'], dropFrom: 'এণ্ড সন্স-এর পক্ষে' },
+  { id: 'nishkriti', base: 'নিষ্কৃতি', roots: ['নিষ্কৃতি (শরৎচন্দ্র চট্টোপাধ্যায়, ১৯৫২)'] },
+  { id: 'mohesh', base: 'মহেশ', roots: ['শরৎ-সাহিত্য-সংগ্রহ (ত্রয়োদশ সম্ভার)/মহেশ'] },
+  { id: 'pallisamaj', base: 'পল্লী-সমাজ', roots: ['পল্লী-সমাজ (শরৎচন্দ্র চট্টোপাধ্যায়, ১৯১৯)'] },
+  { id: 'pather_dabi', base: 'পথের দাবী', roots: ['শরৎ-সাহিত্য-সংগ্রহ (ত্রয়োদশ সম্ভার)/পথের দাবী'] },
   // ── Tagore ──
   { id: 'gora', base: 'গোরা', roots: ['গোরা (রবীন্দ্রনাথ ঠাকুর)'] },
   { id: 'chokher_bali', base: 'চোখের বালি' },
@@ -278,7 +279,15 @@ for (const book of list) {
   try {
     const fetched = await fetchBook(book);
     const { chapters, root, notes } = fetched;
-    const text = scrub(fetched.text, { keepNumbers: !!book.keepNumbers });
+    let text = scrub(fetched.text, { keepNumbers: !!book.keepNumbers });
+    // Optional per-book tail cut for trailing printer/publisher colophons —
+    // cut from the START of the line holding the marker. Loud failure if the
+    // configured marker is missing (transcription changed → re-inspect).
+    if (book.dropFrom) {
+      const i = text.lastIndexOf(book.dropFrom);
+      if (i < 0) throw new Error(`dropFrom marker not found: "${book.dropFrom.slice(0, 30)}"`);
+      text = text.slice(0, text.lastIndexOf('\n', i)).trimEnd();
+    }
     // Safeguards: refuse to write a file that is shorter than the known
     // plausible minimum for this work, ends mid-text, or leaks HTML/JSON — a
     // bad fetch must FAIL LOUDLY here, never flow silently into the library.
