@@ -132,7 +132,7 @@ export default function Library() {
 
       {COMICS_DB.length > 0 && (
         <>
-          <p className="label" style={{ marginTop: 18 }}>Classic comics</p>
+          <p className="label" style={{ marginTop: 18 }}>Comics</p>
           <div className="comic-shelf">
             {COMICS_DB.map(c => (
               <Link key={c.id} to={'/comic/' + c.id} className="comic-tile">
@@ -143,7 +143,8 @@ export default function Library() {
             ))}
           </div>
           <p className="sub" style={{ fontSize: 10.5 }}>
-            Original public-domain scans — untouched Golden Age printing.
+            Free-to-use only: public-domain Golden Age scans, and Pepper&amp;Carrot
+            © David Revoy (CC-BY 4.0) — art untouched.
           </p>
         </>
       )}

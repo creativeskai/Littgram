@@ -149,7 +149,9 @@ export default function ComicReader() {
             <span style={{ fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap' }}>{page + 1}/{comic.pages}</span>
           </div>
           <p className="sub" style={{ fontSize: 9.5, marginTop: 6, textAlign: 'center' }}>
-            Original {comic.year} scan · {comic.publisher} · Public domain
+            {comic.credit
+              ? `${comic.credit} · ${comic.license}`
+              : `Original ${comic.year} scan · ${comic.publisher} · Public domain`}
           </p>
         </div>
       )}
