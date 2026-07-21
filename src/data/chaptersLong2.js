@@ -370,13 +370,13 @@ bhavartha_ramayan: [
 
 aesop_fables: [
   { title: 'Foxes, Wolves, and False Alarms',
-    quote: 'I thought those Grapes were ripe, but I see now they are quite sour.',
+    quote: 'Honesty is the best policy.',
     summary: `The collection opens on its most famous note: a fox who cannot reach a bunch of grapes decides on the spot that they must have been sour anyway. The fables that follow in this stretch return again and again to appetite dressed up as virtue — a goose killed for the gold its owners imagine must be hidden inside it, a wolf who invents a grievance to justify eating a lamb downstream from him, a dog who drops his own dinner in a river snapping at its reflection. The North Wind and the Sun settle an argument over which can strip a traveller's cloak faster, and the Sun's gentle warmth wins where force could not. And a shepherd's boy who cries "Wolf!" for sport twice finds, on the third and real occasion, that no one comes.` },
   { title: 'Tortoises, Kings, and Borrowed Feathers',
     quote: 'Slow and steady wins the race.',
     summary: `A hare so certain of beating a tortoise that he naps mid-race loses the whole match to patience. The middle of the collection is full of this kind of quiet correction: frogs who demand a king from Jupiter get first a log too passive to rule and then a stork that eats them, and learn to be careful what they ask for. A town mouse's rich, dangerous dinners are traded for a country mouse's plain, safe ones. A dog lying in the manger won't eat the hay himself and won't let the ox eat it either. And when the body's limbs go on strike against a belly they accuse of doing no work, they discover too late that the belly was feeding them all along.` },
   { title: 'Grasshoppers, Millers, and the Traveller at the Well',
-    quote: "you can't do better than spend the winter dancing.",
+    quote: 'Once bitten, twice shy.',
     summary: `Winter arrives and a grasshopper who sang all summer begs the ants for grain, and gets a lesson instead of a meal. The closing run of fables turns increasingly toward consequence: a miller, his son, and their one donkey try to please every passerby's conflicting advice about who should ride, and end up pleasing no one; an astronomer so busy studying the stars falls into a well at his feet; an ant who once saved a dove from drowning returns the favor by stinging a fowler's foot just as he takes aim. The book's very last fable is quieter than most — a traveller asleep at the edge of a well is woken by Fortune herself, who moves him along before he falls in, unwilling to be blamed for a misfortune that was never hers to cause.` },
 ],
 
