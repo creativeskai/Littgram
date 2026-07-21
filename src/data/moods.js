@@ -30,6 +30,7 @@ export const MOODS = [
     { bookId: 'valmiki_ramayan_3', quote: 'Unknown were want, disease, and crime: So calm, so happy was the time.' },
     { bookId: 'siddhartha', quote: 'the river is everywhere' },
     { bookId: 'madhushala', quote: "'राह पकड़ तू एक चला चल, पा जाएगा मधुशाला।'" },
+    { bookId: 'aesop_fables', quote: 'Slow and steady wins the race.' },
   ] },
   { key: 'courage', label: 'Brave', entries: [
     { bookId: '1984', quote: 'Freedom is the freedom to say that two plus two make four. If that is granted, all else follows.' },
@@ -51,6 +52,8 @@ export const MOODS = [
     { bookId: 'siddhartha', quote: 'Searching means: having a goal. But finding means: being free, being open, having no goal.' },
     { bookId: 'mahabharata_1', quote: 'The mother is weightier than the earth; the father is higher than the heaven; the mind is fleeter than the wind; and our thoughts are more numerous than grass.' },
     { bookId: 'godan', quote: 'आदमी वह हैं, जिनके पास धन है, अख़्तियार है, इलम है, हम लोग तो बैल हैं और जुतने के लिए पैदा हुए हैं।' },
+    { bookId: 'aesop_fables', quote: 'Much wants more and loses all.' },
+    { bookId: 'panchatantra_5', quote: 'Indulge in no excessive greed (A little helps in time of need)— A greedy fellow in the world Found on his head a wheel that whirled.' },
   ] },
   { key: 'defiance', label: 'Defiant', entries: [
     { bookId: 'gitanjali', quote: 'বিপদে মোরে রক্ষা কর, এ নহে মোর প্রার্থনা, বিপদে আমি না যেন করি ভয়।' },

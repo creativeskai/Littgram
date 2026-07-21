@@ -35,6 +35,10 @@ const EXPECTED_MIN = {
   // sectioned epics (Griffith Ramayan I–II/III–V/VI, Butler Odyssey ×3)
   valmiki_ramayan_1: 650000, valmiki_ramayan_2: 500000, valmiki_ramayan_3: 220000,
   odyssey_1: 150000, odyssey_2: 150000, odyssey_3: 150000,
+  // fables round (fetch-fables.mjs)
+  aesop_fables: 150000,
+  panchatantra_1: 180000, panchatantra_2: 65000, panchatantra_3: 75000,
+  panchatantra_4: 38000, panchatantra_5: 38000,
 };
 // English translations are usually 0.8–1.4x the native char count; use a
 // looser floor of half the native minimum.
@@ -68,6 +72,12 @@ const EXPECTED_END = {
   odyssey_1: /as his own brother\?”\s*$/,
   odyssey_2: /boon of sleep\.\s*$/,
   odyssey_3: /between the two contending parties\.\s*$/,
+  aesop_fables: /on me, Fortune\."\s*$/,
+  panchatantra_1: /malicious ends\.\s*$/,
+  panchatantra_2: /purpose through\.\s*$/,
+  panchatantra_3: /crows with fire returned\.\s*$/,
+  panchatantra_4: /monkey tricked the crocodile\.\s*$/,
+  panchatantra_5: /warning from the barber\.\s*$/,
 };
 const endOk = (id, text) => (EXPECTED_END[id] || ENDINGS).test(text);
 

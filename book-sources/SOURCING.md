@@ -146,3 +146,16 @@ PDFs/EPUBs in this folder are gitignored — only this checklist is committed.
 Raw PG downloads live in book-sources/texts/ as pg15474–pg15477.txt and
 pg24869.txt (gitignored); re-run `node scripts/fetch-epics.mjs` to rebuild the
 cleaned texts into public/texts/.
+
+## Fables round (July 2026 — scripts/fetch-fables.mjs)
+
+| bookId | Title | Source | Status |
+|---|---|---|---|
+| `aesop_fables` | Aesop's Fables (tr. V. S. Vernon Jones, 1912) | AUTO — PG 11339 | staged |
+| `panchatantra_1..5` | The Panchatantra (tr. Arthur W. Ryder, 1925), Books I–V | AUTO — en.wikisource, Featured/validated text | staged |
+| `jataka_tales` | Jataka Tales (Ellen C. Babbitt, 1912) | **NEED-VERIFY** — PG 62514 is clean US-PD text, but Babbitt's death year isn't confirmed anywhere searched, so life+60 (India PD) can't be established. Do not seed on US status alone. |
+
+Both Vernon Jones (d. 1955) and Ryder (d. 1938) are PD in India (life+60) and
+the US (pre-1929 publication). Raw PG download lives in book-sources/texts/
+as pg11339.txt (gitignored); re-run `node scripts/fetch-fables.mjs` to rebuild
+the cleaned texts into public/texts/.
