@@ -34,6 +34,11 @@ const SEED_IDS = [
   // Butler Odyssey Books I–VIII / IX–XVI / XVII–XXIV
   'valmiki_ramayan_1', 'valmiki_ramayan_2', 'valmiki_ramayan_3',
   'odyssey_1', 'odyssey_2', 'odyssey_3',
+  // fables round (scripts/fetch-fables.mjs): Vernon Jones's Aesop (PG 11339)
+  // and Ryder's Panchatantra (en.wikisource, Book I–V) — short reads, good
+  // "start small" starters for the retention funnel.
+  'aesop_fables',
+  'panchatantra_1', 'panchatantra_2', 'panchatantra_3', 'panchatantra_4', 'panchatantra_5',
 ];
 
 // Monolith editions replaced by the sections above. Retiring writes

@@ -182,6 +182,32 @@ architecture; this file records project history and operational knowledge.
     the injected configstore token). Rules enumerate collections — any NEW
     collection needs a rules block + deploy.
 
+16. **Fables round (July 2026)** — short, "start small"-friendly reads for
+    the retention funnel: `scripts/fetch-fables.mjs` builds `aesop_fables`
+    (V. S. Vernon Jones's 1912 translation, PG 11339 — Chesterton's intro,
+    CONTENTS, and the illustrations list cut; 196K chars, ends "...on me,
+    Fortune.") and `panchatantra_1..5` (Arthur W. Ryder's 1925 translation,
+    the Featured/validated en.wikisource transcription, one cloud book per
+    Ryder book — 231K/86K/102K/51K/53K chars). Two fetch bugs worth
+    remembering: the Panchatantra TOC-length sanity check must run on the
+    *unfiltered* link list (filtering out front-matter/Translator's-
+    Introduction first undercounts it); and per-story pages leak a
+    `Proofreadpage_pagenum_template` JSON blob that must be scrubbed
+    *before* the per-page heading-dedupe regex runs, or the blob's stray
+    blank lines break the match. The Header template also double-renders
+    the title on exactly the 5 book-opening pages (central-cell + body
+    heading) — collapsed in `cleanPtPage`; ordinary story pages are NOT
+    affected, and the frame-narrative pattern of "...told the story of
+    TITLE" immediately followed by that story's own TITLE heading (from
+    joining two separate wiki subpages) is genuine book structure, not a
+    duplicate — left alone. Quotes and chapter summaries verbatim-checked
+    against the built texts (a first draft's Aesop grasshopper quote spanned
+    a "replied the Ants" dialogue tag and had to be trimmed to the
+    continuous fragment — verify before reusing quotes across dialogue).
+    Both authors are long dead (Vernon Jones d. 1955, Ryder d. 1938) — PD
+    in India and the US. No period OpenLibrary cover found for either
+    edition; both keep the designed gradient plate + emoji.
+
 ## Ingestion pipeline — USE THE SAFEGUARDS, never bypass
 
 - `scripts/scrub.mjs` — THE shared scrubber + `validateText` gate (surgical
