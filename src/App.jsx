@@ -7,6 +7,7 @@ import BottomNav from './components/BottomNav.jsx';
 import Feed from './screens/Feed.jsx';
 import Explore from './screens/Explore.jsx';
 import Library from './screens/Library.jsx';
+import Comics from './screens/Comics.jsx';
 import Challenges from './screens/Challenges.jsx';
 import Quotes from './screens/Quotes.jsx';
 import Notifications from './screens/Notifications.jsx';
@@ -60,6 +61,7 @@ export default function App() {
             <Route path="/" element={<Feed />} />
             <Route path="/explore" element={<Explore />} />
             <Route path="/library" element={<Library />} />
+            <Route path="/comics" element={<Comics />} />
             <Route path="/challenges" element={<Challenges />} />
             <Route path="/quotes" element={<Quotes />} />
             <Route path="/notifications" element={<Notifications />} />
