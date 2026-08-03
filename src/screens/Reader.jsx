@@ -11,6 +11,9 @@ import { useToast } from '../components/Toast.jsx';
 import { useTTS } from '../lib/useTTS.js';
 import { chaptersFor } from '../lib/chapters.js';
 import { publishReading } from '../lib/social.js';
+import { useUiLang } from '../lib/i18n.js';
+import { fbRead } from '../lib/firebase.js';
+import { translationEditionId, getTranslationStatus, translateBookToLang } from '../lib/translateBook.js';
 
 export default function Reader() {
   const { bookId } = useParams();
@@ -25,6 +28,12 @@ export default function Reader() {
   const [page, setPage] = useState(0);
   const [font, setFont] = useState(getFontSize());
   const [sibling, setSibling] = useState(null);
+  const uiLang = useUiLang();
+  const [trState, setTrState] = useState(null); // null | 'available' | 'translating' | 'ready'
+  const [trProgress, setTrProgress] = useState(null); // { pct, msg }
+  const trIdRef = useRef(null);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
   const [showControls, setShowControls] = useState(true);
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [showChapters, setShowChapters] = useState(false);
@@ -144,6 +153,52 @@ export default function Reader() {
     nav('/read/' + sibling, { replace: true });
   }
 
+  // Read-in-my-language: only relevant when the app language differs from
+  // this book's own language AND the real sibling (if any) doesn't already
+  // cover it — a real ingested edition always wins over AI translation.
+  useEffect(() => {
+    if (state !== 'ready' || !meta.lang || uiLang === meta.lang) { setTrState(null); return; }
+    let alive = true;
+    (async () => {
+      let siblingLang = null;
+      if (sibling) {
+        try { siblingLang = (await fbRead('books/' + sibling))?.lang || null; } catch {}
+      }
+      if (!alive || uiLang === siblingLang) { if (alive) setTrState(null); return; }
+      const status = await getTranslationStatus(bookId, uiLang).catch(() => null);
+      if (!alive) return;
+      trIdRef.current = translationEditionId(bookId, uiLang);
+      setTrState(status?.seeded ? 'ready' : 'available');
+    })();
+    return () => { alive = false; };
+  }, [state, meta.lang, uiLang, sibling, bookId]);
+
+  function switchToTranslation() {
+    if (!trIdRef.current) return;
+    const ratio = pages.length > 1 ? page / (pages.length - 1) : 0;
+    sessionStorage.setItem('littgram_jump_ratio', String(ratio));
+    nav('/read/' + trIdRef.current, { replace: true });
+  }
+
+  async function startTranslation() {
+    setTrState('translating');
+    setTrProgress({ pct: 0, msg: 'Starting…' });
+    try {
+      await translateBookToLang(bookId, meta.lang, uiLang, (done, total, msg) => {
+        if (!mountedRef.current) return;
+        const pct = total ? Math.round((done / total) * 100) : 0;
+        setTrProgress({ pct, msg: msg || `${pct}%` });
+      });
+      if (!mountedRef.current) return;
+      setTrState('ready');
+      switchToTranslation();
+    } catch (e) {
+      if (!mountedRef.current) return;
+      setTrState('available');
+      toast('Translation failed: ' + e.message);
+    }
+  }
+
   useEffect(() => {
     if (state !== 'ready') return;
     const r = sessionStorage.getItem('littgram_jump_ratio');
@@ -183,7 +238,24 @@ export default function Reader() {
               {meta.native || meta.title || bookId}
             </div>
             <div style={{ fontSize: 10, color: 'var(--muted)' }}>{meta.author}</div>
+            {trState === 'translating' && trProgress && (
+              <div style={{ fontSize: 10, color: 'var(--gold)' }}>Translating… {trProgress.pct}%</div>
+            )}
           </div>
+          {(trState === 'ready' || trState === 'available') && (
+            <button
+              className="rbtn"
+              onClick={trState === 'ready' ? switchToTranslation : startTranslation}
+              title={trState === 'ready' ? 'Read the translated edition' : `Translate to ${uiLang.toUpperCase()}`}
+            >
+              {uiLang.toUpperCase()}
+            </button>
+          )}
+          {trState === 'translating' && (
+            <button className="rbtn" disabled title="Translating…">
+              <LoaderCircle size={15} className="spin" />
+            </button>
+          )}
           {sibling && (
             <button className="rbtn" onClick={switchEdition} title="Switch edition">
               {bookId.endsWith('_en') ? 'BNG' : 'EN'}

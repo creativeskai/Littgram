@@ -186,8 +186,10 @@ export async function fetchOcrText(jobId) {
 }
 
 // Translate long text by sending ≤40KB pieces to /api/translate (server
-// re-chunks to Mayura's 1000-char limit internally)
-export async function translateText(text, sourceLang, onProgress) {
+// re-chunks to Mayura's 1000-char limit internally). targetLang defaults to
+// English (the Uploader's OCR→English flow); pass e.g. 'bn-IN' to translate
+// into another app language instead.
+export async function translateText(text, sourceLang, onProgress, targetLang = 'en-IN') {
   const PIECE = 6000; // ~7 Sarvam calls/request, finishes in ~12s (Vercel 60s cap)
   const pieces = [];
   let pos = 0;
@@ -206,7 +208,7 @@ export async function translateText(text, sourceLang, onProgress) {
     const r = await fetch('/api/translate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
-      body: JSON.stringify({ text: pieces[i], source_lang: sourceLang, target_lang: 'en-IN' }),
+      body: JSON.stringify({ text: pieces[i], source_lang: sourceLang, target_lang: targetLang }),
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'translate failed: ' + r.status);

@@ -10,14 +10,15 @@ const GEMINI_MODEL = 'gemini-2.5-flash';
 const CHUNK_SIZE = 900; // Sarvam limit is 1000
 
 const LANG_NAMES = {
-  'bn-IN': 'Bengali', 'hi-IN': 'Hindi', 'mr-IN': 'Marathi',
+  'en-IN': 'English', 'bn-IN': 'Bengali', 'hi-IN': 'Hindi', 'mr-IN': 'Marathi',
   'ta-IN': 'Tamil', 'te-IN': 'Telugu',
 };
 
 // Gemini fallback: translates the WHOLE piece in one call (better context
 // than 900-char fragments). Used when Sarvam has no credits (429).
-async function geminiTranslate(text, sourceLang) {
+async function geminiTranslate(text, sourceLang, targetLang = 'en-IN') {
   const langName = LANG_NAMES[sourceLang] || 'the source language';
+  const targetName = LANG_NAMES[targetLang] || 'English';
   for (let attempt = 1; attempt <= 3; attempt++) {
     const r = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`,
@@ -26,7 +27,7 @@ async function geminiTranslate(text, sourceLang) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text:
-            `Translate the following ${langName} literary text into natural, faithful English. ` +
+            `Translate the following ${langName} literary text into natural, faithful ${targetName}. ` +
             `Preserve paragraph breaks. Output ONLY the translation, no commentary.\n\n${text}` }] }],
           generationConfig: {
             temperature: 0.2,
@@ -75,7 +76,7 @@ export default async function handler(req, res) {
     // fallback when Gemini is not set up.
     if (GEMINI_KEY) {
       try {
-        const out = await geminiTranslate(text, source_lang);
+        const out = await geminiTranslate(text, source_lang, target_lang);
         return res.status(200).json({
           translated: out, chunkCount: 1, errorCount: 0, lastError: 0,
           charCount: out.length, engine: 'gemini',
@@ -134,7 +135,7 @@ export default async function handler(req, res) {
     async function tryGeminiWhole() {
       if (!GEMINI_KEY) return null;
       try {
-        const out = await geminiTranslate(text, source_lang);
+        const out = await geminiTranslate(text, source_lang, target_lang);
         return res.status(200).json({
           translated: out, chunkCount: 1, errorCount: 0, lastError: 0,
           charCount: out.length, engine: 'gemini',

@@ -53,22 +53,33 @@ export default function BookCover({ book, height = 150, width, radius = 12 }) {
         <Motif size={Math.max(18, height / 4.5)} strokeWidth={1.3}
           style={{ color: 'rgba(255,255,255,0.85)' }} />
       </div>
-      <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 3,
-        background: 'linear-gradient(transparent, rgba(0,0,0,0.72))',
-        padding: '20px 7px 7px',
-      }}>
+      {/* Title/author plate — only the fallback design's own text. A real
+          cover photo already carries its own printed title, so the plate
+          is hidden once a photo has loaded (it was overlapping/overflowing
+          on top of scanned title pages otherwise). */}
+      {!(book?.cover && imgState === 'ok') && (
         <div style={{
-          fontSize: Math.max(9, Math.min(11, height / 14)),
-          fontWeight: 700, color: '#fff',
-          fontFamily: "'Playfair Display',Georgia,serif",
-          lineHeight: 1.25, marginBottom: 2,
-          wordBreak: 'break-word',
-        }}>{title}</div>
-        <div style={{ fontSize: 9, color: accent, opacity: 0.9 }}>{author}</div>
-      </div>
+          position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 3,
+          background: 'linear-gradient(transparent, rgba(0,0,0,0.72))',
+          padding: '20px 7px 7px',
+          maxHeight: '70%', overflow: 'hidden',
+        }}>
+          <div style={{
+            fontSize: Math.max(9, Math.min(11, height / 14)),
+            fontWeight: 700, color: '#fff',
+            fontFamily: "'Playfair Display',Georgia,serif",
+            lineHeight: 1.25, marginBottom: 2,
+            wordBreak: 'break-word',
+            display: '-webkit-box',
+            WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+          }}>{title}</div>
+          <div style={{ fontSize: 9, color: accent, opacity: 0.9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{author}</div>
+        </div>
+      )}
 
-      {/* Cover photo — fades in only when loaded, no crossOrigin */}
+      {/* Cover photo — fades in only when loaded, no crossOrigin. `contain`
+          so scanned title pages show whole (never cropped); the gradient
+          background behind it reads fine as letterboxing. */}
       {book?.cover && imgState !== 'err' && (
         <img
           src={coverSrc(book.cover)}
@@ -82,7 +93,7 @@ export default function BookCover({ book, height = 150, width, radius = 12 }) {
           style={{
             position: 'absolute', inset: 0,
             width: '100%', height: '100%',
-            objectFit: 'cover', zIndex: 2,
+            objectFit: 'contain', zIndex: 2,
             opacity: imgState === 'ok' ? 1 : 0,
             transition: 'opacity 0.35s ease',
           }}
