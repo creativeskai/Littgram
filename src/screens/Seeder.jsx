@@ -39,6 +39,11 @@ const SEED_IDS = [
   // "start small" starters for the retention funnel.
   'aesop_fables',
   'panchatantra_1', 'panchatantra_2', 'panchatantra_3', 'panchatantra_4', 'panchatantra_5',
+  // tales round (scripts/fetch-tales.mjs): the complete Cowell Jataka (one
+  // cloud book per print volume — a natural split, not an artificial one),
+  // Arnold's Hitopadesha, and Burton's Vikram and the Vampire.
+  'jataka_1', 'jataka_2', 'jataka_3', 'jataka_4', 'jataka_5', 'jataka_6',
+  'hitopadesha', 'vikram_and_vampire',
 ];
 
 // Monolith editions replaced by the sections above. Retiring writes

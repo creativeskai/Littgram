@@ -208,6 +208,70 @@ architecture; this file records project history and operational knowledge.
     in India and the US. No period OpenLibrary cover found for either
     edition; both keep the designed gradient plate + emoji.
 
+17. **Read-in-your-language + book cover fix (August 2026)** — user wants any
+    book readable in their chosen app language, not just the ~8 titles with a
+    pre-ingested real sibling edition (`siblingEditionId`/`switchEdition` in
+    Reader.jsx, bn⇄en pairs like `gitanjali`/`gitanjali_en`). Added on-demand
+    AI translation as a fallback: `/api/translate` (already existed for the
+    Uploader's OCR→English flow, Gemini 2.5-flash primary + Sarvam Mayura
+    fallback) generalized to an arbitrary `target_lang` (was hardcoded to
+    English); `src/lib/translateBook.js` (new) drives translation piece by
+    piece and writes it incrementally to `books/{bookId}__tr_{lang}` — a
+    Firestore chunk flushed every ~200K translated chars, with
+    `sourceOffset`/`chunksDone` recorded so an interrupted run resumes
+    instead of re-paying for the whole book — finishing with `seeded:true` in
+    the same field shape `saveBook`/`Seeder.jsx`'s `seedBook` already use, so
+    every existing read path works unmodified. No Firestore rules changes
+    needed — `books/{bookId}` + nested `chunks` already allows any doc id.
+    Reader shows a button in the same header slot as the existing sibling
+    toggle (real sibling wins if its language matches; AI translation is the
+    fallback). **BookCover.jsx also fixed same session**: real cover photos
+    now use `object-fit: contain` (was `cover`, cropping scanned title
+    pages) and the gradient fallback's own title/author text plate only
+    renders when there's no photo (was always overlaid on top, causing the
+    text-over-photo overflow the user reported).
+
+18. **Tales round (August 2026)** — `scripts/fetch-tales.mjs` builds three
+    more validated texts: `jataka_1..6` (the complete Cowell/Chalmers/Rouse/
+    Francis/Neil translation of *The Jataka*, one cloud book per print
+    volume — a natural split, matching the six real volumes, not an
+    artificial section), `hitopadesha` (Edwin Arnold's *The Book of Good
+    Counsels*, PG 13268 — sliced out of a 4-work bundled anthology
+    "Hindu Literature"; Arnold's translator's preface cut, the work's own
+    Introduction frame story kept, same treatment as Ryder's Panchatantra),
+    and `vikram_and_vampire` (Richard Burton's *Vikram and the Vampire* /
+    Baital Pachisi, PG 2400 — both translator prefaces cut, narrative
+    Introduction kept). Source-quality triage before building: of 5 titles
+    the user proposed, Jataka/Hitopadesha/Vikram were clean and fetchable;
+    Kathasaritsagara (only Tawney Vol. 2 was linked) and Singhasan Battisi
+    (no PD text under that title, only a different substitute translation)
+    were skipped per user decision; Shuka Saptati has **no full PD English
+    translation at all** (the only complete one, Haksar 2000, isn't PD) and
+    was dropped — tracked here, not in SOURCING.md, since that file is
+    scoped to the vernacular-title checklist and these are English-source
+    works. Jataka sourced from archive.org's EPUB of this item (its own
+    description says it's a direct calibre conversion of sacred-texts.com's
+    HTML — clean per-story pages, not the noisy OCR `djvu.txt` archive.org
+    also offers, which was rejected on sight). Three fetch gotchas worth
+    remembering: (1) a handful of Jataka story numbers are genuine one-line
+    cross-references ("This Birth will be given below in the X Birth") —
+    real content, not broken pages, so the per-page length floor has to stay
+    low; (2) Volume VI's index uses "No. 544:" (no period before the colon,
+    unlike every other entry's "No. N.:") and its longest story is split
+    across `_split_000/001/002.htm` sibling files calibre generated — both
+    needed separate handling from the simple one-page-per-story assumption;
+    (3) Vikram and the Vampire's footnote-anchor tag is sometimes wrapped
+    onto a new line in PG's pretty-printed htm (`<a\n href="#linknote-68"
+    ...>`) — a regex requiring the literal contiguous string `<a href="`
+    silently failed to match and left `[68]` sitting in the reader text;
+    fixed with `<a\s+href="`. All 8 texts + quotes verbatim-verified
+    (normalized-whitespace) before writing to `public/texts/`; registered in
+    `BOOKS_DB` (books.js), Seeder `SEED_IDS`, and audit-cloud `EXPECTED_MIN`.
+    Chapter summaries deferred to a follow-up round (the epics got theirs in
+    a separate "completion round" too) — **still needs `/seed` → Initial
+    seeding** to actually reach Firestore; nothing here writes to the cloud
+    directly.
+
 ## Ingestion pipeline — USE THE SAFEGUARDS, never bypass
 
 - `scripts/scrub.mjs` — THE shared scrubber + `validateText` gate (surgical

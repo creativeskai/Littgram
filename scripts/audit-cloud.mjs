@@ -39,6 +39,10 @@ const EXPECTED_MIN = {
   aesop_fables: 150000,
   panchatantra_1: 180000, panchatantra_2: 65000, panchatantra_3: 75000,
   panchatantra_4: 38000, panchatantra_5: 38000,
+  // tales round (fetch-tales.mjs)
+  jataka_1: 750000, jataka_2: 610000, jataka_3: 680000,
+  jataka_4: 670000, jataka_5: 640000, jataka_6: 745000,
+  hitopadesha: 140000, vikram_and_vampire: 350000,
 };
 // English translations are usually 0.8–1.4x the native char count; use a
 // looser floor of half the native minimum.
