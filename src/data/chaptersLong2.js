@@ -430,4 +430,93 @@ panchatantra_5: [
     summary: `The book's remaining tales return to the same warning from different angles. A Brahman's wife, seeing her pet mongoose run to her with blood on its mouth, kills it on the spot for what she assumes it has done to her baby — and only afterward finds a slain black snake by the empty, undisturbed cradle, and a devoted protector she destroyed on a first glance instead of a second look. Four poor Brahman friends who set out together to hunt for treasure fare little better, undone in their own ways by wanting more than the moment safely allowed — Book V's whole case, closing the Panchatantra, that a hasty verdict costs more than the patience it saves.` },
 ],
 
+jataka_1: [
+  { title: 'The Wise Merchant and the Waterless Desert',
+    quote: 'Praised be the Blessed One, the Arahat, the perfect Buddha.',
+    summary: `The very first Jātaka in the whole collection sets the pattern every one of the 547 will follow: a dispute among the monks at Jetavana — here, some disciples of other schools who keep drifting back to their old teachers whenever the Buddha travels — prompts him to tell of a past life. Two merchants once crossed a waterless desert with five hundred carts apiece; a demon disguised as a rain-soaked traveller convinced the foolish one to pour out all his water on the promise of rivers ahead, then devoured him and his men that night. The wise merchant — the Bodhisatta himself — noticed the "traveller" cast no shadow, refused, and crossed safely to find the other's abandoned carts waiting for him.` },
+  { title: "A King's Hidden Son",
+    summary: `Among the early single-verse Births is the story of Kaṭṭhavāhana, "the faggot-bearer" — a king's son by a woman he met gathering firewood, raised without ever meeting his father. Brought at last before the king with only a signet ring as proof, and denied three times, the boy is thrown into the air by his mother in a trial of truth: if he is truly the king's son, let him hang suspended; if not, let him fall and die. He hangs in mid-air reciting his claim in verse, and the king catches him in his own arms. Story after story in this book turns on exactly this kind of test — of courage, honesty, or self-command — resolved by a single decisive act.` },
+  { title: '150 Lives in a Single Verse',
+    summary: `The Ekanipāta — "book of ones" — is the largest single volume in the whole Jātaka: 150 Birth Stories, each built to illustrate just one verse of canonical scripture. Cowell's own introduction notes that later volumes contain fewer and fewer stories as the number of verses per story climbs, so this first book is also the broadest in subject: merchants, kings, animals, ascetics, and thieves, tied together only by the closing formula in which the Master reveals who, in the story just told, was reborn as whom. Volume One ends, fittingly, "END OF THE FIRST BOOK."` },
+],
+
+jataka_2: [
+  { title: 'A King Learns to Rule',
+    summary: `Volume Two opens the Dukanipāta, where each Birth is now built around two verses instead of one. Its first story, the Rājovāda-Jātaka ("Instruction of a King"), was told at Jetavana to explain how a king of Kosala, harsh in judgment, was brought to gentler rule — an early sign that this book's Births, still short, are beginning to carry more deliberate moral argument than Volume One's more varied cast.` },
+  { title: 'Twos and Threes',
+    summary: `Cowell's introduction records the pattern precisely: the Dukanipāta holds 100 two-verse stories, the Tikanipāta that follows it holds 50 three-verse stories — the count of tales shrinking book by book even as each one grows a little longer and more elaborate. Kings tested by disguised gods, animals whose loyalty outlasts a hunter's trap, and the Bodhisatta again and again reborn as the just ruler of Benares fill this stretch.` },
+  { title: 'The Wolf Who Broke His Resolve',
+    summary: `The book closes on a fable in verse: a wolf, resolved to fast and do no harm, abandons the vow the instant a goat wanders into view — "Swerve from their purpose, as the wolf did here / As soon as he beheld the goat appear." The Master closes the Third Book by identifying himself with Sakka, the god who set the test — the same closing formula as every Birth before it, "END OF THE THIRD BOOK."` },
+],
+
+jataka_3: [
+  { title: 'Four Ascetics at the Gate',
+    quote: "Once upon a time the Bodhisatta was king of Benares, and exercising his rule with justice and equity he gave alms and kept the moral law.",
+    summary: `Volume Three opens Book IV, the Catukkanipāta — four-verse Births — with the Cullakāliṅga-Jātaka, "Open the gate," told at Jetavana about the admission of seven thousand Licchavi women to the religious life. From here the volume runs through six nipātas in sequence, Books IV to IX, the stories growing steadily longer as the verse-count per Birth climbs from four to nine.`},
+  { title: 'Devadatta, Named Again',
+    quote: "At that time the ascetic was Devadatta, the lizard Kisāgotamī, the tiger Moggallāna, the lion Sāriputta, the world-renowned teacher Kassapa, and the learned partridge was myself.",
+    summary: `As in almost every volume, the Buddha's rival and cousin Devadatta recurs as the villain of past lives — here identified as the treacherous ascetic in the closing Birth of the book, one of dozens of such identifications across the Jātaka in which the same handful of figures from the Buddha's own lifetime are shown to have crossed paths with him, for good or ill, across countless earlier existences.` },
+],
+
+jataka_4: [
+  { title: 'The Prince Who Would Not Return',
+    summary: `Volume Four opens Book X, the Dasanipāta — ten-verse Births — with the Catu-Dvāra-Jātaka, telling of an unruly disciple at Jetavana and, in the Birth beneath it, a prince's great renunciation. By this point in the collection the stories have grown into small sagas: dynastic disputes, exiled princes, and reclaimed kingdoms that need the fuller ten-verse form to tell properly.` },
+  { title: 'Ten Brethren and a Reclaimed City',
+    quote: "Thus the Ten Brethren, having slain their two uncles, assumed the sovereignty of the city of Asitañjanā, and brought their parents thither.",
+    summary: `Among this volume's longer sagas is the story of ten princely brothers who avenge their exiled parents and retake the city of Asitañjanā — the kind of multi-generation palace intrigue that the growing verse-length of Books X to XV makes room for, in contrast to the shorter animal fables of the earlier volumes.` },
+  { title: 'The Wise Ayoghara',
+    quote: "At that time the king's parents were the mother and father, the Buddha's followers were their followers, and I was myself the Wise Ayoghara.",
+    summary: `The volume closes on the Ayoghara-Jātaka's identification — the Bodhisatta as a prince raised in secret in an iron house against a prophecy of murder, who outwits every attempt on his life through patience rather than force. As always, the closing formula ties the past-life cast back to the people gathered around the Buddha at Jetavana.` },
+],
+
+jataka_5: [
+  { title: 'A Fast-Day Question',
+    summary: `Volume Five opens Book XVI, the Tiṁsanipāta — Births of twenty verses and more — with the Kiṁchanda-Jātaka, told at Jetavana about lay Brothers and Sisters keeping a fast-day. The stories here are approaching the length of short sagas in their own right, among them the taming of the cannibal king Sutasoma and Prince Temiya's long feigned muteness to escape a throne he never wanted.` },
+  { title: 'King Sutasoma Tamed',
+    quote: "the rest of the kings were the followers of Buddha, the king's father and mother were members of the great king's household, and king Sutasoma, it is said, was I myself.",
+    summary: `One of this volume's fullest Births tells of King Sutasoma, a man-eating king brought back from cannibalism and violence by a single kept promise — a story long enough now to carry real dramatic weight, not just a moral aside, and typical of how the later nipātas trade breadth of subject for depth of a single tale.` },
+  { title: 'Verses Kept by the Elders',
+    quote: "These stanzas were recorded by elders as they chanted the Law and sang the praises of the Lord of all Power.",
+    summary: `Volume Five is the last full book before the ten Great Births of Volume Six — its closing note, on stanzas preserved through generations of chanting, is a reminder that the entire Jātaka reached Cowell's translators only because Buddhist monks had carried it, verse by verse, across two thousand years of oral and written transmission.` },
+],
+
+jataka_6: [
+  { title: 'The Ten Great Births',
+    summary: `The sixth and final volume is the Mahānipāta — the ten Great Births, the culminating stories in which the Bodhisatta perfects, one by one, the ten qualities a Buddha-to-be must master. It opens with the Mūga-Pakkha-Jātaka: a prince who feigns deafness, muteness, and idiocy for sixteen years rather than inherit a throne that would force him to order executions, tested at every turn by his own father before he is finally allowed to renounce the world.` },
+  { title: 'Vessantara Gives Away His Kingdom',
+    summary: `The book — and the whole 547-story collection — closes with the Vessantara-Jātaka, its longest single Birth by far, telling of the perfection of giving carried to its limit: Prince Vessantara gives away his kingdom's rain-bringing white elephant to a rival state, is exiled for it, and in the forest gives away his own two children to the brahmin Jūjaka and, when a god tests him one final time, his wife Maddī herself — before everything is restored to him at the story's close.` },
+  { title: 'The Last Identification',
+    quote: "the followers of Buddha were the rest of the people, and King Vessantara was I myself",
+    summary: `The Vessantara-Jātaka's own closing identification — Devadatta as the grasping brahmin Jūjaka, Vessantara's wife and children matched to figures in the Buddha's own life, and Vessantara himself as the Bodhisatta — is also the final identification of the entire Jātaka collection, the last of 547 such moments linking a past life back to the people gathered around the Buddha at Jetavana.` },
+],
+
+hitopadesha: [
+  { title: 'The Winning of Friends',
+    quote: "Sans way or wealth, wise friends their purpose gain-- The Mouse, Crow, Deer, and Tortoise make this plain.",
+    summary: `Nārāyaṇa's frame opens with the sage Vishnu-Sarman promising a king's dull sons that stories will teach them statecraft. Book One tells how the crow Light-o'-Leap, watching a fowler lay a trap of scattered rice, sees the pigeon-king Speckle-neck and his flock caught in the net despite the warning — and how a mouse gnaws them free in gratitude for a kindness. Deer and tortoise join the rescued circle one by one, each pulled from a fresh danger by the friends they have only just made, until the four of them are inseparable.` },
+  { title: 'The Parting of Friends',
+    quote: "The Jackal set--of knavish cunning full-- At loggerheads the Lion and the Bull.",
+    summary: `Book Two turns the lesson around: a jackal minister out of favour at a lion-king's court finds his way back to influence by engineering a friendship between the lion and a stray bull named Sanjivaka — then, resentful of the bull's new closeness to the king, quietly poisons each one's trust in the other with lies neither has any way to check, until the friendship he built with his own hands ends in the duel his whispers made inevitable.`},
+  { title: 'War: The Swans and the Peacocks',
+    quote: "Between the peoples of Peacock and Swan War raged; and evenly the contest ran, Until the Swans to trust the Crows began.",
+    summary: `Book Three tells of a war between the swan-king Silver-sides and the peacock-king Jewel-plume, sparked and lost through misplaced trust — the swans' citadel burned from within by a traitor among crow allies they should never have relied on. Vishnu-Sarman uses the campaign to teach the princes the six expedients of statecraft: peace, war, marching, halting, seeking shelter, and duplicity.` },
+  { title: 'Peace: The Vulture and the Goose',
+    quote: "When those great Kings their weary war did cease, The Vulture and the Goose concluded Peace.",
+    summary: `The book's final counsel is on making peace after war: the swan-king's minister Goose and the peacock-king's minister Far-sight negotiate a treaty sealed by an oath of truth rather than force, and the two kingdoms part on gifts and good will. Vishnu-Sarman closes his teaching here, and the princes — the frame story's whole reason for being told — declare themselves ready to rule.` },
+],
+
+vikram_and_vampire: [
+  { title: 'How Vikram Became King',
+    summary: `Burton's Introduction tells how Vikramaditya, second son of a minor king, seized the throne of Ujjayani by killing the murderer of his own elder brother, then ruled so well that he became the measure of kingship across India — before a wandering devotee asks a single favour of him, setting up the tale proper: bring back a corpse hanging in a distant tree, in total silence, or the ordeal begins again.` },
+  { title: 'The Vampire\'s First Tales',
+    quote: "In Benares once reigned a mighty prince, by name Pratapamukut, to whose eighth son Vajramukut happened the strangest adventure.",
+    summary: `Each time Vikram sets out through the haunted forest with the corpse on his shoulder, the Baital — the vampire-spirit possessing it — tells him a riddling story and asks a question that Vikram, a man of honour, cannot leave unanswered; the moment he speaks, the corpse flies back to its tree and the walk must begin again. The first tales turn on love and disguise — a prince who wins a princess through a deception he later has to answer for, and question after question of who among a story's rivals loved most truly.` },
+  { title: 'Riddles of Villainy and Virtue',
+    quote: "Divorce, friend! Re-wed thee! The spring draweth near, And a wife's but an almanac—good for the year.",
+    summary: `The middle stories turn darker and stranger: a thief who laughs and weeps in the same breath on his way to execution, three men who each claim the strongest right to a revived woman's love, and magic pills that let their user swap bodies — put to catastrophic misuse. Each riddle asks Vikram to weigh loyalty, desire, and self-interest against each other, and each time his honest answer costs him the very corpse he is trying to deliver.` },
+  { title: "The Baital's Last Riddle, and the Conclusion",
+    quote: "he left behind him a name that endured amongst men like the odour of the flower whose memory remains long after its form has mingled with the dust.",
+    summary: `The eleventh and final tale — of three queens undone by absurdly delicate senses — puzzles Vikram into silence at last; unable to answer, he completes the journey. The Baital, satisfied, reveals the truth behind the sage's request — a plot against Vikram's own life — and helps him turn it back on the plotter. Indra himself descends to bless the kingdom, and Vikram reigns on, the frame story closing exactly where the Introduction promised it would.` },
+],
+
 };

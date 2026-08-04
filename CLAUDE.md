@@ -267,10 +267,21 @@ architecture; this file records project history and operational knowledge.
     fixed with `<a\s+href="`. All 8 texts + quotes verbatim-verified
     (normalized-whitespace) before writing to `public/texts/`; registered in
     `BOOKS_DB` (books.js), Seeder `SEED_IDS`, and audit-cloud `EXPECTED_MIN`.
-    Chapter summaries deferred to a follow-up round (the epics got theirs in
-    a separate "completion round" too) — **still needs `/seed` → Initial
-    seeding** to actually reach Firestore; nothing here writes to the cloud
-    directly.
+    Seeded and audited clean same day (`ALL CLEAN`, chunk/char counts match
+    staged files exactly). Chapter summaries added same session
+    (`chaptersLong2.js`, 2–4 per book, quotes verbatim-checked) — for the
+    Jataka's 6 anthology volumes (~150 independent stories each, not a
+    continuous narrative) each chapter anchors on a story actually read in
+    full plus a genuinely-sourced structural note (nipata verse-counts,
+    from Cowell's own footnote) rather than claiming detailed knowledge of
+    every story in a 700-800K-char volume. Covers: OpenLibrary's search API
+    was flaky (intermittent 503s) mid-session, so only 2 of 8 got checked —
+    `jataka_4` (Cambridge UP Vol. IV title page, matches its real
+    translator W. H. D. Rouse exactly) and `hitopadesha` (the actual 1861
+    Smith, Elder & Co. first edition). Two other hits (a Jataka "V6" cover,
+    a Vikram cover) were rejected on sight as generic modern print-on-demand
+    reprint plates, not period scans — the other 6 books keep their
+    designed gradient plates.
 
 ## Ingestion pipeline — USE THE SAFEGUARDS, never bypass
 
