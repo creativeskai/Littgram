@@ -283,6 +283,37 @@ architecture; this file records project history and operational knowledge.
     reprint plates, not period scans — the other 6 books keep their
     designed gradient plates.
 
+19. **Ganapati Atharvashirsha (August 2026)** — user asked for Ganpati
+    mantras. `scripts/fetch-mantras.mjs` builds `ganapati_atharvashirsha`
+    from sa.wikisource.org — a genuinely different content category from
+    everything else in the library: there is no historic public-domain
+    English TRANSLATION of a Sanskrit mantra text the way there is for the
+    library's novels (checked; only modern devotional-site renderings
+    exist, copyright status unclear), so per explicit user choice this book
+    carries Devanagari (the real, verbatim text) + a plain phonetic
+    transliteration I wrote myself, no meaning-translation. The live
+    Wikisource page's generic peace-invocation preamble/postscript (a
+    verse borrowed from the Taittiriya tradition, not part of the
+    Atharvashirsha's own text) has an obvious transcription corruption in
+    that specific transcription — stray Latin "x" characters, a broken
+    "{\म्+}" markup fragment — so it's cut rather than repaired or
+    propagated; the work's own 14 numbered verses are unaffected. One
+    isolated glitch inside verse 7 ("ंआदः सन्धानम्") is corrected to the
+    standard reading "नादः सन्धानम्" (unambiguous OCR-type slip, not a
+    variant — every published edition reads नादः here) — documented
+    in-script, and the build script asserts every hardcoded verse actually
+    appears on the live source page (against the UNCORRECTED reading for
+    verse 7) before trusting the paired transliteration, so the hardcoded
+    text can't silently drift from the real source. Contains the Ganapati
+    Gayatri (verse 8) and the beej mantra Om Gam Ganapataye Namah (verse
+    7). Deliberately short (6.2K chars) — scripture, not a novel; no
+    OpenLibrary cover search attempted (a designed gradient plate fits a
+    devotional text fine). Not offered through the read-in-your-language
+    AI translation feature by design — translating a mantra's phonetics
+    into another language's prose would defeat its purpose — but nothing
+    currently blocks the button from appearing if a reader's app language
+    isn't Hindi; worth revisiting if that turns out to matter in practice.
+
 ## Ingestion pipeline — USE THE SAFEGUARDS, never bypass
 
 - `scripts/scrub.mjs` — THE shared scrubber + `validateText` gate (surgical

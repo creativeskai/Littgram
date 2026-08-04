@@ -44,6 +44,10 @@ const SEED_IDS = [
   // Arnold's Hitopadesha, and Burton's Vikram and the Vampire.
   'jataka_1', 'jataka_2', 'jataka_3', 'jataka_4', 'jataka_5', 'jataka_6',
   'hitopadesha', 'vikram_and_vampire',
+  // Ganapati Atharvashirsha (scripts/fetch-mantras.mjs) — Devanagari +
+  // phonetic transliteration, no English translation (see books.js entry
+  // for why this one differs from everything else in the library).
+  'ganapati_atharvashirsha',
 ];
 
 // Monolith editions replaced by the sections above. Retiring writes

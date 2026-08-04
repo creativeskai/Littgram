@@ -43,6 +43,9 @@ const EXPECTED_MIN = {
   jataka_1: 750000, jataka_2: 610000, jataka_3: 680000,
   jataka_4: 670000, jataka_5: 640000, jataka_6: 745000,
   hitopadesha: 140000, vikram_and_vampire: 350000,
+  // Ganapati Atharvashirsha (fetch-mantras.mjs) — short by design (Sanskrit
+  // scripture, not a novel)
+  ganapati_atharvashirsha: 5500,
 };
 // English translations are usually 0.8–1.4x the native char count; use a
 // looser floor of half the native minimum.
