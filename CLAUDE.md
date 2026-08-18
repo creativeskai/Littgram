@@ -331,10 +331,44 @@ architecture; this file records project history and operational knowledge.
     read/write failures are swallowed so they can never turn into a TTS
     failure for the user. Uses the request's own Firebase ID token (already
     verified by `requireAuth`) as the Firestore REST bearer — no service
-    account needed. **`firestore.rules` gained a `tts_cache` block (public
-    read, authenticated write, mirrors `books/`) — needs `firebase deploy
-    --only firestore:rules` before this does anything** (no Firebase CLI
-    available in-session to deploy it automatically).
+    account needed. `firestore.rules` gained a `tts_cache` block (public
+    read, authenticated write, mirrors `books/`) — deployed via `npx
+    firebase-tools deploy --only firestore:rules` (no service account in
+    the session; `firebase login` needs a real interactive terminal, not
+    the `!`-prefixed bridge, since that runs non-interactively too).
+
+21. **Retention: drop-off analytics + reading-time badges + short-form Home
+    (August 2026)** — user asked what to do about most users reading one
+    page and leaving. Diagnosis: the prior retention round (item 15) built
+    ways to bring lapsed readers *back* (Continue Reading card, push nudge)
+    but nothing addressed first-session drop-off itself, which the original
+    funnel numbers actually pointed at (page 1–2 of the first book).
+    Shipped three pieces. **(a)** `src/lib/analytics.js` logs one Firestore
+    doc per settled reader page to `page_views/<session>_<book>_p<page>`
+    (deterministic id — revisiting a page overwrites rather than piling up)
+    so future fixes can be evidence-based; wired into Reader.jsx's existing
+    4s settle-debounce effect (same one that already guards `publishReading`
+    against the single-page race) — no new timer. A `Legal.jsx` "Analytics"
+    toggle already existed (Profile → Legal → Cookies) but was opt-in and
+    said "Littgram runs no analytics" — with nobody having a reason to have
+    opted in, gating on it would have produced ~0 data, so **per explicit
+    user decision it now ships on by default** (`littgram_consent_analytics`
+    flipped to opt-out semantics: absent/`'1'` = on, `'0'` = off), with the
+    Cookies copy rewritten to honestly describe what's collected (anonymous
+    page-reads, no ads/trackers). `firestore.rules` gained a write-only
+    `page_views` block (`allow read: if false`). **(b)** `src/lib/
+    readingTime.js` turns a book's cloud `bytes` into a "N min/hr read"
+    label (~200 wpm); `recommend.js`'s `readableCatalog()` was silently
+    dropping `bytes` when merging BOOKS_DB entries with cloud metadata —
+    fixed to thread it through to every entry, matched or cloud-only extra.
+    Chip added to Explore rows, BookDetail, and Library (replacing its old
+    ad hoc "K chars" string). **(c)** Feed's "Start small" starter rail
+    (shown only to zero-history users, per `listRecent(1)`) was a hardcoded
+    3-book id list — now computed as the 4 lowest-`bytes` books in the live
+    catalog (self-scaling as more short books get seeded, no threshold to
+    keep tuned), falling back to the old static list while the cloud fetch
+    is still in flight or fails. `Feed.jsx` gained its own `listCloudBooks`
+    +`readableCatalog` call for this (same pattern Explore.jsx already used).
 
 ## Ingestion pipeline — USE THE SAFEGUARDS, never bypass
 
