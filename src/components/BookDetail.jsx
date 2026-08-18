@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Pause, Play, Headphones, LoaderCircle, TriangleAlert, BookOpen, PenLine } from 'lucide-react';
 import BookCover from './BookCover.jsx';
+import { readingTimeLabel } from '../lib/readingTime.js';
 import { chaptersFor } from '../lib/chapters.js';
 import { useTTS } from '../lib/useTTS.js';
 import { setComposeDraft } from '../lib/composeDraft.js';
@@ -52,6 +53,7 @@ export default function BookDetail({ book, cloudIds, onClose }) {
               <span className="chip">{(book.lang || '').toUpperCase()}</span>
               {book.tag && <span className="chip">{book.tag}</span>}
               {book.part && <span className="chip">Part {book.part} of {book.parts}</span>}
+              {readingTimeLabel(book.bytes) && <span className="chip">{readingTimeLabel(book.bytes)}</span>}
             </div>
           </div>
         </div>

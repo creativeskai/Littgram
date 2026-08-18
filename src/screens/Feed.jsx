@@ -13,6 +13,8 @@ import { MOODS } from '../data/moods.js';
 import { fetchCommunityPosts, publishPost } from '../lib/social.js';
 import { ensureBotPosts } from '../lib/bots.js';
 import { listRecent } from '../lib/progress.js';
+import { listCloudBooks } from '../lib/books.js';
+import { readableCatalog } from '../lib/recommend.js';
 import { pushSupported, enablePush } from '../lib/push.js';
 import { peekComposeDraft, clearComposeDraft } from '../lib/composeDraft.js';
 import PostCard from '../components/PostCard.jsx';
@@ -64,6 +66,10 @@ export default function Feed() {
     }));
   }, []);
 
+  // Cloud catalog, only needed to pick short "start small" reads below.
+  const [cloud, setCloud] = useState(null);
+  useEffect(() => { listCloudBooks().then(setCloud).catch(() => setCloud([])); }, []);
+
   const posts = useMemo(() => {
     const catalog = POSTS_DB.filter(p =>
       (lang === 'all' || p.lang === lang) && (!topic || p.topic === topic));
@@ -91,9 +97,18 @@ export default function Feed() {
   // Reading first: returning readers resume in one tap from Home; brand-new
   // users get a short "first win" instead of facing a 250-page classic cold.
   const recent = useMemo(() => listRecent(1)[0] || null, []);
-  const starters = useMemo(
-    () => (recent ? [] : STARTER_IDS.map(id => BOOKS_DB.find(b => b.id === id)).filter(Boolean)),
-    [recent]);
+  // Shortest available books by cloud length — self-scaling as the catalog
+  // grows, rather than a fixed list. Falls back to the static ids while the
+  // cloud fetch is still in flight or fails, so Home never shows nothing.
+  const shortPicks = useMemo(() => {
+    const readable = readableCatalog(cloud);
+    return readable.filter(b => b.bytes).sort((a, b) => a.bytes - b.bytes).slice(0, 4);
+  }, [cloud]);
+  const starters = useMemo(() => {
+    if (recent) return [];
+    if (shortPicks.length) return shortPicks;
+    return STARTER_IDS.map(id => BOOKS_DB.find(b => b.id === id)).filter(Boolean);
+  }, [recent, shortPicks]);
 
   // One-time push prompt for people who have started reading
   const [pushCard, setPushCard] = useState(() =>
@@ -144,7 +159,7 @@ export default function Feed() {
 
       {starters.length > 0 && (
         <div className="card" style={{ marginTop: 12 }}>
-          <p className="label" style={{ margin: 0 }}>Start small — a classic in one sitting</p>
+          <p className="label" style={{ margin: 0 }}>Start small — an easy first read</p>
           <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
             {starters.map(b => (
               <Link key={b.id} to={'/read/' + b.id} style={{ flex: 1, textDecoration: 'none', color: 'inherit', minWidth: 0 }}>

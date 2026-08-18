@@ -5,12 +5,13 @@ import { Pause, Play, Volume2, LoaderCircle, TriangleAlert, Hand, BookOpen, Book
 import { loadBookText, buildPages, siblingEditionId } from '../lib/books.js';
 import {
   savePosition, getPosition, toggleBookmark, listBookmarks,
-  isBookmarked, getFontSize, setFontSize,
+  isBookmarked, getFontSize, setFontSize, listRecent,
 } from '../lib/progress.js';
 import { useToast } from '../components/Toast.jsx';
 import { useTTS } from '../lib/useTTS.js';
 import { chaptersFor } from '../lib/chapters.js';
 import { publishReading } from '../lib/social.js';
+import { logPageView } from '../lib/analytics.js';
 import { useUiLang } from '../lib/i18n.js';
 import { fbRead } from '../lib/firebase.js';
 import { translationEditionId, getTranslationStatus, translateBookToLang } from '../lib/translateBook.js';
@@ -44,6 +45,10 @@ export default function Reader() {
   const [, force] = useState(0);
   const touchX = useRef(null);
   const bodyRef = useRef(null);
+  // Captured once, before this book's own savePosition() call can pollute
+  // the zero-history signal — same check Feed.jsx uses to gate starters.
+  const isNewReaderRef = useRef(null);
+  if (isNewReaderRef.current === null) isNewReaderRef.current = !listRecent(1)[0];
 
   useEffect(() => {
     let alive = true;
@@ -78,6 +83,7 @@ export default function Reader() {
       const timer = setTimeout(() => {
         if (pages.length > 1 && page < pages.length) {
           publishReading({ bookId, title: meta.native || meta.title || bookId, page, totalPages: pages.length });
+          logPageView({ bookId, page, totalPages: pages.length, isNewReader: isNewReaderRef.current });
         }
       }, 4000);
       return () => clearTimeout(timer);

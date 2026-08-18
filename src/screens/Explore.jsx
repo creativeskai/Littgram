@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { PenLine } from 'lucide-react';
 import { listCloudBooks } from '../lib/books.js';
 import { readableCatalog } from '../lib/recommend.js';
+import { readingTimeLabel } from '../lib/readingTime.js';
 import BookCover from '../components/BookCover.jsx';
 import BookDetail from '../components/BookDetail.jsx';
 import { setComposeDraft } from '../lib/composeDraft.js';
@@ -121,6 +122,7 @@ export default function Explore() {
               <div className="row-sub">{b.author}</div>
             </div>
             {b.part && <span className="chip">{b.part}/{b.parts}</span>}
+            {readingTimeLabel(b.bytes) && <span className="chip">{readingTimeLabel(b.bytes)}</span>}
             <span className="chip">{(b.lang || '').toUpperCase()}</span>
           </div>
         ))}

@@ -113,6 +113,11 @@ function Cookies() {
         (Firebase Auth), remembering your reading position, bookmarks, language and display
         preferences, and remembering that you've seen the tutorial.
       </S>
+      <S title="Product analytics">
+        We record anonymous page-read events (which page of which book, not the content) so we
+        can see where readers drop off and fix it — no ads, no third-party trackers. This is on
+        by default; turn it off below.
+      </S>
       <S title="Third parties">
         Signing in with Google may set Google's own cookies, governed by Google's policies.
         Book cover images and fonts are loaded from third-party CDNs which may log requests.
@@ -127,12 +132,12 @@ function Cookies() {
 
 function CookiePrefs() {
   const [functional] = useState(true);
-  const [analytics, setAnalytics] = useState(localStorage.getItem('littgram_consent_analytics') === '1');
+  const [analytics, setAnalytics] = useState(localStorage.getItem('littgram_consent_analytics') !== '0');
   function toggleAnalytics() {
     const v = !analytics;
     setAnalytics(v);
-    if (v) localStorage.setItem('littgram_consent_analytics', '1');
-    else localStorage.removeItem('littgram_consent_analytics');
+    if (v) localStorage.removeItem('littgram_consent_analytics'); // default = on
+    else localStorage.setItem('littgram_consent_analytics', '0');
   }
   const Row = ({ title, desc, on, onToggle, locked }) => (
     <div className="card" style={{ marginBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -157,7 +162,7 @@ function CookiePrefs() {
       <Row title="Essential" locked on={functional}
         desc="Sign-in, reading positions, preferences. Required for the app to work." />
       <Row title="Analytics" on={analytics} onToggle={toggleAnalytics}
-        desc="Currently unused — Littgram runs no analytics. This preference is honoured if analytics are ever added." />
+        desc="Anonymous page-read events, so we can see where readers drop off. No ads, no third-party trackers. On by default." />
     </>
   );
 }

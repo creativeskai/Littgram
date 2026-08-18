@@ -9,6 +9,7 @@ import { listCloudBooks } from '../lib/books.js';
 import { listRecent } from '../lib/progress.js';
 import { BOOKS_DB } from '../data/books.js';
 import BookCover from '../components/BookCover.jsx';
+import { readingTimeLabel } from '../lib/readingTime.js';
 import { t } from '../lib/i18n.js';
 
 const LANG_NAMES = { en: 'English', bn: 'বাংলা', hi: 'हिन्दी', mr: 'मराठी', ta: 'தமிழ்', te: 'తెలుగు' };
@@ -158,7 +159,7 @@ export default function Library() {
               <div className="row-title">{b.native || b.title}</div>
               <div className="row-sub">
                 {b.author && b.author + ' · '}{LANG_NAMES[b.lang] || b.lang}
-                {b.bytes && ' · ' + (b.bytes > 100000 ? Math.round(b.bytes / 1000) + 'K chars' : b.bytes.toLocaleString() + ' chars')}
+                {readingTimeLabel(b.bytes) && ' · ' + readingTimeLabel(b.bytes)}
               </div>
             </div>
             {b.db?.part && <span className="chip">{b.db.part}/{b.db.parts}</span>}

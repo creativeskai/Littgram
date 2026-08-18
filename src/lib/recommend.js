@@ -18,7 +18,9 @@ const baseId = (id) => (id.endsWith('_en') ? id.slice(0, -3) : id);
 export function readableCatalog(cloud) {
   if (!cloud) return [];
   const cloudIds = new Set(cloud.map(b => b.id));
-  const matched = BOOKS_DB.filter(b => cloudIds.has(b.id) || cloudIds.has(b.id + '_en'));
+  const bytesOf = new Map(cloud.map(b => [b.id, b.bytes]));
+  const matched = BOOKS_DB.filter(b => cloudIds.has(b.id) || cloudIds.has(b.id + '_en'))
+    .map(b => ({ ...b, bytes: bytesOf.get(b.id) ?? bytesOf.get(b.id + '_en') ?? null }));
   const matchedIds = new Set(matched.flatMap(b => [b.id, b.id + '_en']));
   const extras = [];
   for (const cb of cloud) {
@@ -28,7 +30,7 @@ export function readableCatalog(cloud) {
     extras.push({
       id: cb.id, title: cb.title, native: cb.native, author: cb.author,
       lang: cb.lang && cb.lang !== '?' ? cb.lang : 'en',
-      emoji: '📖', topics: [], quotes: [],
+      emoji: '📖', topics: [], quotes: [], bytes: cb.bytes ?? null,
     });
   }
   // Newly seeded books lead the Explore list too — same grouped-recency
