@@ -77,6 +77,13 @@ export default async function handler(req, res) {
     const voices = VOICE_MAP[lang] || VOICE_MAP['en-IN'];
     const speaker = gender === 'f' ? voices.f : voices.m;
 
+    const { cacheKey, getCachedAudio, saveCachedAudio } = await import('./_ttsCache.js');
+    const token = req.headers['authorization'].slice(7); // requireAuth already validated this
+    const hash = cacheKey(text, lang, speaker, pace);
+
+    const cached = await getCachedAudio(token, hash);
+    if (cached) return res.status(200).json({ audio: cached.audio, engine: cached.engine, cached: true });
+
     let lastStatus = 0;
     for (let attempt = 1; attempt <= 3; attempt++) {
       const r = await fetch(SARVAM_TTS, {
@@ -95,6 +102,7 @@ export default async function handler(req, res) {
         const d = await r.json();
         const audio = d.audios && d.audios[0];
         if (!audio) return res.status(502).json({ error: 'No audio in Sarvam response' });
+        await saveCachedAudio(token, hash, audio, { lang, voice: speaker, pace, engine: 'sarvam' });
         return res.status(200).json({ audio }); // base64 WAV
       }
       if (r.status === 402 || r.status === 403) break; // no credits — try Gemini
@@ -109,7 +117,10 @@ export default async function handler(req, res) {
     // Sarvam unavailable — fall back to Gemini TTS
     if (GEMINI_KEY) {
       const audio = await geminiTTS(text, gender);
-      if (audio) return res.status(200).json({ audio, engine: 'gemini' });
+      if (audio) {
+        await saveCachedAudio(token, hash, audio, { lang, voice: speaker, pace, engine: 'gemini' });
+        return res.status(200).json({ audio, engine: 'gemini' });
+      }
     }
     return res.status(502).json({ error: 'TTS failed: Sarvam has no credits and Gemini fallback unavailable', lastStatus });
   } catch (err) {

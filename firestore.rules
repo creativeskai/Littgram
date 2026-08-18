@@ -57,5 +57,16 @@ service cloud.firestore {
       allow read: if true;
       allow write, delete: if request.auth != null;
     }
+
+    // Content-addressed TTS audio cache (api/_ttsCache.js). Shared across
+    // every user — same trust model as books/chunks above.
+    match /tts_cache/{hash} {
+      allow read: if true;
+      allow write: if request.auth != null;
+      match /audio/{chunkId} {
+        allow read: if true;
+        allow write: if request.auth != null;
+      }
+    }
   }
 }

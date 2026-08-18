@@ -314,6 +314,28 @@ architecture; this file records project history and operational knowledge.
     currently blocks the button from appearing if a reader's app language
     isn't Hindi; worth revisiting if that turns out to matter in practice.
 
+20. **TTS caching (August 2026)** — a growth/opex review found generated
+    read-aloud audio was the single largest projected cost at scale (live
+    Sarvam call on every playback, ~85–90% of the modeled bill at 10K MAU)
+    while AI book translation was nearly free because it's cached. Closed
+    the gap the same way: `api/_ttsCache.js` hashes `(lang, resolved voice,
+    pace, exact chunk text)` with SHA-256 and stores the resulting audio in
+    Firestore at `tts_cache/<hash>` — content-addressed and shared across
+    every user, same principle as `books/{id}__tr_{lang}`. A single audio
+    blob doesn't fit Firestore's ~1MiB doc limit, so it's split across
+    `tts_cache/<hash>/audio/<i>` sub-docs in 700K-char base64 pieces (base64
+    is always 1 byte/char, unlike the 250K-char rule in `firebase.js` which
+    exists for raw UTF-8 text where Bengali/Hindi run 3 bytes/char). `api/
+    tts.js` checks the cache before calling Sarvam/Gemini and writes back
+    on a miss (both the Sarvam and the Gemini-fallback success paths); cache
+    read/write failures are swallowed so they can never turn into a TTS
+    failure for the user. Uses the request's own Firebase ID token (already
+    verified by `requireAuth`) as the Firestore REST bearer — no service
+    account needed. **`firestore.rules` gained a `tts_cache` block (public
+    read, authenticated write, mirrors `books/`) — needs `firebase deploy
+    --only firestore:rules` before this does anything** (no Firebase CLI
+    available in-session to deploy it automatically).
+
 ## Ingestion pipeline — USE THE SAFEGUARDS, never bypass
 
 - `scripts/scrub.mjs` — THE shared scrubber + `validateText` gate (surgical
